@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Cart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{--bg:#f7f7fb;--card:#fff;--line:#e5e7eb;--text:#111827;--muted:#6b7280;--ok:#16a34a;--danger:#ef4444}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,Tahoma,Arial,sans-serif}
+    .container{max-width:980px;margin:24px auto;padding:0 16px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+    .header h1{font-size:20px;margin:0}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700;text-decoration:none}
+    .btn.ok{background:var(--ok);color:#fff;border-color:transparent}
+    .btn.ghost{background:#fff}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{font-size:13px;color:#6b7280;text-align:left;padding:12px 14px;border-bottom:1px solid var(--line)}
+    tbody td{padding:12px 14px;border-bottom:1px dashed var(--line);vertical-align:middle}
+    .qty-input{width:72px;padding:8px;border:1px solid var(--line);border-radius:8px;text-align:center}
+    .qty-wrapper{display:flex;align-items:center;gap:6px}
+    .qty-btn{width:32px;height:32px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+    .qty-btn:hover{background:#f3f4f6;border-color:#9ca3af}
+    .qty-btn:active{transform:scale(0.95)}
+    .danger{color:var(--danger);cursor:pointer}
+    .empty{padding:18px;text-align:center;color:var(--muted)}
+    .summary{display:flex;justify-content:flex-end;gap:20px;align-items:flex-start;padding:16px}
+    .summary .box{min-width:280px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+    .summary .row{display:flex;justify-content:space-between;margin:6px 0}
+    .summary .row.total{font-weight:800}
+    @media (max-width:640px){
+      thead{display:none}
+      tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 8px}
+      tbody td{border-bottom:0;padding:6px 8px}
+      tbody td[data-label]::before{content:attr(data-label);display:block;font-size:12px;color:#6b7280;margin-bottom:2px}
+      .summary{padding:12px}
+      .summary .box{width:100%;min-width:auto}
+      .qty-input{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <section id="cart" aria-label="Shopping cart">
+    <div class="container">
+      <div class="header">
+        <h1>Your Cart</h1>
+        <div class="actions">
+          <a class="btn ghost" href="marketplace.html">← Continue shopping</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <table role="table" aria-label="Cart items">
+          <thead><tr><th>Product</th><th>Unit price</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead>
+          <tbody id="cart-body"></tbody>
+        </table>
+        <div id="empty" class="empty" hidden>No items in cart yet.</div>
+      </div>
+
+      <div class="summary">
+        <div class="box" aria-live="polite">
+          <div class="row"><span>Subtotal</span><strong id="sum-sub">$0.00</strong></div>
+          <div class="row"><span>Discount</span><span id="sum-dis">$0.00</span></div>
+          <div class="row total"><span>Total</span><strong id="sum-total">$0.00</strong></div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <a class="btn ghost" href="marketplace.html">← Add more</a>
+            <a id="to-checkout" class="btn ok" href="Checkout.html">Proceed to checkout</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+  (function(){
+    const KEY='mp_cart_v1';
+    const $=s=>document.querySelector(s);
+    const money=n=>'$'+(Number(n)||0).toFixed(2);
+    const parse=(j,f)=>{try{const v=JSON.parse(j);return v??f;}catch{return f;}};
+
+    const read=()=>parse(localStorage.getItem(KEY)||'[]',[]);
+    const write=a=>{ try{ localStorage.setItem(KEY, JSON.stringify(a)); }catch{} };
+    const norm=it=>{ const u=Number(it.unitPrice)||0, q=Math.max(1,parseInt(it.quantity,10)||1); return { id:it.id, name:it.name||it.id||'Item', unitPrice:+u.toFixed(2), quantity:q, currency:'USD', total:+(u*q).toFixed(2), ts:it.ts||Date.now() }; };
+    const kOf=it=>it.id+'|'+it.unitPrice;
+
+    function mergeUnique(arr){
+      const map=new Map();
+      arr.forEach(it=>{
+        const n=norm(it); const k=kOf(n);
+        if(map.has(k)){ const ex=map.get(k); ex.quantity+=n.quantity; ex.total=+(ex.unitPrice*ex.quantity).toFixed(2); ex.ts=Math.max(ex.ts||0,n.ts||0); map.set(k,ex); }
+        else map.set(k,n);
+      });
+      return [...map.values()];
+    }
+
+    let cart = mergeUnique(read()); // only localStorage source
+
+    const body=$('#cart-body'), empty=$('#empty');
+
+    function totals(){
+      const sub=cart.reduce((s,it)=>s+(it.unitPrice||0)*(it.quantity||1),0);
+      const dis=0, tot=sub-dis;
+      $('#sum-sub').textContent=money(sub);
+      $('#sum-dis').textContent=money(dis);
+      $('#sum-total').textContent=money(tot);
+      return {sub,dis,tot};
+    }
+
+    function render(){
+      body.innerHTML='';
+      if(!cart.length){ empty.hidden=false; pushViewCart([], {sub:0,dis:0,tot:0}); return; }
+      empty.hidden=true;
+      cart.forEach((it,idx)=>{
+        const tr=document.createElement('tr');
+        const td=(t,l)=>{const d=document.createElement('td'); d.textContent=t; if(l) d.setAttribute('data-label',l); return d;};
+        tr.appendChild(td(it.name,'Product'));
+        tr.appendChild(td(money(it.unitPrice),'Unit price'));
+        const qTd=document.createElement('td'); qTd.setAttribute('data-label','Qty');
+        
+        const qWrapper=document.createElement('div'); qWrapper.className='qty-wrapper';
+        
+        const btnMinus=document.createElement('button'); btnMinus.type='button'; btnMinus.className='qty-btn'; btnMinus.textContent='−';
+        const q=document.createElement('input'); q.type='number'; q.min='1'; q.value=String(it.quantity||1); q.className='qty-input';
+        const btnPlus=document.createElement('button'); btnPlus.type='button'; btnPlus.className='qty-btn'; btnPlus.textContent='+';
+        
+        const updateQty=(newVal)=>{
+          const v=Math.max(1,parseInt(newVal,10)||1); 
+          q.value=String(v); 
+          it.quantity=v; 
+          it.total=+(it.unitPrice*it.quantity).toFixed(2); 
+          write(cart); 
+          subCell.textContent=money(it.total); 
+          subCell.style.transition='color 0.3s'; 
+          subCell.style.color='#16a34a'; 
+          setTimeout(()=>{ subCell.style.color=''; },500);
+          const t=totals(); 
+          pushViewCart(cart,t,true); 
+        };
+        
+        btnMinus.addEventListener('click',()=>{ updateQty(it.quantity-1); });
+        btnPlus.addEventListener('click',()=>{ updateQty(it.quantity+1); });
+        
+        // Update on input (while typing) - real-time update
+        q.addEventListener('input',()=>{ 
+          const v=Math.max(1,parseInt(q.value,10)||1); 
+          if(q.value && !isNaN(q.value)) {
+            updateQty(v);
+          }
+        });
+        
+        // Also update on change (when clicking away)
+        q.addEventListener('change',()=>{ updateQty(q.value); });
+        
+        qWrapper.appendChild(btnMinus);
+        qWrapper.appendChild(q);
+        qWrapper.appendChild(btnPlus);
+        qTd.appendChild(qWrapper); 
+        tr.appendChild(qTd);
+        const subCell=td(money(it.total),'Subtotal'); tr.appendChild(subCell);
+        const act=document.createElement('td'); const rm=document.createElement('button'); rm.type='button'; rm.textContent='Remove'; rm.className='danger';
+        rm.addEventListener('click',()=>{ cart.splice(idx,1); write(cart); render(); });
+        act.appendChild(rm); tr.appendChild(act);
+        body.appendChild(tr);
+      });
+      const t=totals(); pushViewCart(cart,t);
+    }
+
+    // GA4
+    let lastPayload='';
+    const gaItems=a=>a.map(it=>({item_id:it.id,item_name:it.name,price:it.unitPrice,quantity:it.quantity}));
+    function pushViewCart(items,t,throttle=false){
+      try{
+        window.dataLayer=window.dataLayer||[];
+        const payload=JSON.stringify(gaItems(items));
+        if(throttle && payload===lastPayload) return;
+        lastPayload=payload;
+        window.dataLayer.push({event:'view_cart',ecommerce:{currency:'USD',value:+(t.tot||0).toFixed(2),items:gaItems(items)}});
+      }catch{}
+    }
+
+    render();
+
+    document.getElementById('to-checkout')?.addEventListener('click',e=>{
+      if(!cart.length){ e.preventDefault(); alert('Your cart is empty.'); return; }
+      try{
+        const t=totals();
+        window.dataLayer=window.dataLayer||[];
+        window.dataLayer.push({event:'begin_checkout',ecommerce:{currency:'USD',value:+(t.tot||0).toFixed(2),items:gaItems(cart)}});
+      }catch{}
+    });
+
+    // cross-tab sync (same key only)
+    window.addEventListener('storage',ev=>{
+      if(ev && ev.key===KEY){ cart = mergeUnique(read()); render(); }
+    });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Order Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card: #fff;
+            --line: #e5e7eb;
+            --text: #111827;
+            --muted: #6b7280;
+            --ok: #16a34a;
+            --danger: #ef4444;
+            --primary: #2563eb;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f5f5f5;
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Login styles */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .error-message {
+            color: var(--danger);
+            text-align: center;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .login-card h2 {
+            margin: 0 0 24px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .login-btn:hover {
+            background: #1d4ed8;
+        }
+
+        /* Dashboard styles */
+        .dashboard {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard-wrapper {
+            display: flex;
+            gap: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .dashboard-container {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        .future-box {
+            width: 300px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .future-box h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #333;
+            font-weight: 600;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+
+        .future-box-content {
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+            padding: 30px 10px;
+        }
+
+        .future-box-placeholder {
+            font-size: 48px;
+            opacity: 0.2;
+            margin-bottom: 15px;
+        }
+
+        .header {
+            background: white;
+            color: #333;
+            padding: 20px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #111;
+        }
+
+        .header button {
+            background: #f3f4f6;
+            color: #333;
+            border: 1px solid #d1d5db;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .header button:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+
+        .orders-section {
+            padding: 32px;
+        }
+
+        .order-filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 16px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: var(--bg);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .count {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .filter-btn.active .count {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .order-card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .order-header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .order-header:hover {
+            background: var(--bg);
+        }
+
+        .order-id {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .order-date {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-confirmed { background: #dbeafe; color: #1e40af; }
+        .status-processing { background: #e0e7ff; color: #3730a3; }
+        .status-completed { background: #d1fae5; color: #065f46; }
+        .status-cancelled { background: #fee2e2; color: #991b1b; }
+        .status-refunded { background: #fce7f3; color: #831843; }
+        .status-hold { background: #f3f4f6; color: #374151; }
+
+        .expand-indicator {
+            transition: transform 0.3s;
+        }
+
+        .order-card.expanded .expand-indicator {
+            transform: rotate(180deg);
+        }
+
+        .order-content {
+            display: none;
+            padding: 0 16px 16px 16px;
+            border-top: 1px solid var(--line);
+        }
+
+        .order-card.expanded .order-content {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 16px 0 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .client-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .info-group {
+            margin-bottom: 8px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .crypto-address, .crypto-hash {
+            font-family: monospace;
+            font-size: 11px;
+            word-break: break-all;
+        }
+
+        .order-items {
+            margin: 16px 0;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .item-details {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .item-quantity {
+            background: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .order-totals {
+            margin: 16px 0;
+            padding-top: 16px;
+            border-top: 1px solid var(--line);
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        .total-row.final {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--primary);
+            padding-top: 16px;
+            border-top: 2px solid var(--line);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--line);
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .btn-confirm {
+            background: var(--ok);
+            color: white;
+        }
+
+        .btn-cancel {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-process {
+            background: var(--info);
+            color: white;
+        }
+
+        .btn-hold {
+            background: var(--muted);
+            color: white;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* Tab Navigation Styles */
+        .tab-btn {
+            padding: 18px 28px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--muted);
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: var(--text);
+            background: #f8f9fa;
+        }
+
+        .tab-btn.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+            background: transparent;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Delivery Row Styles */
+        .delivery-row {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .delivery-row:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .delivery-row-header {
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .delivery-row-header:hover {
+            background: #f8f9fa;
+        }
+
+        .delivery-row-content {
+            display: none;
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
+            background: #fafafa;
+        }
+
+        .delivery-row.expanded .delivery-row-content {
+            display: block;
+        }
+
+        .delivery-row.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .expand-icon {
+            transition: transform 0.3s;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Notification Form and History Row Styles */
+        .notification-form-row,
+        .notification-history-row {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .notification-form-row:hover,
+        .notification-history-row:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .notification-form-header,
+        .notification-history-header {
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .notification-form-header:hover,
+        .notification-history-header:hover {
+            background: #f8f9fa;
+        }
+
+        .notification-form-content,
+        .notification-history-content {
+            display: none;
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
+            background: #fafafa;
+        }
+
+        .notification-form-row.expanded .notification-form-content,
+        .notification-history-row.expanded .notification-history-content {
+            display: block;
+        }
+
+        .notification-form-row.expanded .arrow,
+        .notification-history-row.expanded .arrow {
+            transform: rotate(90deg);
+        }
+
+        .arrow {
+            transition: transform 0.3s;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .dashboard-wrapper {
+                flex-direction: column;
+            }
+
+            .future-box {
+                width: 100%;
+                position: static;
+            }
+
+            .dashboard-container {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="loginSection" class="login-container">
+        <div class="login-card">
+            <h2>🔐 Admin Login</h2>
+            <div id="loginError" class="error-message">Invalid credentials</div>
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="dashboard">
+        <div class="dashboard-wrapper">
+            <!-- Main Dashboard Container -->
+            <div class="dashboard-container">
+                <div class="header">
+                    <h1>📦 Admin Dashboard</h1>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button onclick="refreshDashboard()" title="Refresh Dashboard" style="display: flex; align-items: center; gap: 6px;">
+                            🔄 Refresh
+                        </button>
+                        <button onclick="window.location.href='admin.html'" title="Go to Admin Page" style="display: flex; align-items: center; gap: 6px;">
+                            🏠 Admin Page
+                        </button>
+                        <button onclick="handleLogout()">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+
+        <!-- Tab Navigation -->
+        <div style="background: white; border-bottom: 2px solid var(--line); padding: 0 32px;">
+            <div style="display: flex; gap: 0;">
+                <button class="tab-btn active" data-tab="orders" onclick="switchTab('orders')">
+                    📦 Order Management
+                </button>
+                <button class="tab-btn" data-tab="delivery" onclick="switchTab('delivery')">
+                    🚚 Delivery File Management
+                </button>
+                <button class="tab-btn" data-tab="notifications" onclick="switchTab('notifications')">
+                    🔔 Send Notification
+                </button>
+            </div>
+        </div>
+
+        <!-- Section 1: Order Management -->
+        <div id="ordersTab" class="tab-content active">
+            <div class="orders-section">
+            <div class="order-filters" id="statusFilters">
+                <button class="filter-btn active" data-status="all">
+                    All Orders
+                    <span class="count" id="count-all">0</span>
+                </button>
+                <button class="filter-btn" data-status="pending">
+                    Pending
+                    <span class="count" id="count-pending">0</span>
+                </button>
+                <button class="filter-btn" data-status="confirmed">
+                    Confirmed
+                    <span class="count" id="count-confirmed">0</span>
+                </button>
+                <button class="filter-btn" data-status="processing">
+                    Processing
+                    <span class="count" id="count-processing">0</span>
+                </button>
+                <button class="filter-btn" data-status="completed">
+                    Completed
+                    <span class="count" id="count-completed">0</span>
+                </button>
+                <button class="filter-btn" data-status="hold">
+                    On Hold
+                    <span class="count" id="count-hold">0</span>
+                </button>
+                <button class="filter-btn" data-status="cancelled">
+                    Cancelled
+                    <span class="count" id="count-cancelled">0</span>
+                </button>
+                <button class="filter-btn" data-status="refunded">
+                    Refunded
+                    <span class="count" id="count-refunded">0</span>
+                </button>
+            </div>
+
+            <div id="ordersList">
+                <!-- Orders will be inserted here by JavaScript -->
+            </div>
+        </div>
+        </div>
+
+        <!-- Section 2: Delivery File Management -->
+        <div id="deliveryTab" class="tab-content">
+            <div style="padding: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: #333;">🚚 Delivery File Management</h2>
+                    <button onclick="openSendDeliveryModal()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+                        📦 Send Delivery File
+                    </button>
+                </div>
+
+                <!-- Delivery Statistics -->
+                <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <div style="background: #f8f9fa; padding: 12px 20px; border-radius: 8px; border: 1px solid #e0e0e0; display: flex; align-items: center; gap: 12px;">
+                        <div style="font-size: 28px; font-weight: 700; color: #667eea;" id="totalDeliveries">0</div>
+                        <div style="font-size: 13px; color: #666;">Total Deliveries</div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 12px 20px; border-radius: 8px; border: 1px solid #e0e0e0; display: flex; align-items: center; gap: 12px;">
+                        <div style="font-size: 28px; font-weight: 700; color: #f093fb;" id="deliveriesThisMonth">0</div>
+                        <div style="font-size: 13px; color: #666;">This Month</div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 12px 20px; border-radius: 8px; border: 1px solid #e0e0e0; display: flex; align-items: center; gap: 12px;">
+                        <div style="font-size: 28px; font-weight: 700; color: #4facfe;" id="totalFilesSize">0</div>
+                        <div style="font-size: 13px; color: #666;">Total Files Sent</div>
+                    </div>
+                </div>
+
+                <!-- Delivery History List -->
+                <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <h3 style="margin-top: 0; color: #333;">📋 Delivery History</h3>
+                    <div id="deliveryHistoryList" style="max-height: 600px; overflow-y: auto;">
+                        <!-- Delivery history will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Send Notification Management -->
+        <div id="notificationsTab" class="tab-content">
+            <div style="padding: 24px;">
+                <h2 style="margin-top: 0; margin-bottom: 24px; color: #333;">🔔 Send Notification to Customers</h2>
+
+                <!-- Notification Statistics -->
+                <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <div style="background: #f8f9fa; padding: 12px 20px; border-radius: 8px; border: 1px solid #e9ecef; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 28px; font-weight: 700; color: #007bff;" id="totalNotifications">0</span>
+                        <span style="font-size: 14px; color: #666;">Total Sent</span>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 12px 20px; border-radius: 8px; border: 1px solid #e9ecef; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 28px; font-weight: 700; color: #28a745;" id="notificationsThisMonth">0</span>
+                        <span style="font-size: 14px; color: #666;">This Month</span>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 12px 20px; border-radius: 8px; border: 1px solid #e9ecef; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 28px; font-weight: 700; color: #17a2b8;" id="notificationsRead">0</span>
+                        <span style="font-size: 14px; color: #666;">Read</span>
+                    </div>
+                </div>
+
+                <!-- Send Notification Form (Collapsible) -->
+                <div class="notification-form-row" onclick="toggleNotificationForm()" style="cursor: pointer;">
+                    <div class="notification-form-header">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-size: 20px;">✉️</span>
+                            <span style="font-weight: 600; color: #333;">Send New Notification</span>
+                        </div>
+                        <span class="arrow">▶</span>
+                    </div>
+                    <div class="notification-form-content" onclick="event.stopPropagation()">
+                        <form id="notificationFormMain" onsubmit="sendNotificationMain(event)">
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Customer Email</label>
+                                <input type="email" id="notificationEmailMain" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;" placeholder="customer@email.com">
+                                <small style="color: #666; font-size: 12px;">Enter the customer's email address</small>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Notification Icon</label>
+                                <select id="notificationIconMain" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                                    <option value="🔔">🔔 Bell</option>
+                                    <option value="📢">📢 Announcement</option>
+                                    <option value="⚠️">⚠️ Warning</option>
+                                    <option value="✅">✅ Success</option>
+                                    <option value="📦">📦 Package</option>
+                                    <option value="💬">💬 Message</option>
+                                    <option value="🎉">🎉 Celebration</option>
+                                    <option value="ℹ️">ℹ️ Info</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Notification Title</label>
+                                <input type="text" id="notificationTitleMain" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;" placeholder="Important Update">
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Message</label>
+                                <textarea id="notificationMessageMain" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; min-height: 120px; font-size: 14px; box-sizing: border-box; font-family: inherit;" placeholder="Your message to the customer..."></textarea>
+                            </div>
+
+                            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                <button type="button" onclick="document.getElementById('notificationFormMain').reset()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">Clear</button>
+                                <button type="submit" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">📤 Send Notification</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Notification History -->
+                <div style="margin-top: 20px;">
+                    <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px;">📨 Recent Notifications</h3>
+                    <div id="notificationHistoryList">
+                        <!-- Notification history will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+            </div>
+            <!-- Future Box -->
+            <div class="future-box">
+                <h3>📌 Quick Access</h3>
+                <div class="future-box-content">
+                    <div class="future-box-placeholder">📦</div>
+                    <p>Future features and quick actions will appear here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Delivery File Modal -->
+    <div id="sendDeliveryModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%;">
+            <h2 style="margin-bottom: 20px; color: #333;">📦 Send Delivery File</h2>
+            <form id="deliveryForm" onsubmit="sendDeliveryFile(event)">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Order ID</label>
+                    <input type="text" id="deliveryOrderId" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="ORD-1234567890">
+                    <small style="color: #666; font-size: 12px;">Enter the specific Order ID</small>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Customer Email</label>
+                    <input type="email" id="deliveryEmail" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="customer@email.com">
+                    <small style="color: #666; font-size: 12px;">Enter customer's email address</small>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">File URL or Description</label>
+                    <textarea id="deliveryFileUrl" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; min-height: 80px;" placeholder="Enter download link or file description"></textarea>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Attach Files (Optional)</label>
+                    <input type="file" id="deliveryFiles" multiple style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    <div id="filesList" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" onclick="closeSendDeliveryModal()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">Cancel</button>
+                    <button type="submit" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Send File</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Helper function for DOM manipulation
+        const $ = id => document.getElementById(id);
+        const formatMoney = amount => '$' + Number(amount).toFixed(2);
+        const formatDate = date => new Date(date).toLocaleString();
+
+        // Authentication
+        function handleLogin(event) {
+            event.preventDefault();
+            const username = $('username').value;
+            const password = $('password').value;
+
+            if (username === 'admin' && password === 'admin123') {
+                localStorage.setItem('admin_logged_in', 'true');
+                showDashboard();
+            } else {
+                $('loginError').style.display = 'block';
+            }
+        }
+
+        function showDashboard() {
+            $('loginSection').style.display = 'none';
+            $('dashboardSection').style.display = 'block';
+            switchTab('orders'); // Default to orders tab
+            loadOrders();
+        }
+
+        // Tab Switching Function
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            const selectedTab = document.getElementById(tabName + 'Tab');
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Activate corresponding button
+            const selectedBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('active');
+            }
+            
+            // Load content based on tab
+            if (tabName === 'orders') {
+                loadOrders();
+            } else if (tabName === 'delivery') {
+                loadDeliveryHistory();
+            } else if (tabName === 'notifications') {
+                loadNotificationHistory();
+            }
+        }
+
+
+        function handleLogout() {
+            localStorage.removeItem('admin_logged_in');
+            $('loginSection').style.display = 'flex';
+            $('dashboardSection').style.display = 'none';
+            $('username').value = '';
+            $('password').value = '';
+            $('loginError').style.display = 'none';
+        }
+
+        // Refresh Dashboard
+        function refreshDashboard() {
+            // Get current active tab
+            const activeTab = document.querySelector('.tab-content.active');
+            const activeTabId = activeTab ? activeTab.id.replace('Tab', '') : 'orders';
+            
+            // Reload current tab content
+            switchTab(activeTabId);
+            
+            // Show feedback
+            console.log('Dashboard refreshed');
+            
+            // Optional: Show a brief notification
+            const originalTitle = document.title;
+            document.title = '🔄 Refreshing...';
+            setTimeout(() => {
+                document.title = originalTitle;
+            }, 1000);
+        }
+
+        // Filter functionality
+        $('statusFilters').addEventListener('click', (e) => {
+            const btn = e.target.closest('.filter-btn');
+            if (!btn) return;
+
+            // Update active state
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Filter orders
+            const status = btn.dataset.status;
+            filterOrders(status);
+        });
+
+        function filterOrders(status) {
+            const orders = document.querySelectorAll('.order-card');
+            orders.forEach(order => {
+                const orderStatus = order.dataset.status;
+                if (status === 'all' || orderStatus === status) {
+                    order.style.display = 'block';
+                } else {
+                    order.style.display = 'none';
+                }
+            });
+        }
+
+        // Load and display orders
+        function loadOrders() {
+            // Load orders from localStorage
+            let orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+            
+            console.log('Loading orders from localStorage...');
+            console.log('Total orders found:', orders.length);
+            console.log('Orders data:', orders);
+            
+            displayOrders(orders);
+            updateStatusCounts(orders);
+        }
+
+        function updateStatusCounts(orders) {
+            const counts = {
+                all: orders.length,
+                pending: orders.filter(o => o.status === 'pending').length,
+                confirmed: orders.filter(o => o.status === 'confirmed').length,
+                completed: orders.filter(o => o.status === 'completed').length,
+                processing: orders.filter(o => o.status === 'processing').length,
+                hold: orders.filter(o => o.status === 'hold').length,
+                cancelled: orders.filter(o => o.status === 'cancelled').length,
+                refunded: orders.filter(o => o.status === 'refunded').length
+            };
+
+            Object.entries(counts).forEach(([status, count]) => {
+                const el = $(`count-${status}`);
+                if (el) el.textContent = count;
+            });
+        }
+
+        function displayOrders(orders) {
+            const ordersList = $('ordersList');
+            console.log('displayOrders called with', orders.length, 'orders');
+            console.log('ordersList element:', ordersList);
+            
+            ordersList.innerHTML = orders.length ? '' : '<p style="text-align: center; color: var(--muted); padding: 40px;">No orders found</p>';
+
+            orders.forEach(order => {
+                const orderCard = document.createElement('div');
+                orderCard.className = 'order-card';
+                orderCard.dataset.status = order.status;
+
+                orderCard.innerHTML = `
+                    <div class="order-header" style="cursor: pointer;">
+                        <div>
+                            <div class="order-id" style="color: #2563eb; cursor: pointer; text-decoration: underline;">#${order.orderId}</div>
+                            <div class="order-date">${formatDate(order.createdAt)}</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="status-badge status-${order.status}">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</div>
+                            <div class="expand-indicator">▼</div>
+                        </div>
+                    </div>
+
+                    <div class="order-content">
+                        <div class="client-details">
+                            <div class="client-info">
+                                <div class="info-group">
+                                    <div class="info-label">Order Number</div>
+                                    <div class="info-value" style="font-weight: 700; color: #2563eb;">#${order.orderId}</div>
+                                </div>
+                                <div class="info-group">
+                                    <div class="info-label">Customer</div>
+                                    <div class="info-value">${order.customer.first} ${order.customer.last}</div>
+                                </div>
+                                <div class="info-group">
+                                    <div class="info-label">Email</div>
+                                    <div class="info-value">${order.customer.email}</div>
+                                </div>
+                                <div class="info-group">
+                                    <div class="info-label">Phone</div>
+                                    <div class="info-value">${order.customer.phone || '-'}</div>
+                                </div>
+                                <div class="info-group">
+                                    <div class="info-label">Country</div>
+                                    <div class="info-value">${order.customer.country || '-'}</div>
+                                </div>
+                                <div class="info-group">
+                                    <div class="info-label">IP Address</div>
+                                    <div class="info-value">${order.customer.ip || 'Not available'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="payment-details">
+                            <h3 class="section-title">Payment Information</h3>
+                            <div class="info-grid">
+                                <div class="info-group">
+                                    <div class="info-label">Payment Method</div>
+                                    <div class="info-value">
+                                        ${order.paymentMethod === 'cod' ? 'Cash on Delivery' : 
+                                          order.paymentMethod === 'crypto' ? 'Cryptocurrency' : order.paymentMethod}
+                                    </div>
+                                </div>
+                                ${order.transaction ? `
+                                    <div class="info-group">
+                                        <div class="info-label">Transaction ID</div>
+                                        <div class="info-value">${order.transaction.id || '-'}</div>
+                                    </div>
+                                    <div class="info-group">
+                                        <div class="info-label">Transaction Status</div>
+                                        <div class="info-value">${order.transaction.status || '-'}</div>
+                                    </div>
+                                    <div class="info-group">
+                                        <div class="info-label">Payment Date</div>
+                                        <div class="info-value">${order.transaction.date ? formatDate(order.transaction.date) : '-'}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <h3 class="section-title">Order Items</h3>
+                        <div class="order-items">
+                            ${order.items.map(item => `
+                                <div class="item-row">
+                                    <div class="item-details">
+                                        <span class="item-quantity">${item.quantity}×</span>
+                                        <span>${item.name}</span>
+                                    </div>
+                                    <div>${formatMoney(item.unitPrice * item.quantity)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="order-totals">
+                            <div class="total-row">
+                                <span>Subtotal:</span>
+                                <span>${formatMoney(order.totals.sub)}</span>
+                            </div>
+                            <div class="total-row">
+                                <span>Discount:</span>
+                                <span>-${formatMoney(order.totals.totalDis)}</span>
+                            </div>
+                            <div class="total-row final">
+                                <span>Total:</span>
+                                <span>${formatMoney(order.totals.tot)}</span>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            ${order.status === 'pending' ? `
+                                <button class="action-btn btn-confirm" onclick="updateOrderStatus('${order.orderId}', 'confirmed')">
+                                    ✓ Confirm Order
+                                </button>
+                                <button class="action-btn btn-hold" onclick="updateOrderStatus('${order.orderId}', 'hold')">
+                                    ⏸ Put On Hold
+                                </button>
+                                <button class="action-btn btn-cancel" onclick="updateOrderStatus('${order.orderId}', 'cancelled')">
+                                    ✕ Cancel Order
+                                </button>
+                                <button class="action-btn" onclick="updateOrderStatus('${order.orderId}', 'refunded')" style="background: #ff9800;">
+                                    💰 Refund
+                                </button>
+                                <button class="action-btn btn-cancel" onclick="deleteOrder('${order.orderId}')" style="background: #dc3545; margin-left: auto;">
+                                    🗑️ Delete Order
+                                </button>
+                            ` : ''}
+                            ${order.status === 'confirmed' ? `
+                                <button class="action-btn btn-process" onclick="updateOrderStatus('${order.orderId}', 'processing')">
+                                    ⚙️ Start Processing
+                                </button>
+                                <button class="action-btn btn-hold" onclick="updateOrderStatus('${order.orderId}', 'hold')">
+                                    ⏸ Put On Hold
+                                </button>
+                                <button class="action-btn btn-cancel" onclick="updateOrderStatus('${order.orderId}', 'cancelled')">
+                                    ✕ Cancel Order
+                                </button>
+                                <button class="action-btn" onclick="updateOrderStatus('${order.orderId}', 'refunded')" style="background: #ff9800;">
+                                    💰 Refund
+                                </button>
+                                <button class="action-btn btn-cancel" onclick="deleteOrder('${order.orderId}')" style="background: #dc3545; margin-left: auto;">
+                                    🗑️ Delete Order
+                                </button>
+                            ` : ''}
+                            ${order.status === 'processing' ? `
+                                <button class="action-btn btn-confirm" onclick="updateOrderStatus('${order.orderId}', 'completed')">
+                                    ✓ Mark as Completed
+                                </button>
+                                <button class="action-btn btn-hold" onclick="updateOrderStatus('${order.orderId}', 'hold')">
+                                    ⏸ Put On Hold
+                                </button>
+                                <button class="action-btn btn-cancel" onclick="updateOrderStatus('${order.orderId}', 'cancelled')">
+                                    ✕ Cancel Order
+                                </button>
+                                <button class="action-btn" onclick="updateOrderStatus('${order.orderId}', 'refunded')" style="background: #ff9800;">
+                                    💰 Refund
+                                </button>
+                                <button class="action-btn btn-cancel" onclick="deleteOrder('${order.orderId}')" style="background: #dc3545; margin-left: auto;">
+                                    🗑️ Delete Order
+                                </button>
+                            ` : ''}
+                            ${order.status === 'completed' ? `
+                                <button class="action-btn btn-hold" onclick="updateOrderStatus('${order.orderId}', 'hold')">
+                                    ⏸ Put On Hold
+                                </button>
+                                <button class="action-btn btn-cancel" onclick="updateOrderStatus('${order.orderId}', 'cancelled')">
+                                    ✕ Cancel Order
+                                </button>
+                                <button class="action-btn" onclick="updateOrderStatus('${order.orderId}', 'refunded')" style="background: #ff9800;">
+                                    💰 Refund
+                                </button>
+                                <button class="action-btn btn-cancel" onclick="deleteOrder('${order.orderId}')" style="background: #dc3545; margin-left: auto;">
+                                    🗑️ Delete Order
+                                </button>
+                            ` : ''}
+                            ${order.status === 'hold' ? `
+                                <button class="action-btn btn-confirm" onclick="updateOrderStatus('${order.orderId}', 'confirmed')">
+                                    ✓ Resume Order
+                                </button>
+                                <button class="action-btn btn-cancel" onclick="updateOrderStatus('${order.orderId}', 'cancelled')">
+                                    ✕ Cancel Order
+                                </button>
+                                <button class="action-btn" onclick="updateOrderStatus('${order.orderId}', 'refunded')" style="background: #ff9800;">
+                                    💰 Refund
+                                </button>
+                                <button class="action-btn btn-cancel" onclick="deleteOrder('${order.orderId}')" style="background: #dc3545; margin-left: auto;">
+                                    🗑️ Delete Order
+                                </button>
+                            ` : ''}
+                            ${order.status === 'cancelled' || order.status === 'refunded' ? `
+                                <button class="action-btn btn-cancel" onclick="deleteOrder('${order.orderId}')" style="background: #dc3545;">
+                                    🗑️ Delete Order
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+
+                // Add click handler for expand/collapse
+                const header = orderCard.querySelector('.order-header');
+                header.addEventListener('click', () => {
+                    orderCard.classList.toggle('expanded');
+                });
+
+                ordersList.appendChild(orderCard);
+            });
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            if (!confirm(`Change order status to "${newStatus}"?`)) return;
+
+            const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+            const orderIndex = orders.findIndex(o => o.orderId === orderId);
+
+            if (orderIndex !== -1) {
+                const order = orders[orderIndex];
+                const oldStatus = order.status;
+                
+                // Update status
+                orders[orderIndex].status = newStatus;
+                localStorage.setItem('all_orders', JSON.stringify(orders));
+                
+                // Send order confirmation email if status changed to confirmed
+                if (newStatus === 'confirmed') {
+                    sendOrderConfirmationEmail(order);
+                }
+                
+                // Create automatic notification for status change
+                createOrderStatusNotification(order, newStatus, oldStatus);
+                
+                loadOrders();
+                alert('Order status updated successfully!');
+            }
+        }
+
+        // Function to create automatic notification when order status changes
+        function createOrderStatusNotification(order, newStatus, oldStatus) {
+            const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+            
+            // Define notification details based on status
+            let icon = '📦';
+            let title = 'Order Status Update';
+            let message = '';
+            
+            switch(newStatus) {
+                case 'confirmed':
+                    icon = '✅';
+                    title = 'Order Confirmed';
+                    message = `Great news! Your order #${order.orderId} has been confirmed and will be processed soon.`;
+                    break;
+                case 'processing':
+                    icon = '⚙️';
+                    title = 'Order is Being Processed';
+                    message = `Your order #${order.orderId} is now being processed. We'll notify you when it's ready.`;
+                    break;
+                case 'completed':
+                    icon = '🎉';
+                    title = 'Order Completed';
+                    message = `Congratulations! Your order #${order.orderId} has been completed successfully. Check your downloads section for files.`;
+                    break;
+                case 'cancelled':
+                    icon = '❌';
+                    title = 'Order Cancelled';
+                    message = `Your order #${order.orderId} has been cancelled. If you have any questions, please contact support.`;
+                    break;
+                case 'refunded':
+                    icon = '💰';
+                    title = 'Order Refunded';
+                    message = `Your order #${order.orderId} has been refunded. The amount will be credited back to your account.`;
+                    break;
+                case 'hold':
+                    icon = '⏸️';
+                    title = 'Order On Hold';
+                    message = `Your order #${order.orderId} has been put on hold. We'll update you soon with more information.`;
+                    break;
+                case 'pending':
+                    icon = '🕒';
+                    title = 'Order Pending';
+                    message = `Your order #${order.orderId} is pending. We'll process it shortly.`;
+                    break;
+                default:
+                    message = `Your order #${order.orderId} status has been updated to ${newStatus}.`;
+            }
+            
+            // Create notification object
+            const notification = {
+                id: 'AUTO-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                email: order.customer.email,
+                icon: icon,
+                title: title,
+                message: message,
+                sentDate: new Date().toISOString(),
+                read: false,
+                orderId: order.orderId,
+                statusChange: {
+                    from: oldStatus,
+                    to: newStatus
+                }
+            };
+            
+            // Add notification
+            notifications.push(notification);
+            localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+            
+            console.log('✅ Auto-notification created:', notification);
+        }
+
+        // Function to create automatic notification when delivery file is sent
+        function createDeliveryNotification(order, filesCount) {
+            const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+            
+            const notification = {
+                id: 'DELIVERY-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                email: order.customer.email,
+                icon: '📥',
+                title: 'Files Delivered',
+                message: `Your order #${order.orderId} files have been delivered! ${filesCount > 0 ? `${filesCount} file(s) are now available in your downloads section.` : 'Check your downloads section to access them.'}`,
+                sentDate: new Date().toISOString(),
+                read: false,
+                orderId: order.orderId,
+                deliveryInfo: {
+                    filesCount: filesCount,
+                    deliveryDate: order.deliveryDate
+                }
+            };
+            
+            // Add notification
+            notifications.push(notification);
+            localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+            
+            console.log('✅ Delivery notification created:', notification);
+        }
+
+
+        function deleteOrder(orderId) {
+            if (!confirm('⚠️ Are you sure you want to DELETE this order?\n\nThis action cannot be undone!')) return;
+            
+            // Double confirmation for safety
+            if (!confirm('⚠️ FINAL CONFIRMATION: Delete order #' + orderId + '?\n\nThis will permanently remove the order from the system.')) return;
+
+            const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+            const orderIndex = orders.findIndex(o => o.orderId === orderId);
+
+            if (orderIndex !== -1) {
+                const deletedOrder = orders[orderIndex];
+                orders.splice(orderIndex, 1); // Remove the order from array
+                localStorage.setItem('all_orders', JSON.stringify(orders));
+                
+                console.log('Order deleted:', deletedOrder.orderId);
+                loadOrders();
+                alert('✅ Order #' + orderId + ' has been permanently deleted.');
+            } else {
+                alert('❌ Order not found!');
+            }
+        }
+
+        // Send Delivery File Modal Functions
+        function openSendDeliveryModal() {
+            $('sendDeliveryModal').style.display = 'flex';
+            // Attach file change listener
+            const fileInput = $('deliveryFiles');
+            fileInput.addEventListener('change', handleFileSelect);
+        }
+
+        function closeSendDeliveryModal() {
+            $('sendDeliveryModal').style.display = 'none';
+            $('deliveryForm').reset();
+            $('filesList').innerHTML = '';
+        }
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            const filesList = $('filesList');
+            filesList.innerHTML = '';
+            
+            if (files.length > 0) {
+                filesList.innerHTML = '<strong>Selected files:</strong><br>';
+                Array.from(files).forEach(file => {
+                    filesList.innerHTML += `📎 ${file.name} (${(file.size / 1024).toFixed(2)} KB)<br>`;
+                });
+            }
+        }
+
+        async function sendDeliveryFile(event) {
+            event.preventDefault();
+            const orderId = $('deliveryOrderId').value.trim();
+            const email = $('deliveryEmail').value.trim().toLowerCase();
+            const fileUrl = $('deliveryFileUrl').value.trim();
+            const files = $('deliveryFiles').files;
+
+            // Find order by Order ID
+            const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+            const orderIndex = orders.findIndex(o => o.orderId === orderId);
+
+            if (orderIndex === -1) {
+                alert('❌ Order not found with ID: ' + orderId);
+                return;
+            }
+
+            // Verify email matches the order
+            if (orders[orderIndex].customer.email.toLowerCase() !== email) {
+                alert('❌ Email does not match this order!');
+                return;
+            }
+
+            // Convert files to base64
+            const attachedFiles = [];
+            if (files.length > 0) {
+                for (let file of files) {
+                    const base64 = await convertFileToBase64(file);
+                    attachedFiles.push({
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        data: base64
+                    });
+                }
+            }
+
+            // Update order with delivery information
+            orders[orderIndex].deliveryFile = fileUrl;
+            orders[orderIndex].deliveryDate = new Date().toISOString();
+            orders[orderIndex].deliveryStatus = 'sent';
+            if (attachedFiles.length > 0) {
+                orders[orderIndex].attachedFiles = attachedFiles;
+            }
+
+            localStorage.setItem('all_orders', JSON.stringify(orders));
+            
+            // Create automatic notification for delivery
+            createDeliveryNotification(orders[orderIndex], attachedFiles.length);
+            
+            alert('✅ Delivery file sent successfully!');
+            closeSendDeliveryModal();
+            
+            // Refresh delivery history if we're on that tab
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab && activeTab.id === 'deliveryTab') {
+                loadDeliveryHistory();
+            }
+        }
+
+        function convertFileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Send notification from modal (kept for backward compatibility)
+        function openSendNotificationModal() {
+            switchTab('notifications');
+        }
+
+        function closeSendNotificationModal() {
+            // No longer needed as we have a dedicated tab
+        }
+
+        function sendNotification(event) {
+            // Redirect to main notification function
+            sendNotificationMain(event);
+        }
+
+        // Send notification from main form (notifications tab)
+        function sendNotificationMain(event) {
+            event.preventDefault();
+            const email = $('notificationEmailMain').value.trim().toLowerCase();
+            const icon = $('notificationIconMain').value;
+            const title = $('notificationTitleMain').value.trim();
+            const message = $('notificationMessageMain').value.trim();
+
+            // Validate email exists in orders
+            const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+            const customerExists = orders.some(o => o.customer.email.toLowerCase() === email);
+            
+            if (!customerExists) {
+                if (!confirm(`Warning: No orders found for ${email}. Send notification anyway?`)) {
+                    return;
+                }
+            }
+
+            // Get existing notifications or create new array
+            const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+            
+            // Add new notification
+            const newNotification = {
+                id: 'NOTIF-' + Date.now(),
+                email: email,
+                icon: icon,
+                title: title,
+                message: message,
+                sentDate: new Date().toISOString(),
+                read: false
+            };
+            
+            notifications.push(newNotification);
+
+            // Save to localStorage
+            localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+
+            alert(`✅ Notification sent successfully to ${email}!`);
+            
+            // Reset form
+            $('notificationFormMain').reset();
+            
+            // Refresh notification history
+            loadNotificationHistory();
+        }
+
+        // Load notification history
+        function loadNotificationHistory() {
+            const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+            const historyContainer = $('notificationHistoryList');
+
+            if (notifications.length === 0) {
+                historyContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;"><div style="font-size: 48px; margin-bottom: 15px;">📭</div><p>No notifications sent yet</p></div>';
+                updateNotificationStats(0, 0, 0);
+                return;
+            }
+
+            // Sort by date (newest first)
+            notifications.sort((a, b) => new Date(b.sentDate) - new Date(a.sentDate));
+
+            // Calculate statistics
+            const totalNotifications = notifications.length;
+            const now = new Date();
+            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const notificationsThisMonth = notifications.filter(n => {
+                if (!n.sentDate) return false;
+                return new Date(n.sentDate) >= firstDayOfMonth;
+            }).length;
+            const notificationsRead = notifications.filter(n => n.read).length;
+            updateNotificationStats(totalNotifications, notificationsThisMonth, notificationsRead);
+
+            const historyHTML = notifications.slice(0, 30).map(notif => {
+                const sentDate = new Date(notif.sentDate).toLocaleString();
+                const statusBadge = notif.read ? 
+                    '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">READ</span>' :
+                    '<span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">UNREAD</span>';
+                
+                return `
+                    <div class="notification-history-row" onclick="toggleNotificationRow(this)">
+                        <div class="notification-history-header">
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                                <span style="font-size: 18px;">${notif.icon}</span>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: #333; margin-bottom: 2px;">${notif.title}</div>
+                                    <div style="font-size: 12px; color: #666;">To: ${notif.email} • ${sentDate}</div>
+                                </div>
+                                ${statusBadge}
+                            </div>
+                            <span class="arrow">▶</span>
+                        </div>
+                        <div class="notification-history-content" onclick="event.stopPropagation()">
+                            <div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 10px;">
+                                <div style="font-size: 14px; color: #333; line-height: 1.6;">${notif.message}</div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #999;">
+                                <span>ID: ${notif.id}</span>
+                                <span>Sent: ${sentDate}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            historyContainer.innerHTML = historyHTML;
+        }
+
+        // Toggle notification form
+        function toggleNotificationForm() {
+            const formRow = document.querySelector('.notification-form-row');
+            formRow.classList.toggle('expanded');
+        }
+
+        // Toggle notification history row
+        function toggleNotificationRow(row) {
+            row.classList.toggle('expanded');
+        }
+
+        // Update notification statistics
+        function updateNotificationStats(total, thisMonth, read) {
+            const totalEl = document.getElementById('totalNotifications');
+            const monthEl = document.getElementById('notificationsThisMonth');
+            const readEl = document.getElementById('notificationsRead');
+            
+            if (totalEl) totalEl.textContent = total;
+            if (monthEl) monthEl.textContent = thisMonth;
+            if (readEl) readEl.textContent = read;
+        }
+
+
+        // Delivery History Dashboard Functions
+        function openDeliveryHistoryDashboard() {
+            switchTab('delivery');
+        }
+
+        function closeDeliveryHistoryDashboard() {
+            switchTab('orders');
+        }
+
+        function loadDeliveryHistory() {
+            const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+            const deliveredOrders = orders.filter(o => 
+                o.deliveryFile || (o.attachedFiles && o.attachedFiles.length > 0)
+            );
+
+            // Calculate statistics
+            const totalDeliveries = deliveredOrders.length;
+            const now = new Date();
+            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const deliveriesThisMonth = deliveredOrders.filter(o => {
+                if (!o.deliveryDate) return false;
+                return new Date(o.deliveryDate) >= firstDayOfMonth;
+            }).length;
+            const totalFiles = deliveredOrders.reduce((sum, o) => 
+                sum + (o.attachedFiles ? o.attachedFiles.length : 0), 0
+            );
+
+            // Update UI stats
+            $('totalDeliveries').textContent = totalDeliveries;
+            $('deliveriesThisMonth').textContent = deliveriesThisMonth;
+            $('totalFilesSize').textContent = totalFiles;
+
+            const historyContainer = $('deliveryHistoryList');
+
+            if (deliveredOrders.length === 0) {
+                historyContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;"><div style="font-size: 64px; margin-bottom: 20px;">📦</div><h3>No Delivery History</h3><p>Delivery files will appear here once sent.</p></div>';
+                return;
+            }
+
+            // Sort by delivery date (newest first)
+            deliveredOrders.sort((a, b) => {
+                const dateA = a.deliveryDate ? new Date(a.deliveryDate) : new Date(a.createdAt);
+                const dateB = b.deliveryDate ? new Date(b.deliveryDate) : new Date(b.createdAt);
+                return dateB - dateA;
+            });
+
+            const historyHTML = deliveredOrders.map((order, index) => {
+                const deliveryDate = order.deliveryDate ? new Date(order.deliveryDate).toLocaleString() : 'N/A';
+                const productNames = order.items.map(item => item.name).join(', ');
+                const filesCount = order.attachedFiles ? order.attachedFiles.length : 0;
+                const isHidden = order.deliveryHidden === true;
+                const rowId = 'delivery-row-' + index;
+                
+                return `
+                    <div class="delivery-row" id="${rowId}">
+                        <div class="delivery-row-header" onclick="toggleDeliveryRow('${rowId}')">
+                            <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
+                                <div style="font-weight: 600; color: #333; font-size: 14px;">
+                                    #${order.orderId}
+                                </div>
+                                <div style="font-size: 13px; color: #666;">
+                                    ${order.customer.first} ${order.customer.last}
+                                </div>
+                                <div style="font-size: 12px; color: #999;">
+                                    ${new Date(order.deliveryDate || order.createdAt).toLocaleDateString()}
+                                </div>
+                                <span style="background: ${isHidden ? '#6c757d' : '#28a745'}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px;">
+                                    ${isHidden ? 'Hidden' : 'Delivered'}
+                                </span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div style="text-align: right;">
+                                    <span style="font-weight: 600; color: #007bff;">${filesCount}</span>
+                                    <span style="font-size: 11px; color: #666;"> files</span>
+                                </div>
+                                <span class="expand-icon">▼</span>
+                            </div>
+                        </div>
+                        
+                        <div class="delivery-row-content">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <div style="font-size: 12px; color: #999; margin-bottom: 5px;">Customer Email</div>
+                                    <div style="font-size: 13px; color: #333; font-weight: 500;">${order.customer.email}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: #999; margin-bottom: 5px;">Products</div>
+                                    <div style="font-size: 13px; color: #333; font-weight: 500;">${productNames}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: #999; margin-bottom: 5px;">Delivery Date</div>
+                                    <div style="font-size: 13px; color: #333; font-weight: 500;">${deliveryDate}</div>
+                                </div>
+                            </div>
+                            
+                            ${order.deliveryFile ? `
+                                <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #e0e0e0;">
+                                    <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 5px;">📝 Delivery URL/Description:</div>
+                                    <div style="font-size: 13px; color: #666; word-break: break-all;">${order.deliveryFile}</div>
+                                </div>
+                            ` : ''}
+                            
+                            ${filesCount > 0 ? `
+                                <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #e0e0e0;">
+                                    <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">📎 Attached Files:</div>
+                                    ${order.attachedFiles.map(file => `
+                                        <div style="font-size: 12px; color: #666; padding: 5px 0; border-bottom: 1px solid #f0f0f0;">
+                                            � ${file.name} <span style="color: #999;">(${(file.size / 1024).toFixed(2)} KB)</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                ${isHidden ? `
+                                    <button onclick="event.stopPropagation(); redoDelivery('${order.orderId}')" style="flex: 1; background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                                        🔄 Redo (Show to User)
+                                    </button>
+                                ` : `
+                                    <button onclick="event.stopPropagation(); undoDelivery('${order.orderId}')" style="flex: 1; background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                                        ↩️ Undo (Hide from User)
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            historyContainer.innerHTML = historyHTML;
+        }
+
+        // Toggle delivery row expansion
+        function toggleDeliveryRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.classList.toggle('expanded');
+            }
+        }
+
+        // Undo delivery - Hide from user profile downloads
+        function undoDelivery(orderId) {
+            if (!confirm('This will hide the delivery file from the user\'s downloads section. Continue?')) {
+                return;
+            }
+            
+            const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+            const orderIndex = orders.findIndex(o => o.orderId === orderId);
+            
+            if (orderIndex !== -1) {
+                orders[orderIndex].deliveryHidden = true;
+                localStorage.setItem('all_orders', JSON.stringify(orders));
+                alert('✅ Delivery file hidden from user profile!');
+                loadDeliveryHistory(); // Refresh the dashboard
+            }
+        }
+
+        // Redo delivery - Show in user profile downloads again
+        function redoDelivery(orderId) {
+            if (!confirm('This will show the delivery file in the user\'s downloads section again. Continue?')) {
+                return;
+            }
+            
+            const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+            const orderIndex = orders.findIndex(o => o.orderId === orderId);
+            
+            if (orderIndex !== -1) {
+                orders[orderIndex].deliveryHidden = false;
+                localStorage.setItem('all_orders', JSON.stringify(orders));
+                alert('✅ Delivery file visible to user again!');
+                loadDeliveryHistory(); // Refresh the dashboard
+            }
+        }
+
+        // Send order delivery confirmation email
+        async function sendOrderConfirmationEmail(orderData) {
+            try {
+                const response = await fetch('http://localhost:3000/api/send-order-delivery-confirmation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: orderData.customer.email, orderData })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    console.log('✅ Order delivery confirmation email sent to:', orderData.customer.email);
+                } else {
+                    console.log('⚠️ Email not sent:', result.message);
+                }
+            } catch (error) {
+                console.log('⚠️ Email service unavailable:', error.message);
+                // Don't block the order update if email fails
+            }
+        }
+
+        // Initialize - Check if already logged in
+        if (localStorage.getItem('admin_logged_in') === 'true') {
+            showDashboard();
+        }
+    </script>
+</body>
+</html>

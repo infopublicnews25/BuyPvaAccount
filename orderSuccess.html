@@ -1,0 +1,180 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Success - BuyPvaAccount</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: white; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .thank-you-card { background: white; max-width: 650px; width: 100%; padding: 60px 40px; text-align: center; }
+        .checkmark { width: 80px; height: 80px; margin: 0 auto 30px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 50px; color: white; animation: scaleIn 0.5s ease-out; }
+        @keyframes scaleIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+        h1 { font-size: 32px; color: #1f2937; margin-bottom: 15px; font-weight: 700; }
+        .subtitle { font-size: 18px; color: #6b7280; margin-bottom: 40px; line-height: 1.6; }
+        .section-title { font-size: 18px; color: #1f2937; font-weight: 600; margin-bottom: 15px; text-align: left; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        .order-info { background: #f9fafb; border-radius: 12px; padding: 25px; margin-bottom: 20px; }
+        .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #6b7280; font-size: 15px; }
+        .info-value { color: #1f2937; font-weight: 600; font-size: 15px; }
+        .items-section { background: #f9fafb; border-radius: 12px; padding: 25px; margin-bottom: 20px; text-align: left; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #e5e7eb; }
+        .item-row:last-child { border-bottom: none; }
+        .item-name { flex: 1; color: #1f2937; font-weight: 500; }
+        .item-qty { color: #6b7280; margin: 0 20px; }
+        .item-price { color: #1f2937; font-weight: 600; }
+        .totals-section { background: #f9fafb; border-radius: 12px; padding: 25px; margin-bottom: 20px; text-align: left; }
+        .total-row { display: flex; justify-content: space-between; padding: 10px 0; font-size: 15px; }
+        .total-row.final { border-top: 2px solid #1f2937; padding-top: 15px; margin-top: 10px; font-size: 18px; font-weight: 700; }
+        .crypto-info { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: left; }
+        .crypto-info p { color: #92400e; font-size: 14px; margin: 5px 0; }
+        .crypto-info strong { color: #78350f; }
+        .crypto-link { color: #667eea; font-weight: 600; text-decoration: underline; }
+        .message-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: left; }
+        .message-box p { color: #1e40af; font-size: 14px; line-height: 1.6; margin: 0; }
+        .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .btn { padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s ease; display: inline-block; }
+        .btn-primary { background: white; color: #667eea; border: 2px solid #667eea; }
+        .btn-primary:hover { background: #f9fafb; }
+        .btn-secondary { background: white; color: #667eea; border: 2px solid #667eea; }
+        .btn-secondary:hover { background: #f9fafb; }
+        @media (max-width: 600px) { .thank-you-card { padding: 40px 25px; } h1 { font-size: 26px; } .subtitle { font-size: 16px; } .buttons { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="thank-you-card">
+        <div class="checkmark">✓</div>
+        <h1>Thank You!</h1>
+        <p class="subtitle">Your order has been successfully placed. We'll send you a confirmation email shortly.</p>
+        
+        <div class="order-info">
+            <div class="info-row"><span class="info-label">Order Number</span><span class="info-value" id="orderId">Loading...</span></div>
+            <div class="info-row" id="transactionRow"><span class="info-label">Transaction ID</span><span class="info-value" id="transactionId">-</span></div>
+            <div class="info-row"><span class="info-label">Order Date</span><span class="info-value" id="orderDate">Loading...</span></div>
+            <div class="info-row"><span class="info-label">Order Status</span><span class="info-value" style="color: #f59e0b;">Pending</span></div>
+            <div class="info-row"><span class="info-label">Payment Method</span><span class="info-value" id="paymentMethod">Loading...</span></div>
+            <div class="info-row"><span class="info-label">Email</span><span class="info-value" id="customerEmail">Loading...</span></div>
+            <div class="info-row"><span class="info-label">Customer Information</span><span class="info-value" id="customerInfo">Loading...</span></div>
+            <div id="itemsListRows"></div>
+            <div class="info-row"><span class="info-label">Subtotal</span><span class="info-value" id="subtotal">$0.00</span></div>
+            <div class="info-row" id="discountRow" style="display: none;"><span class="info-label">Discount</span><span class="info-value" id="discount" style="color: #10b981;">-$0.00</span></div>
+            <div class="info-row" style="border-top: 2px solid #1f2937; font-weight: 700; font-size: 16px;"><span class="info-label">Total Amount</span><span class="info-value" id="totalAmount">$0.00</span></div>
+        </div>
+
+        <div id="cryptoPaymentInfo" class="crypto-info" style="display: none;">
+            <h3 style="margin: 0 0 15px 0; color: #78350f; font-size: 16px;">₿ Cryptocurrency Payment Details</h3>
+            <div id="cryptoDetails"></div>
+        </div>
+
+        <div class="message-box">
+            <p><strong>📧 What's Next?</strong><br><span id="nextStepsText">We've sent a confirmation email to your email address. You can track your order anytime from your account dashboard.</span></p>
+        </div>
+        
+        <div class="buttons">
+            <a href="profile.html" class="btn btn-primary">View My Orders</a>
+            <a href="marketplace.html" class="btn btn-secondary">Continue Shopping</a>
+        </div>
+    </div>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('orderId');
+        if (orderId) {
+            const allOrders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+            let order = allOrders.find(o => o.orderId === orderId);
+            if (!order) { 
+                try { 
+                    order = JSON.parse(sessionStorage.getItem('last_order_snapshot') || 'null'); 
+                } catch (e) { 
+                    console.error('Error:', e); 
+                } 
+            }
+            if (order) {
+                // Order Summary
+                document.getElementById('orderId').textContent = order.orderId;
+                
+                // Transaction ID - Always show, generate if not available
+                const transactionId = order.transactionId || 'TXN-' + order.orderId.substring(0, 8).toUpperCase();
+                document.getElementById('transactionId').textContent = transactionId;
+                
+                const orderDate = new Date(order.createdAt);
+                document.getElementById('orderDate').textContent = orderDate.toLocaleDateString('en-US', { 
+                    month: 'long', 
+                    day: 'numeric', 
+                    year: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+
+                // Email
+                document.getElementById('customerEmail').textContent = order.customer.email;
+
+                // Customer Information - Combine name, phone, country
+                let customerInfo = order.customer.fullName || (order.customer.first + ' ' + order.customer.last);
+                
+                if (order.customer.phone) {
+                    customerInfo += ', ' + order.customer.phone;
+                }
+                
+                if (order.customer.country) {
+                    customerInfo += ', ' + order.customer.country;
+                }
+                
+                document.getElementById('customerInfo').textContent = customerInfo;
+
+                // Order Items - Add as rows in the same section
+                const itemsListRows = document.getElementById('itemsListRows');
+                if (order.items && order.items.length > 0) {
+                    itemsListRows.innerHTML = order.items.map(item => `
+                        <div class="info-row">
+                            <span class="info-label">${item.name || item.id} (Qty: ${item.quantity})</span>
+                            <span class="info-value">$${(item.unitPrice * item.quantity).toFixed(2)}</span>
+                        </div>
+                    `).join('');
+                }
+
+                // Payment Summary
+                document.getElementById('subtotal').textContent = '$' + order.totals.sub.toFixed(2);
+                
+                if (order.totals.dis && order.totals.dis > 0) {
+                    document.getElementById('discountRow').style.display = 'flex';
+                    document.getElementById('discount').textContent = '-$' + order.totals.dis.toFixed(2);
+                }
+                
+                document.getElementById('totalAmount').textContent = '$' + order.totals.tot.toFixed(2);
+
+                // Payment Method
+                const paymentMethod = order.paymentMethod || 'cod';
+                if (paymentMethod === 'crypto') {
+                    document.getElementById('paymentMethod').textContent = '₿ Cryptocurrency';
+                    
+                    // Show crypto payment info
+                    if (order.paymentData) {
+                        const cryptoInfo = document.getElementById('cryptoPaymentInfo');
+                        const cryptoDetails = document.getElementById('cryptoDetails');
+                        cryptoInfo.style.display = 'block';
+                        
+                        let detailsHTML = '';
+                        if (order.paymentData.invoice_id) {
+                            detailsHTML += `<p><strong>Invoice ID:</strong> ${order.paymentData.invoice_id}</p>`;
+                        }
+                        if (order.paymentData.payment_status) {
+                            detailsHTML += `<p><strong>Payment Status:</strong> ${order.paymentData.payment_status.replace(/_/g, ' ').toUpperCase()}</p>`;
+                        }
+                        if (order.paymentData.invoice_url) {
+                            detailsHTML += `<p style="margin-top: 10px;"><a href="${order.paymentData.invoice_url}" target="_blank" class="crypto-link">Complete Payment →</a></p>`;
+                        }
+                        
+                        cryptoDetails.innerHTML = detailsHTML || '<p>Payment processing...</p>';
+                        
+                        // Update next steps for crypto
+                        document.getElementById('nextStepsText').textContent = 'Please complete your cryptocurrency payment using the link above. Once confirmed on the blockchain, we\'ll process your order immediately and send you a confirmation email.';
+                    }
+                } else {
+                    document.getElementById('paymentMethod').textContent = '💵 Cash on Delivery';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

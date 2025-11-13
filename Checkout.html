@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Checkout</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{--bg:#f7f7fb;--card:#fff;--line:#e5e7eb;--text:#111827;--muted:#6b7280;--ok:#16a34a;--danger:#ef4444;--primary:#2563eb}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI, Tahoma, Arial, sans-serif}
+    .container{max-width:1100px;margin:24px auto;padding:0 16px}
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .header h1{margin:0;font-size:22px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;font-weight:700;cursor:pointer;text-decoration:none}
+    .btn.ok{background:var(--ok);color:#fff;border-color:transparent}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:20px}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+    .section{padding:16px}
+    .title{font-weight:800;margin-bottom:8px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:780px){.row{grid-template-columns:1fr}}
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+    .field label{min-height:40px;display:block}
+    .field input,.field select,.field textarea{padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit}
+    .muted{color:var(--muted);font-size:13px}
+    .summary .item{display:grid;grid-template-columns:1fr 80px 80px;gap:10px;padding:10px 0;border-top:1px dashed var(--line);align-items:center}
+    .summary .item:first-child{border-top:0}
+    .summary .totals{padding-top:10px;border-top:1px solid var(--line)}
+    .summary .row{display:flex;justify-content:space-between;margin:6px 0}
+    .summary .row.total{font-weight:800}
+    .pm-box{border:1px solid var(--line);border-radius:12px;padding:12px}
+    .pm-option{display:flex;align-items:center;gap:8px;margin:8px 0}
+    .terms{display:flex;gap:10px;align-items:flex-start}
+    .terms a{color:var(--primary);text-decoration:underline}
+  </style>
+</head>
+<body>
+  <section id="checkout" class="checkout-page" aria-label="Checkout">
+    <div class="container">
+      <div class="header">
+        <h1>You are almost there</h1>
+        <div class="actions">
+          <a class="btn" href="Cartpage.html">← Back to cart</a>
+          <a class="btn" href="marketplace.html">Continue shopping</a>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- Billing -->
+        <div class="card">
+          <div class="section">
+            <div class="title">Billing details</div>
+            <div class="row">
+              <div class="field"><label for="b-first">First name *</label><input id="b-first" required></div>
+              <div class="field"><label for="b-last">Last name *</label><input id="b-last" required></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="b-phone">Phone</label><input id="b-phone" placeholder="+8801xxxxxxxxx"></div>
+              <div class="field"><label for="b-email">Email address *</label><input id="b-email" type="email" required></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="b-extra">Additional Contact (WhatsApp, Telegram, Skype, Other)</label><input id="b-extra" placeholder="@telegram"></div>
+              <div class="field"><label for="b-country">Country / Region</label>
+                <select id="b-country"></select>
+              </div>
+            </div>
+            <div class="field"><label for="b-notes">Additional information</label><textarea id="b-notes" rows="4" placeholder="Any specific delivery format, batch size, timing..."></textarea></div>
+          </div>
+        </div>
+
+        <!-- Order & Payment -->
+        <div class="card">
+          <div class="section summary">
+            <div class="title">Your order</div>
+            <div id="sum-items"></div>
+            <div class="totals">
+              <div class="row"><span>Subtotal</span><strong id="sum-sub">$0.00</strong></div>
+              <div class="row"><span>Discounts</span><span id="sum-dis">$0.00</span></div>
+              <div class="row total"><span>Total</span><strong id="sum-total">$0.00</strong></div>
+            </div>
+
+            <div class="field" style="margin-top:12px">
+              <label for="coupon">Coupon Code</label>
+              <div style="display:flex;gap:8px"><input id="coupon" placeholder="Enter coupon"><button class="btn" id="apply-coupon" type="button">Apply</button></div>
+              <div class="muted">Demo coupon: COUPON5 (5% off)</div>
+            </div>
+
+            <div class="title" style="margin-top:8px">Payment</div>
+            <div class="pm-box">
+              <label class="pm-option">
+                <input type="radio" name="pm" value="cod" checked> 
+                <span>💵 Cash on Delivery (COD)</span>
+              </label>
+              <div class="muted" style="margin-left:28px;margin-top:4px">Pay with cash upon delivery</div>
+              
+              <label class="pm-option" style="margin-top:12px">
+                <input type="radio" name="pm" value="crypto"> 
+                <span>₿ Crypto Currency Payment</span>
+              </label>
+              <div class="muted" style="margin-left:28px;margin-top:4px">Pay with Bitcoin, USDT, Ethereum and more via NOWPayments</div>
+            </div>
+
+            <div class="field terms" style="margin-top:12px">
+              <label for="agree" style="display: flex; align-items: center; gap: 8px;">
+                <input id="agree" type="checkbox" />
+                <span>I have read and agree to the <a href="/terms/" target="_blank" rel="noopener">website terms and conditions</a> <span style="color: #ef4444; font-size: 18px; font-weight: bold;">*</span></span>
+              </label>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button id="place-order" class="btn ok" type="button">Place Order</button>
+            </div>
+            <div class="muted" style="margin-top:10px">SSL secured checkout • 24/7 support available</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+  (function(){
+    // ---------- constants & helpers ----------
+    const PRIMARY_KEY='mp_cart_v1', LEGACY=['cart'], ALL=[PRIMARY_KEY,...LEGACY];
+    const COUPON_KEY='mp_coupon_code';
+    const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
+    const money=n=>'$'+(Number(n)||0).toFixed(2);
+    const parse=(j,f)=>{ try{ const v=JSON.parse(j); return v??f; }catch{ return f; } };
+    const read=(k)=>parse(localStorage.getItem(k)||'[]',[]);
+    const write=a=>{ try{ localStorage.setItem(PRIMARY_KEY, JSON.stringify(a)); }catch{} };
+    const lineKey=it=>[it.id,it.unitPrice,it.payMethod].join('|');
+    const norm=it=>{ const u=Number(it.unitPrice)||0, q=Math.max(1,parseInt(it.quantity,10)||1); return { id:it.id, name:it.name||it.id||'Item', payMethod:it.payMethod||'', unitPrice:+u.toFixed(2), quantity:q, currency:(it.currency||'USD').toUpperCase(), total:+(u*q).toFixed(2), ts:it.ts||Date.now() }; };
+    function merge(arr){ const m=new Map(); arr.forEach(it=>{ const n=norm(it), k=lineKey(n); if(m.has(k)){ const ex=m.get(k); ex.quantity+=n.quantity; ex.total=+(ex.unitPrice*ex.quantity).toFixed(2); ex.ts=Math.max(ex.ts||0,n.ts||0); m.set(k,ex);} else m.set(k,n); }); return [...m.values()]; }
+    function readAll(){ let items=[...read(PRIMARY_KEY)]; LEGACY.forEach(k=> items=items.concat(read(k))); /* no session/qs to avoid dup */ return merge(items); }
+    function migrate(a){ write(a); LEGACY.forEach(k=>{ try{ localStorage.removeItem(k); }catch{} }); return a; }
+
+    // ---------- state ----------
+    let cart=migrate(readAll());
+    let coupon=(localStorage.getItem(COUPON_KEY)||'').trim().toUpperCase();
+
+    // ---------- country list (all ISO countries) ----------
+    const COUNTRIES = [
+      "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria",
+      "Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia",
+      "Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia","Cameroon",
+      "Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo (Congo-Brazzaville)",
+      "Costa Rica","Côte d’Ivoire","Croatia","Cuba","Cyprus","Czechia","Democratic Republic of the Congo","Denmark","Djibouti","Dominica",
+      "Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia",
+      "Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea",
+      "Guinea-Bissau","Guyana","Haiti","Holy See","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland",
+      "Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Kuwait","Kyrgyzstan","Laos","Latvia",
+      "Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi","Malaysia",
+      "Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia",
+      "Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger",
+      "Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau","Panama","Papua New Guinea","Paraguay","Peru",
+      "Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia",
+      "Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia",
+      "Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea",
+      "South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania",
+      "Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda",
+      "Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Venezuela","Vietnam",
+      "Yemen","Zambia","Zimbabwe"
+    ];
+    (function populateCountries(){
+      const sel = $('#b-country');
+      if(!sel) return;
+      sel.innerHTML = '';
+      // default placeholder on top
+      const ph = document.createElement('option'); ph.value=''; ph.textContent='Select country'; sel.appendChild(ph);
+      COUNTRIES.sort().forEach(c=>{
+        const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o);
+      });
+      // optional: preselect Bangladesh
+      const guess = 'Bangladesh';
+      if([...sel.options].some(o=>o.value===guess)) sel.value = guess;
+    })();
+
+    // ---------- render order items ----------
+    const itemsEl=$('#sum-items');
+    function renderItems(){
+      itemsEl.innerHTML='';
+      if(!cart.length){ itemsEl.innerHTML='<div class="muted">Your cart is empty.</div>'; totals(); return; }
+      cart.forEach(it=>{
+        const line=document.createElement('div'); line.className='item';
+        const t=document.createElement('div'); t.textContent=it.name;
+        const q=document.createElement('div'); q.textContent='× '+it.quantity;
+        const p=document.createElement('div'); p.textContent=money(it.total);
+        line.appendChild(t); line.appendChild(q); line.appendChild(p);
+        itemsEl.appendChild(line);
+      });
+      totals();
+    }
+
+    // ---------- totals & discounts ----------
+    function calcTotals(){
+      const sub=cart.reduce((s,it)=>s+(it.unitPrice||0)*(it.quantity||1),0);
+      const couponPct = (coupon==='COUPON5') ? 0.05 : 0;
+      const couponDis = +(sub*couponPct).toFixed(2);
+      const afterCoupon = sub - couponDis;
+      
+      // Check selected payment method
+      const selectedPayment = document.querySelector('input[name="pm"]:checked')?.value || 'cod';
+      
+      // Apply crypto discount only if crypto payment is selected
+      const cryptoDis = (selectedPayment === 'crypto') ? +((afterCoupon) * 0.05).toFixed(2) : 0;
+      const totalDis = +(couponDis + cryptoDis).toFixed(2);
+      const tot = +(afterCoupon - cryptoDis).toFixed(2);
+      return {sub, couponDis, cryptoDis, totalDis, tot, pm: selectedPayment};
+    }
+    function totals(){
+      const t=calcTotals();
+      $('#sum-sub').textContent=money(t.sub);
+      $('#sum-dis').textContent=t.totalDis?('-$'+t.totalDis.toFixed(2)):'$0.00';
+      $('#sum-total').textContent=money(t.tot);
+      return t;
+    }
+
+    // ---------- GA4 ----------
+    function gaItems(){ return cart.map(it=>({item_id:it.id,item_name:it.name,price:it.unitPrice,quantity:it.quantity})); }
+    function pushDL(obj){ try{ window.dataLayer=window.dataLayer||[]; window.dataLayer.push(obj); }catch{} }
+    (function beginCheckout(){ const t=calcTotals(); pushDL({event:'begin_checkout',ecommerce:{currency:'USD',value:t.tot,items:gaItems()}}); })();
+    
+    // Track payment method selection and update totals
+    document.querySelectorAll('input[name="pm"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        totals(); // Recalculate totals when payment method changes
+        const t=calcTotals(); 
+        pushDL({event:'add_payment_info',ecommerce:{currency:'USD',payment_type:e.target.value,value:t.tot,items:gaItems()}});
+      });
+    });
+
+    // ---------- coupon ----------
+    $('#apply-coupon')?.addEventListener('click',()=>{
+      const code=($('#coupon')?.value||'').trim().toUpperCase();
+      if(!code) return alert('Enter a coupon code.');
+      if(code!=='COUPON5') return alert('Invalid coupon. (demo: use COUPON5)');
+      coupon=code; localStorage.setItem(COUPON_KEY,coupon);
+      totals(); alert('Coupon applied: 5% off subtotal.');
+    });
+
+    // ---------- auto-register user from billing details ----------
+    function autoRegisterUser(email, fullName, phone, country) {
+      try {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        
+        // Check if user already exists with this email
+        const existingUser = users.find(u => u.email === email);
+        if (existingUser) {
+          console.log('User already exists with email:', email);
+          return false; // User already exists, no need to create
+        }
+        
+        // Create new user profile with auto-generated password
+        const autoPassword = 'Auto' + Math.random().toString(36).substr(2, 8);
+        const newUser = {
+          fullName: fullName,
+          email: email,
+          phone: phone || '',
+          country: country || '',
+          password: btoa(autoPassword), // Base64 encoded password
+          authType: 'email',
+          autoCreated: true, // Flag to indicate auto-created account
+          createdAt: new Date().toISOString()
+        };
+        
+        users.push(newUser);
+        localStorage.setItem('users', JSON.stringify(users));
+        console.log('Auto-created user profile for:', email);
+        return true; // New user created
+      } catch (error) {
+        console.error('Error auto-registering user:', error);
+        return false;
+      }
+    }
+
+    // ---------- place order ----------
+    $('#place-order')?.addEventListener('click',()=>{
+      if(!cart.length) return alert('Your cart is empty.');
+      const f=$('#b-first')?.value?.trim(), l=$('#b-last')?.value?.trim(), em=$('#b-email')?.value?.trim();
+      if(!f||!l||!em) return alert('Please fill First name, Last name and Email.');
+      if(!$('#agree')?.checked) return alert('Please accept the terms and conditions.');
+      
+      // Auto-register user if email doesn't exist
+      const fullName = f + ' ' + l;
+      const phone = $('#b-phone')?.value || '';
+      const country = $('#b-country')?.value || '';
+      autoRegisterUser(em, fullName, phone, country);
+      
+      // Get selected payment method
+      const selectedPayment = document.querySelector('input[name="pm"]:checked')?.value || 'cod';
+      
+      const t=totals();
+
+      // Generate unique order ID
+      const orderId = 'ORD' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+
+      const order={
+        orderId: orderId,
+        customer:{ 
+          fullName: fullName,
+          first:f,
+          last:l, 
+          phone:phone, 
+          email:em, 
+          extra:$('#b-extra')?.value||'', 
+          country:$('#b-country')?.value||'', 
+          notes:$('#b-notes')?.value||'' 
+        },
+        coupon: coupon||null,
+        items: cart,
+        totals: t,
+        status: 'pending',
+        paymentMethod: selectedPayment,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Save to all_orders in localStorage
+      try {
+        const allOrders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+        allOrders.push(order);
+        localStorage.setItem('all_orders', JSON.stringify(allOrders));
+        
+        // Set client auth for profile access
+        const authData = {
+          email: em,
+          fullName: f + ' ' + l,
+          phone: $('#b-phone')?.value || '',
+          country: $('#b-country')?.value || '',
+          authType: 'Email',
+          loginTime: new Date().toISOString()
+        };
+        localStorage.setItem('client_auth', JSON.stringify(authData));
+      } catch(err) {
+        console.error('Error saving order:', err);
+      }
+      
+      try{ sessionStorage.setItem('last_order_snapshot', JSON.stringify(order)); }catch{}
+      
+      // Send order confirmation email
+      sendOrderConfirmationEmail(em, order);
+      
+      // Handle payment method
+      if(selectedPayment === 'crypto') {
+        // Crypto payment via NOWPayments
+        createNOWPayment(order);
+      } else {
+        // COD - Clear cart and redirect
+        cart = [];
+        localStorage.removeItem('cart');
+        localStorage.removeItem('mp_cart_v1');
+        window.location.href = 'orderSuccess.html?orderId=' + orderId;
+      }
+    });
+
+    // ---------- NOWPayments Integration ----------
+    async function createNOWPayment(order) {
+      const API_KEY = 'DMQ2W7C-54M4T8Y-QYVK91R-73ZA44A'; // NOWPayments API key
+      
+      try {
+        // Create invoice using NOWPayments Invoice API
+        const invoiceData = {
+          price_amount: order.totals.tot,
+          price_currency: 'usd',
+          order_id: order.orderId,
+          order_description: `Order #${order.orderId} - ${order.items.length} item(s)`,
+          success_url: window.location.origin + '/orderSuccess.html?orderId=' + order.orderId,
+          cancel_url: window.location.origin + '/Checkout.html'
+        };
+
+        const response = await fetch('https://api.nowpayments.io/v1/invoice', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': API_KEY
+          },
+          body: JSON.stringify(invoiceData)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('NOWPayments API Error:', errorData);
+          throw new Error(errorData.message || 'Payment creation failed');
+        }
+
+        const result = await response.json();
+        console.log('NOWPayments Response:', result);
+        
+        // Save payment info to order
+        const allOrders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+        const orderIndex = allOrders.findIndex(o => o.orderId === order.orderId);
+        if (orderIndex !== -1) {
+          allOrders[orderIndex].paymentData = {
+            invoice_id: result.id,
+            invoice_url: result.invoice_url,
+            payment_status: result.payment_status || 'waiting',
+            created_at: result.created_at
+          };
+          localStorage.setItem('all_orders', JSON.stringify(allOrders));
+        }
+        
+        // Clear cart before redirect
+        cart = [];
+        localStorage.removeItem('cart');
+        localStorage.removeItem('mp_cart_v1');
+        
+        // Redirect to NOWPayments invoice page
+        if (result.invoice_url) {
+          window.location.href = result.invoice_url;
+        } else {
+          alert('Payment created! Invoice ID: ' + result.id);
+          window.location.href = 'orderSuccess.html?orderId=' + order.orderId;
+        }
+      } catch (error) {
+        console.error('NOWPayments Error:', error);
+        alert('Unable to process crypto payment. Please try again or contact support.\nError: ' + error.message);
+        // Don't redirect, let user try again
+      }
+    }
+
+    // Send order confirmation email
+    async function sendOrderConfirmationEmail(email, orderData) {
+      try {
+        const response = await fetch('http://localhost:3000/api/send-order-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, orderData })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          console.log('✅ Order confirmation email sent to:', email);
+        } else {
+          console.log('⚠️ Email not sent:', result.message);
+        }
+      } catch (error) {
+        console.log('⚠️ Email service unavailable:', error.message);
+        // Don't block the order flow if email fails
+      }
+    }
+
+    // ---------- initial render & sync ----------
+    renderItems();
+    window.addEventListener('storage',ev=>{
+      if(ev && ALL.includes(ev.key)){ cart=migrate(readAll()); renderItems(); }
+    });
+  })();
+  </script>
+</body>
+</html>

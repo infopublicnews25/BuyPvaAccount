@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Configuration - BuyPvaAccount</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; padding: 40px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); padding: 40px; }
+        h1 { color: #333; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 30px; font-size: 14px; }
+        .info-box { background: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; }
+        input:focus, select:focus { outline: none; border-color: #667eea; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-test { background: #4caf50; color: white; }
+        .btn-test:hover { background: #45a049; }
+        .message { padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status { text-align: center; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .status.active { background: #d4edda; color: #155724; }
+        .status.inactive { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📧 Email Configuration</h1>
+        <p class="subtitle">Configure your email account to send password reset codes</p>
+        
+        <div id="message" class="message"></div>
+        
+        <div class="info-box">
+            <strong>📝 Note:</strong> Use a dedicated Gmail account for sending password reset emails. The credentials will be stored securely in your backend.
+        </div>
+
+        <form id="emailConfigForm">
+            <div class="form-group">
+                <label for="emailProvider">Email Provider</label>
+                <select id="emailProvider" required>
+                    <option value="gmail">Gmail</option>
+                    <option value="outlook">Outlook/Hotmail</option>
+                    <option value="yahoo">Yahoo Mail</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="emailAddress">Email Address</label>
+                <input type="email" id="emailAddress" required placeholder="your-email@gmail.com">
+            </div>
+
+            <div class="form-group">
+                <label for="emailPassword">Password</label>
+                <input type="password" id="emailPassword" required placeholder="Enter your email password">
+                <small style="color: #666; font-size: 12px;">⚠️ For Gmail: Enable "Less secure app access" or use App Password if 2FA is enabled</small>
+            </div>
+
+            <button type="button" onclick="testEmailConfig()" class="btn btn-test">🔍 Test Email Configuration</button>
+            <button type="submit" class="btn btn-primary">💾 Save Configuration</button>
+        </form>
+
+        <div id="statusBox" class="status inactive" style="display: none;">
+            <div id="statusText"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('emailConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const config = {
+                provider: document.getElementById('emailProvider').value,
+                email: document.getElementById('emailAddress').value,
+                password: document.getElementById('emailPassword').value
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/configure-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('Email configuration saved successfully! ✅', 'success');
+                    updateStatus('Email service is active and ready to send emails', true);
+                } else {
+                    showMessage('Failed to save configuration: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error connecting to server. Make sure backend is running.', 'error');
+            }
+        });
+
+        async function testEmailConfig() {
+            const email = document.getElementById('emailAddress').value;
+            const password = document.getElementById('emailPassword').value;
+            const provider = document.getElementById('emailProvider').value;
+
+            if (!email || !password) {
+                showMessage('Please enter email and password first', 'error');
+                return;
+            }
+
+            showMessage('Testing email configuration... ⏳', 'success');
+
+            try {
+                const response = await fetch('http://localhost:3000/api/test-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, provider })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('✅ Email test successful! Configuration is working.', 'success');
+                    updateStatus('Email service is working correctly', true);
+                } else {
+                    showMessage('❌ Email test failed: ' + result.message, 'error');
+                    updateStatus('Email service is not configured correctly', false);
+                }
+            } catch (error) {
+                showMessage('Error testing email. Make sure backend is running.', 'error');
+            }
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
+        }
+
+        function updateStatus(text, isActive) {
+            const statusBox = document.getElementById('statusBox');
+            const statusText = document.getElementById('statusText');
+            statusText.textContent = text;
+            statusBox.className = 'status ' + (isActive ? 'active' : 'inactive');
+            statusBox.style.display = 'block';
+        }
+
+        // Load current configuration on page load
+        window.addEventListener('load', async function() {
+            try {
+                const response = await fetch('http://localhost:3000/api/email-status');
+                const result = await response.json();
+                
+                if (result.configured) {
+                    document.getElementById('emailAddress').value = result.email;
+                    updateStatus('Email service is configured', true);
+                }
+            } catch (error) {
+                console.log('Backend not running or email not configured');
+            }
+        });
+    </script>
+</body>
+</html>

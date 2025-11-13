@@ -1,0 +1,38 @@
+{
+    "orderId":  "TEST001",
+    "createdAt":  {
+                      "value":  "\/Date(1762617772301)\/",
+                      "DisplayHint":  2,
+                      "DateTime":  "08 November 2025 08:02:52"
+                  },
+    "total":  15.97,
+    "customer":  {
+                     "email":  "test@customer.com",
+                     "fullName":  "Test Customer",
+                     "phone":  "01700000000",
+                     "country":  "Bangladesh"
+                 },
+    "items":  [
+                  {
+                      "price":  5.99,
+                      "quantity":  2,
+                      "name":  "Gmail PVA"
+                  },
+                  {
+                      "price":  3.99,
+                      "quantity":  1,
+                      "name":  "Facebook PVA"
+                  }
+              ],
+    "status":  "completed",
+    "deliveryFiles":  [
+                          {
+                              "name":  "Gmail Accounts.txt",
+                              "url":  "#"
+                          },
+                          {
+                              "name":  "Facebook Account.txt",
+                              "url":  "#"
+                          }
+                      ]
+}
