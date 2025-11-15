@@ -1,0 +1,21 @@
+[
+  {
+    "username": "sahadat",
+    "email": "admin@buypvaaccount.com",
+    "role": "admin",
+    "status": "active",
+    "lastLogin": "2025-11-15T10:34:24.440Z",
+    "password": "Zx1122##",
+    "passwordHash": "$2b$10$XIUBuq9fZXuQwTL8OPMEf.1c.3Rm8ITJqeVP9ZzVagU5JtS28c02S"
+  },
+  {
+    "username": "admin",
+    "email": "infopublicnews25@gmail.com",
+    "role": "admin",
+    "passwordHash": "$2b$10$E7bpi3n2pKNikot5m4hBoOCtpcV742xr515Svp61l.yR2AYFlOXoO",
+    "status": "active",
+    "createdAt": "2025-11-15T10:32:40.472Z",
+    "lastLogin": "2025-11-15T10:33:40.135Z",
+    "token": "$2b$08$rsuNtEe0PuBa.FOTTRcrGOFegfcW5MTFFaNs2EbTCwj.rmoFffQ66"
+  }
+]

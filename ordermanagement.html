@@ -610,6 +610,9 @@
                         <button onclick="refreshDashboard()" title="Refresh Dashboard" style="display: flex; align-items: center; gap: 6px;">
                             🔄 Refresh
                         </button>
+                            <!-- Import Orders button removed per request -->
+                        <!-- Export Orders button removed per request -->
+                        <div id="backendStatus" style="margin-left:6px;font-size:13px;color:#666;">Checking backend…</div>
                         <button onclick="window.location.href='admin.html'" title="Go to Admin Page" style="display: flex; align-items: center; gap: 6px;">
                             🏠 Admin Page
                         </button>
@@ -845,15 +848,32 @@
 
         // Authentication
         function handleLogin(event) {
-            event.preventDefault();
-            const username = $('username').value;
-            const password = $('password').value;
+            try {
+                event.preventDefault();
+                console.log('[ordermanagement] handleLogin invoked');
+                const username = $('username') ? $('username').value : '';
+                const password = $('password') ? $('password').value : '';
 
-            if (username === 'admin' && password === 'admin123') {
-                localStorage.setItem('admin_logged_in', 'true');
-                showDashboard();
-            } else {
-                $('loginError').style.display = 'block';
+                // clear previous error
+                try { $('loginError').style.display = 'none'; } catch(e){}
+
+                if (username === 'admin' && password === 'admin123') {
+                    localStorage.setItem('admin_logged_in', 'true');
+                    console.log('[ordermanagement] login success — showing dashboard');
+                    if (typeof showDashboard === 'function') {
+                        showDashboard();
+                    } else {
+                        // fallback: manually show dashboard elements
+                        try { $('loginSection').style.display = 'none'; $('dashboardSection').style.display = 'block'; } catch(e){}
+                    }
+                } else {
+                    console.warn('[ordermanagement] invalid credentials', {username});
+                    if ($('loginError')) $('loginError').style.display = 'block';
+                }
+                return false;
+            } catch (err) {
+                console.error('[ordermanagement] handleLogin error', err);
+                if ($('loginError')) $('loginError').style.display = 'block';
             }
         }
 
@@ -901,6 +921,7 @@
 
         function handleLogout() {
             localStorage.removeItem('admin_logged_in');
+            localStorage.removeItem('admin_auth');
             $('loginSection').style.display = 'flex';
             $('dashboardSection').style.display = 'none';
             $('username').value = '';
@@ -955,16 +976,73 @@
         }
 
         // Load and display orders
-        function loadOrders() {
+        async function loadOrders() {
             // Load orders from localStorage
             let orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
-            
+
             console.log('Loading orders from localStorage...');
             console.log('Total orders found:', orders.length);
-            console.log('Orders data:', orders);
-            
+
+            // If no orders are present, try to fetch bundled orders.json (works only over HTTP)
+            if (!orders || orders.length === 0) {
+                try {
+                    console.log('No orders in localStorage — attempting to fetch bundled orders.json...');
+                    const resp = await fetch('orders.json');
+                    if (resp && resp.ok) {
+                        const bundled = await resp.json();
+                        if (Array.isArray(bundled) && bundled.length) {
+                            orders = bundled;
+                            localStorage.setItem('all_orders', JSON.stringify(orders));
+                            console.log('Imported orders.json into localStorage. Orders count:', orders.length);
+                        }
+                    }
+                } catch (err) {
+                    console.warn('orders.json fetch failed (possibly file://). Will try DOM fallback if available.', err);
+                }
+            }
+
+            // Normalize orders to expected shape so rendering and status updates always work
+            orders = normalizeOrdersArray(orders);
+            // Save normalized back so subsequent runs are consistent
+            try { localStorage.setItem('all_orders', JSON.stringify(orders)); } catch(e){}
+
             displayOrders(orders);
             updateStatusCounts(orders);
+        }
+
+        // Normalize a single order into the expected structure
+        function normalizeOrder(o) {
+            if (!o) return null;
+            const order = Object.assign({}, o);
+            // Ensure orderId
+            order.orderId = (order.orderId || order.id || order.order_number || ('ORD-' + Date.now().toString(36).slice(2,9))).toString();
+            // Ensure createdAt
+            order.createdAt = order.createdAt || order.created_at || new Date().toISOString();
+            // Ensure status
+            order.status = (order.status || 'pending').toString().toLowerCase();
+            // Ensure items array
+            if (!Array.isArray(order.items)) {
+                // Try to build from other fields
+                if (order.products && Array.isArray(order.products)) {
+                    order.items = order.products.map(p => ({ id: p.id || ('itm-'+Math.random().toString(36).slice(2,8)), name: p.name || p.title || p.product || 'Item', quantity: p.quantity||1, unitPrice: p.unitPrice||p.price||0 }));
+                } else {
+                    order.items = order.items ? [order.items] : [];
+                }
+            }
+            // Ensure customer object
+            order.customer = order.customer || order.user || { first: order.firstName || order.first || '-', last: order.lastName || order.last || '-', email: order.email || 'unknown@example.local', phone: order.phone || '' };
+            // Ensure totals
+            order.totals = order.totals || { sub: 0, totalDis: 0, tot: 0 };
+            if (typeof order.totals.sub === 'undefined') order.totals.sub = Number(order.subtot || order.sub || 0);
+            if (typeof order.totals.tot === 'undefined') order.totals.tot = Number(order.total || order.tot || order.totals && order.totals.tot || order.totals && order.totals.sub || 0);
+            // Guarantee numeric types where useful
+            order.items = order.items.map(it => ({ id: it.id || ('itm-'+Math.random().toString(36).slice(2,8)), name: it.name || it.title || it.product || 'Item', quantity: Number(it.quantity||1), unitPrice: Number(it.unitPrice||it.price||0) }));
+            return order;
+        }
+
+        function normalizeOrdersArray(arr) {
+            if (!Array.isArray(arr)) return [];
+            return arr.map(normalizeOrder).filter(Boolean);
         }
 
         function updateStatusCounts(orders) {
@@ -1015,6 +1093,10 @@
                                 <div class="info-group">
                                     <div class="info-label">Order Number</div>
                                     <div class="info-value" style="font-weight: 700; color: #2563eb;">#${order.orderId}</div>
+                                </div>
+                                <div class="info-group">
+                                    <div class="info-label">Order Date</div>
+                                    <div class="info-value">${formatDate(order.createdAt)}</div>
                                 </div>
                                 <div class="info-group">
                                     <div class="info-label">Customer</div>
@@ -1193,31 +1275,70 @@
             });
         }
 
+        // importOrders() removed — import button/functionality intentionally disabled
+
+        // Export orders from localStorage to a downloadable orders.json file
+        function exportOrders() {
+            try {
+                const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+                if (!orders || !orders.length) {
+                    alert('No orders available in localStorage to export.');
+                    return;
+                }
+                const blob = new Blob([JSON.stringify(orders, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'orders.json';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('exportOrders error:', err);
+                alert('Export failed: ' + (err && err.message));
+            }
+        }
+
         function updateOrderStatus(orderId, newStatus) {
             if (!confirm(`Change order status to "${newStatus}"?`)) return;
 
-            const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
-            const orderIndex = orders.findIndex(o => o.orderId === orderId);
+            // Persist the status change to the backend so orders.json stays in sync
+            (async () => {
+                try {
+                    const resp = await fetch(`http://localhost:3000/api/orders/${orderId}/status`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: newStatus })
+                    });
 
-            if (orderIndex !== -1) {
-                const order = orders[orderIndex];
-                const oldStatus = order.status;
-                
-                // Update status
-                orders[orderIndex].status = newStatus;
-                localStorage.setItem('all_orders', JSON.stringify(orders));
-                
-                // Send order confirmation email if status changed to confirmed
-                if (newStatus === 'confirmed') {
-                    sendOrderConfirmationEmail(order);
+                    const data = await resp.json();
+                    if (!resp.ok) {
+                        alert('Failed to update order status: ' + (data && data.message ? data.message : resp.statusText));
+                        return;
+                    }
+
+                    // Update local copy in localStorage if backend returned orders
+                    if (data.orders && Array.isArray(data.orders)) {
+                        try { localStorage.setItem('all_orders', JSON.stringify(data.orders)); } catch (e) { /* ignore */ }
+                    } else if (data.order) {
+                        // Update single order in localStorage array
+                        const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+                        const idx = orders.findIndex(o => o.orderId === data.order.orderId);
+                        if (idx !== -1) orders[idx] = data.order;
+                        try { localStorage.setItem('all_orders', JSON.stringify(orders)); } catch (e) {}
+                    }
+
+                    // Create automatic notification locally as before
+                    try { createOrderStatusNotification(data.order || { orderId, customer: { email: '' } }, newStatus, null); } catch (e) {}
+
+                    loadOrders();
+                    alert('Order status updated successfully!');
+                } catch (err) {
+                    console.error('Error updating order status:', err);
+                    alert('Error updating order status: ' + (err && err.message));
                 }
-                
-                // Create automatic notification for status change
-                createOrderStatusNotification(order, newStatus, oldStatus);
-                
-                loadOrders();
-                alert('Order status updated successfully!');
-            }
+            })();
         }
 
         // Function to create automatic notification when order status changes
@@ -1325,20 +1446,33 @@
             // Double confirmation for safety
             if (!confirm('⚠️ FINAL CONFIRMATION: Delete order #' + orderId + '?\n\nThis will permanently remove the order from the system.')) return;
 
-            const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
-            const orderIndex = orders.findIndex(o => o.orderId === orderId);
+            (async () => {
+                try {
+                    const resp = await fetch(`http://localhost:3000/api/orders/${orderId}`, { method: 'DELETE' });
+                    const data = await resp.json();
+                    if (!resp.ok) {
+                        alert('Failed to delete order: ' + (data && data.message ? data.message : resp.statusText));
+                        return;
+                    }
 
-            if (orderIndex !== -1) {
-                const deletedOrder = orders[orderIndex];
-                orders.splice(orderIndex, 1); // Remove the order from array
-                localStorage.setItem('all_orders', JSON.stringify(orders));
-                
-                console.log('Order deleted:', deletedOrder.orderId);
-                loadOrders();
-                alert('✅ Order #' + orderId + ' has been permanently deleted.');
-            } else {
-                alert('❌ Order not found!');
-            }
+                    // Update localStorage from returned orders if available
+                    if (data.orders && Array.isArray(data.orders)) {
+                        localStorage.setItem('all_orders', JSON.stringify(data.orders));
+                    } else {
+                        // fallback: remove locally
+                        const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+                        const idx = orders.findIndex(o => o.orderId === orderId);
+                        if (idx !== -1) orders.splice(idx, 1);
+                        localStorage.setItem('all_orders', JSON.stringify(orders));
+                    }
+
+                    loadOrders();
+                    alert('✅ Order #' + orderId + ' has been permanently deleted.');
+                } catch (err) {
+                    console.error('Error deleting order:', err);
+                    alert('Error deleting order: ' + (err && err.message));
+                }
+            })();
         }
 
         // Send Delivery File Modal Functions
@@ -1774,10 +1908,66 @@
             }
         }
 
-        // Initialize - Check if already logged in
-        if (localStorage.getItem('admin_logged_in') === 'true') {
-            showDashboard();
-        }
+        // Initialize - Check if already logged in or if admin token from admin.html exists
+        (function initAuth() {
+            try {
+                const localFlag = localStorage.getItem('admin_logged_in') === 'true';
+                const token = localStorage.getItem('admin_auth'); // token set by admin.html on successful login
+                if (localFlag) {
+                    showDashboard();
+                    return;
+                }
+
+                if (token) {
+                    // Try to verify token with backend if available, otherwise assume valid
+                    fetch('http://localhost:3000/api/verify-token', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({})
+                    }).then(r => r.json()).then(data => {
+                        if (data && data.success) {
+                            // Respect token from admin page
+                            localStorage.setItem('admin_logged_in', 'true');
+                            showDashboard();
+                        } else {
+                            // token invalid — clear and stay on login
+                            localStorage.removeItem('admin_auth');
+                            console.warn('ordermanagement: admin token invalid');
+                        }
+                    }).catch(err => {
+                        // If verification fails (no backend reachable), assume token presence is sufficient
+                        console.warn('ordermanagement: token verify failed, falling back to token presence', err);
+                        localStorage.setItem('admin_logged_in', 'true');
+                        showDashboard();
+                    });
+                    return;
+                }
+
+                // otherwise, remain on login page
+            } catch (err) {
+                console.error('Initialization auth check failed:', err);
+            }
+        })();
+
+        // Check backend health and update UI indicator
+        (function checkBackendHealth() {
+            const statusEl = document.getElementById('backendStatus');
+            if (!statusEl) return;
+            fetch('http://localhost:3000/api/health', { method: 'GET' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.status === 'OK') {
+                        statusEl.textContent = 'Backend: Online';
+                        statusEl.style.color = '#16a34a';
+                    } else {
+                        statusEl.textContent = 'Backend: Offline';
+                        statusEl.style.color = '#ef4444';
+                    }
+                }).catch(err => {
+                    statusEl.textContent = 'Backend: Offline';
+                    statusEl.style.color = '#ef4444';
+                });
+        })();
     </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -307,7 +307,10 @@
                 return;
             }
             try {
-                const users = JSON.parse(localStorage.getItem("users") || "[]");
+                // Use the shared `registered_users` key so the admin UI and other pages
+                // see the same user list. If backend is available, POST to it for
+                // repository persistence. Fallback: keep user in localStorage.
+                const users = JSON.parse(localStorage.getItem("registered_users") || "[]");
                 if (users.some(u => u.email === formData.email)) {
                     showMessage("An account with this email already exists. Please login.", "error");
                     return;
@@ -322,9 +325,45 @@
                     createdAt: formData.createdAt
                 };
                 users.push(newUser);
-                localStorage.setItem("users", JSON.stringify(users));
+                localStorage.setItem("registered_users", JSON.stringify(users));
+                // Also update legacy `users` key for pages that still read it
+                try {
+                    const legacy = JSON.parse(localStorage.getItem("users") || "[]");
+                    legacy.push(newUser);
+                    localStorage.setItem("users", JSON.stringify(legacy));
+                } catch (e) {
+                    localStorage.setItem("users", JSON.stringify([newUser]));
+                }
+                // Try to persist to backend at port 3000 (the project's server)
+                fetch('http://localhost:3000/api/save-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newUser)
+                }).then(async r => {
+                    try {
+                        const result = await r.json();
+                        if (!result || !result.success) {
+                            console.warn('Backend save-user returned failure or unexpected response', result);
+                        } else {
+                            console.log('User saved to backend.');
+                        }
+                    } catch (err) {
+                        console.warn('Could not parse backend response for save-user', err);
+                    }
+                }).catch(err => {
+                    console.warn('Error saving user to backend (server may be down):', err);
+                });
+                // Remove any existing client-side auth so the login page is shown
+                // instead of immediately redirecting to the profile.
+                try { localStorage.removeItem('client_auth'); localStorage.removeItem('clientAuth'); } catch (e) {}
                 showMessage("Account created successfully! Redirecting to login...", "success");
-                setTimeout(() => { window.location.href = "login.html"; }, 2000);
+                console.log('Signup successful — redirecting to login.html');
+                // Do an immediate, robust redirect to the login page.
+                try {
+                    window.location.replace('login.html');
+                } catch (e) {
+                    window.location.href = 'login.html';
+                }
             } catch (error) {
                 console.error("Signup error:", error);
                 showMessage("An error occurred during signup. Please try again.", "error");

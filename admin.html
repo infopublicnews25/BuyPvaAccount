@@ -125,10 +125,57 @@
             font-size: 14px;
         }
 
-        .status-in-stock {
-            background: #dcfce7;
-            color: #16a34a;
+        .tab-navigation {
+            display: flex;
+            gap: 0;
+            margin-bottom: 24px;
         }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-bottom: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tab-btn:hover {
+            background: var(--bg);
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Role and Status Badges */
+        .role-badge, .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .role-admin { background: #fef3c7; color: #92400e; }
+        .role-editor { background: #dbeafe; color: #1e40af; }
+        .role-moderator { background: #e0e7ff; color: #3730a3; }
+        .role-manager { background: #d1fae5; color: #065f46; }
+
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-inactive { background: #fee2e2; color: #991b1b; }
 
         /* Login form styles */
         .login-container {
@@ -408,6 +455,74 @@
             display: flex;
             gap: 8px;
         }
+
+        /* News Management Styles */
+        .news-list-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .news-list .news-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .news-list .news-item:last-child {
+            border-bottom: none;
+        }
+
+        .news-content {
+            flex: 1;
+            margin-right: 12px;
+        }
+
+        .news-date {
+            font-weight: 600;
+            color: #f97316;
+            min-width: 80px;
+        }
+
+        .news-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-edit {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-edit:hover {
+            background: #d97706;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
     </style>
 </head>
 
@@ -435,84 +550,157 @@
     <div id="adminDashboard" style="display: none;">
         <div class="container">
             <div class="top-header">
-                <h1>Product & News Management</h1>
+                <h1>Admin Dashboard</h1>
                 <div style="display: flex; gap: 12px;">
-                    <button class="btn btn-primary" onclick="location.href='ordermanagement.html'" style="background: #667eea;">📦 Order Management</button>
-                    <button class="btn btn-primary" onclick="location.href='notifications.html'">View All Notifications</button>
+                    <button class="btn btn-primary" onclick="window.location.href='ordermanagement.html'">Order Management</button>
                     <button class="btn btn-danger" onclick="handleLogout()">Logout</button>
                 </div>
             </div>
 
-            <!-- Main Grid Layout -->
-            <div class="grid-container">
-                <!-- Products Section -->
-                <div class="product-section">
-                    <div class="section-header">
-                        <h2>Products</h2>
-                        <button class="btn btn-primary" onclick="openAddModal()">Add New Product</button>
+            <!-- Tab Navigation -->
+            <div class="tab-navigation" style="margin-bottom: 24px; border-bottom: 2px solid var(--line);">
+                <button class="tab-btn active" data-tab="products" onclick="switchTab('products')">📦 Products</button>
+                <button class="tab-btn" data-tab="users" onclick="switchTab('users')">👥 User Management</button>
+                <button class="tab-btn" data-tab="news" onclick="switchTab('news')">📰 News & Updates</button>
+                <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">⚙️ Settings</button>
+            </div>
+
+            <!-- Products Tab -->
+            <div id="productsTab" class="tab-content active">
+                <!-- Main Grid Layout -->
+                <div class="grid-container">
+                    <!-- Products Section -->
+                    <div class="product-section" style="width: 100%;">
+                        <div class="section-header">
+                            <h2>Products</h2>
+                            <button class="btn btn-primary" onclick="openAddModal()">Add New Product</button>
+                        </div>
+                        <table class="product-list">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Title</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productTableBody">
+                                <!-- Products will be loaded here -->
+                            </tbody>
+                        </table>
                     </div>
-                    <table class="product-list">
-                        <thead>
-                            <tr>
-                                <th>Image</th>
-                                <th>Title</th>
-                                <th>Price</th>
-                                <th>Quantity</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="productTableBody">
-                            <!-- Products will be loaded here -->
-                        </tbody>
-                    </table>
                 </div>
-                <!-- News Section -->
-                <div class="news-section">
-                    <h2>Manage News & Updates</h2>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="usersTab" class="tab-content">
+                <div class="user-management-section" style="width: 100%;">
+                    <h2>👥 User & Access Management</h2>
                     
-                    <!-- Add News Form -->
-                    <form id="newsForm" onsubmit="saveNews(event)" style="margin-bottom: 20px;">
+                    <!-- Add User Form -->
+                    <form id="userForm" onsubmit="addUser(event)" style="margin-bottom: 20px; background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--line);">
+                        <h3>Add New User</h3>
                         <div class="form-group">
-                            <label for="newsDate">Date</label>
-                            <input type="text" id="newsDate" required placeholder="e.g., Nov 2025" class="form-control">
+                            <label for="userUsername">Username</label>
+                            <input type="text" id="userUsername" required placeholder="Enter username">
                         </div>
                         <div class="form-group">
-                            <label for="newsContent">Content</label>
-                            <div style="border: 1px solid var(--line); border-radius: 8px; padding: 5px;">
-                                <div class="editor-toolbar" style="padding: 5px; border-bottom: 1px solid var(--line);">
-                                    <button type="button" onclick="formatNewsText('bold')" class="btn" style="padding: 5px 10px; margin-right: 5px;"><b>B</b></button>
-                                    <button type="button" onclick="formatNewsText('italic')" class="btn" style="padding: 5px 10px; margin-right: 5px;"><i>I</i></button>
-                                    <button type="button" onclick="formatNewsText('underline')" class="btn" style="padding: 5px 10px; margin-right: 5px;"><u>U</u></button>
-                                    <button type="button" onclick="formatNewsText('insertunorderedlist')" class="btn" style="padding: 5px 10px; margin-right: 5px;">• List</button>
-                                </div>
-                                <div id="newsContent" contenteditable="true" style="min-height: 100px; padding: 10px; outline: none;"></div>
-                            </div>
+                            <label for="userEmail">Email</label>
+                            <input type="email" id="userEmail" required placeholder="Enter email">
                         </div>
-                        <button type="submit" class="btn btn-primary">Add News Update</button>
+                        <div class="form-group">
+                            <label for="userRole">Role</label>
+                            <select id="userRole" required>
+                                <option value="editor">Editor</option>
+                                <option value="moderator">Moderator</option>
+                                <option value="manager">Manager</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="userPassword">Temporary Password</label>
+                            <input type="password" id="userPassword" required placeholder="Temporary password">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add User</button>
                     </form>
 
-                    <!-- News List -->
+                    <!-- Users List -->
                     <table class="product-list" style="width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 20%;">Date</th>
-                                <th style="width: 60%;">Content</th>
-                                <th style="width: 20%;">Actions</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="newsTableBody"></tbody>
+                        <tbody id="usersTableBody">
+                            <!-- Users will be loaded here -->
+                        </tbody>
                     </table>
+                </div>
+            </div>
 
-                    <!-- Help Section -->
-                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line);">
-                        <h2>Need help?</h2>
-                        <p style="color: var(--muted); margin-top: 8px;">Live chat 24/7 • Custom delivery format • Volume quotes</p>
+            <!-- News & Updates Tab -->
+            <div id="newsTab" class="tab-content">
+                <div class="news-management-section" style="width: 100%;">
+                    <h2>📰 News & Updates Management</h2>
+                    
+                    <!-- Add News Form -->
+                    <form id="newsForm" onsubmit="addNews(event)" style="margin-bottom: 20px; background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--line);">
+                        <h3 id="newsFormTitle">Add New News/Update</h3>
+                        <input type="hidden" id="editIndex" value="-1">
+                        <div class="form-group">
+                            <label for="newsDate">Date</label>
+                            <input type="text" id="newsDate" required placeholder="e.g., Nov 2025" value="Nov 2025">
+                        </div>
+                        <div class="form-group">
+                            <label for="newsContent">Content</label>
+                            <textarea id="newsContent" required placeholder="Enter news content" rows="3"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">Add News</button>
+                            <button type="button" class="btn btn-secondary" id="cancelBtn" onclick="cancelEdit()" style="display: none;">Cancel</button>
+                        </div>
+                    </form>
+
+                    <!-- News List -->
+                    <div class="news-list-container" style="background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--line);">
+                        <h3>Current News & Updates</h3>
+                        <div id="adminNewsContainer" class="news-list">
+                            <!-- News items will be loaded here -->
+                        </div>
                     </div>
                 </div>
-            </div>    </div>
+            </div>
 
-    <!-- Edit/Add Modal -->
+            <!-- Settings Tab -->
+            <div id="settingsTab" class="tab-content">
+                <div class="settings-section" style="width: 100%;">
+                    <h2>⚙️ Admin Settings</h2>
+                    
+                    <!-- Change Admin Credentials -->
+                    <div style="background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--line); margin-bottom: 20px;">
+                        <h3>Change Admin Credentials</h3>
+                        <form id="adminCredentialsForm" onsubmit="updateAdminCredentials(event)">
+                            <div class="form-group">
+                                <label for="adminUsername">New Username</label>
+                                <input type="text" id="adminUsername" required placeholder="Enter new username">
+                            </div>
+                            <div class="form-group">
+                                <label for="adminPassword">New Password</label>
+                                <input type="password" id="adminPassword" required placeholder="Enter new password">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Update Credentials</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+    </div>
     <div id="editModal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
@@ -569,75 +757,7 @@
         // Authentication configuration
         const AUTH_KEY = 'admin_auth';
         const PRODUCTS_KEY = 'admin_products_v1';
-        const NEWS_KEY = 'newsUpdates';
         
-        // You should change these to your desired credentials
-        // The password will be hashed before storing
-        const ADMIN_USERNAME = 'admin';
-        const ADMIN_PASSWORD = 'your_secure_password_123'; // Change this to your secure password
-        
-        // News Management Functions
-        function openNewsModal() {
-            document.getElementById('newsModal').style.display = 'block';
-            loadNews();
-        }
-
-        function closeNewsModal() {
-            document.getElementById('newsModal').style.display = 'none';
-        }
-
-        function loadNews() {
-            const news = JSON.parse(localStorage.getItem(NEWS_KEY) || '[]');
-            const tbody = document.getElementById('newsTableBody');
-            tbody.innerHTML = '';
-
-            news.forEach((item, index) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${item.date}</td>
-                    <td>${item.content}</td>
-                    <td class="actions">
-                        <button class="btn btn-danger btn-sm" onclick="deleteNews(${index})">Delete</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function formatNewsText(command) {
-            document.execCommand(command, false, null);
-            document.getElementById('newsContent').focus();
-        }
-
-        function saveNews(event) {
-            event.preventDefault();
-            const date = document.getElementById('newsDate').value;
-            const content = document.getElementById('newsContent').innerHTML;
-
-            if (!date || !content) {
-                alert('Please fill in all fields');
-                return;
-            }
-
-            const news = JSON.parse(localStorage.getItem(NEWS_KEY) || '[]');
-            news.unshift({ date, content }); // Add new news at the beginning
-            localStorage.setItem(NEWS_KEY, JSON.stringify(news));
-
-            // Clear form
-            document.getElementById('newsDate').value = '';
-            document.getElementById('newsContent').innerHTML = '';
-            loadNews();
-        }
-
-        function deleteNews(index) {
-            if (confirm('Are you sure you want to delete this news item?')) {
-                const news = JSON.parse(localStorage.getItem(NEWS_KEY) || '[]');
-                news.splice(index, 1);
-                localStorage.setItem(NEWS_KEY, JSON.stringify(news));
-                loadNews();
-            }
-        }
-
         // Help Section Functions
         function submitHelp(event) {
             event.preventDefault();
@@ -652,16 +772,24 @@
             document.getElementById('helpForm').reset();
         }
         
-        // Function to hash password (using SHA-256)
-        async function hashPassword(password) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password);
-            const hash = await crypto.subtle.digest('SHA-256', data);
-            return Array.from(new Uint8Array(hash))
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join('');
+        // Function to format date for display
+        function formatDate(dateString) {
+            if (!dateString) return 'Never';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                return 'Invalid Date';
+            }
         }
-
+        
+        // Function to hash password (using SHA-256)
         // Handle login
         async function handleLogin(event) {
             event.preventDefault();
@@ -670,30 +798,307 @@
             const errorMsg = document.getElementById('errorMessage');
             
             try {
-                // Hash the input password
-                const hashedPassword = await hashPassword(password);
-                // Hash the correct password for comparison
-                const correctHash = await hashPassword(ADMIN_PASSWORD);
+                const response = await fetch('http://localhost:3000/api/admin-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
 
-                if (username === ADMIN_USERNAME && hashedPassword === correctHash) {
-                    // Store auth token
-                    const token = await hashPassword(Date.now().toString());
-                    localStorage.setItem(AUTH_KEY, token);
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store auth token from backend
+                    localStorage.setItem(AUTH_KEY, data.token);
                     
                     // Show admin dashboard
                     document.getElementById('loginPage').style.display = 'none';
                     document.getElementById('adminDashboard').style.display = 'block';
                     
-                    // Initialize the dashboard
-                    renderProducts();
+                    // Initialize the products tab by default
+                    switchTab('products');
                 } else {
                     errorMsg.style.display = 'block';
-                    errorMsg.textContent = 'Invalid username or password';
+                    errorMsg.textContent = data.message || 'Invalid username or password';
                 }
             } catch (error) {
                 console.error('Login error:', error);
                 errorMsg.style.display = 'block';
-                errorMsg.textContent = 'An error occurred during login';
+                errorMsg.textContent = 'Unable to connect to server. Please try again.';
+            }
+        }
+
+        // News Management Functions
+        function loadAdminNews() {
+            const newsContainer = document.getElementById('adminNewsContainer');
+            const news = JSON.parse(localStorage.getItem('newsUpdates') || '[]');
+            
+            if (news.length === 0) {
+                newsContainer.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No news items yet. Add your first news update above.</p>';
+            } else {
+                newsContainer.innerHTML = news.map((item, index) => `
+                    <div class="news-item">
+                        <div class="news-content">
+                            <span class="news-date">${item.date}</span>
+                            <span>${item.content}</span>
+                        </div>
+                        <div class="news-actions">
+                            <button class="btn-edit" onclick="editNews(${index})">Edit</button>
+                            <button class="btn-delete" onclick="deleteNews(${index})">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function addNews(event) {
+            event.preventDefault();
+            
+            const date = document.getElementById('newsDate').value.trim();
+            const content = document.getElementById('newsContent').value.trim();
+            const editIndex = parseInt(document.getElementById('editIndex').value);
+            
+            if (!date || !content) {
+                alert('Please fill in both date and content');
+                return;
+            }
+
+            const news = JSON.parse(localStorage.getItem('newsUpdates') || '[]');
+            
+            if (editIndex >= 0) {
+                // Edit existing news
+                news[editIndex] = { date, content };
+                alert('News updated successfully!');
+            } else {
+                // Add new news
+                news.unshift({ date, content }); // Add to beginning
+                alert('News added successfully!');
+            }
+            
+            localStorage.setItem('newsUpdates', JSON.stringify(news));
+            
+            // Reset form
+            cancelEdit();
+            
+            // Reload news
+            loadAdminNews();
+        }
+
+        function editNews(index) {
+            const news = JSON.parse(localStorage.getItem('newsUpdates') || '[]');
+            const item = news[index];
+            
+            if (!item) return;
+            
+            // Populate form with existing data
+            document.getElementById('newsDate').value = item.date;
+            document.getElementById('newsContent').value = item.content;
+            document.getElementById('editIndex').value = index;
+            
+            // Update form UI
+            document.getElementById('newsFormTitle').textContent = 'Edit News/Update';
+            document.getElementById('submitBtn').textContent = 'Update News';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+            
+            // Scroll to form
+            document.getElementById('newsForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            // Reset form
+            document.getElementById('newsForm').reset();
+            document.getElementById('newsDate').value = 'Nov 2025';
+            document.getElementById('editIndex').value = '-1';
+            
+            // Reset form UI
+            document.getElementById('newsFormTitle').textContent = 'Add New News/Update';
+            document.getElementById('submitBtn').textContent = 'Add News';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        function deleteNews(index) {
+            if (!confirm('Are you sure you want to delete this news item?')) return;
+            
+            const news = JSON.parse(localStorage.getItem('newsUpdates') || '[]');
+            news.splice(index, 1);
+            
+            localStorage.setItem('newsUpdates', JSON.stringify(news));
+            loadAdminNews();
+        }
+
+        // Tab Switching Function
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            const selectedTab = document.getElementById(tabName + 'Tab');
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Activate corresponding button
+            const selectedBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('active');
+            }
+            
+            // Load content based on tab
+            if (tabName === 'products') {
+                renderProducts();
+            } else if (tabName === 'users') {
+                loadUsers();
+            }
+        }
+
+        // User Management Functions
+        async function loadUsers() {
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                const response = await fetch('http://localhost:3000/api/admin/users', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayUsers(data.users);
+                } else {
+                    console.error('Failed to load users:', data.message);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+
+            users.forEach((user, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td><span class="role-badge role-${user.role}">${user.role}</span></td>
+                    <td><span class="status-badge status-${user.status || 'active'}">${user.status || 'active'}</span></td>
+                    <td>${user.lastLogin ? formatDate(user.lastLogin) : 'Never'}</td>
+                    <td class="actions">
+                        <button class="btn btn-primary btn-sm" onclick="editUser('${user.username}')">Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')">Delete</button>
+                        <button class="btn btn-info btn-sm" onclick="resetPassword('${user.username}')">Reset Password</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function addUser(event) {
+            event.preventDefault();
+            const username = document.getElementById('userUsername').value;
+            const email = document.getElementById('userEmail').value;
+            const role = document.getElementById('userRole').value;
+            const password = document.getElementById('userPassword').value;
+
+            if (!username || !email || !role || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                const response = await fetch('http://localhost:3000/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, email, role, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Clear form
+                    document.getElementById('userForm').reset();
+                    loadUsers();
+                    alert('User added successfully!');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error adding user:', error);
+                alert('Failed to add user');
+            }
+        }
+
+        async function editUser(username) {
+            // For now, just show an alert. In a full implementation, you'd fetch user data and populate the form
+            alert(`Edit user: ${username}\n\nThis would populate the form with user data for editing.`);
+        }
+
+        async function deleteUser(username) {
+            if (confirm(`Are you sure you want to delete user: ${username}?`)) {
+                try {
+                    const token = localStorage.getItem(AUTH_KEY);
+                    const response = await fetch(`http://localhost:3000/api/admin/users/${username}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        loadUsers();
+                        alert('User deleted successfully!');
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    alert('Failed to delete user');
+                }
+            }
+        }
+
+        async function resetPassword(username) {
+            const newPassword = prompt(`Enter new temporary password for ${username}:`);
+            if (newPassword) {
+                try {
+                    const token = localStorage.getItem(AUTH_KEY);
+                    const response = await fetch(`http://localhost:3000/api/admin/users/${username}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ password: newPassword })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert('Password reset successfully!');
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Error resetting password:', error);
+                    alert('Failed to reset password');
+                }
             }
         }
 
@@ -713,37 +1118,48 @@
                 document.getElementById('adminDashboard').style.display = 'none';
                 return false;
             }
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('adminDashboard').style.display = 'block';
+            
+            // Verify token with server
+            fetch('http://localhost:3000/api/verify-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('loginPage').style.display = 'none';
+                    document.getElementById('adminDashboard').style.display = 'block';
+                    
+                    // Load initial data for active tabs
+                    const activeTab = document.querySelector('.tab-btn.active');
+                    if (activeTab && activeTab.getAttribute('data-tab') === 'products') {
+                        renderProducts();
+                    } else {
+                        // Fallback: always load products if authenticated
+                        renderProducts();
+                    }
+                } else {
+                    // Token invalid, show login
+                    localStorage.removeItem(AUTH_KEY);
+                    document.getElementById('loginPage').style.display = 'flex';
+                    document.getElementById('adminDashboard').style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Token verification failed:', error);
+                // On network error, assume authenticated for now (offline mode)
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                renderProducts();
+            });
+            
             return true;
         }
 
-        // Add authentication check to all sensitive functions
-        const originalRenderProducts = window.renderProducts;
-        window.renderProducts = function() {
-            if (!checkAuth()) return;
-            originalRenderProducts();
-        };
-
-        const originalOpenAddModal = window.openAddModal;
-        window.openAddModal = function() {
-            if (!checkAuth()) return;
-            originalOpenAddModal();
-        };
-
-        const originalEditProduct = window.editProduct;
-        window.editProduct = function(id) {
-            if (!checkAuth()) return;
-            originalEditProduct(id);
-        };
-
-        const originalDeleteProduct = window.deleteProduct;
-        window.deleteProduct = function(id) {
-            if (!checkAuth()) return;
-            originalDeleteProduct(id);
-        };
-
-        // Check authentication on page load
+        // Check authentication on page load (do not auto-render products here)
         document.addEventListener('DOMContentLoaded', () => {
             checkAuth();
         });
@@ -784,33 +1200,119 @@
             }
         }
 
-        // Render products table
-        function renderProducts() {
-            const products = loadProducts();
+        // Lightweight UI refresh for the products table (keeps work localized)
+        function refreshProductsUI(products) {
             const tbody = document.getElementById('productTableBody');
+            if (!tbody) return;
             tbody.innerHTML = '';
 
             products.forEach(product => {
+                // Build row with DOM methods (avoid injecting raw HTML)
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><img src="${product.image || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><rect width="50" height="50" fill="%23eee"/><text x="25" y="25" font-family="Arial" font-size="14" text-anchor="middle" dominant-baseline="middle">📦</text></svg>'}" 
-                         alt="${product.title}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"></td>
-                    <td>${product.title}</td>
-                    <td>${product.offerPrice ? 
-                        `<span style="text-decoration: line-through; color: var(--muted)">$${product.price.toFixed(2)}</span> 
-                         <span style="color: var(--ok)">$${product.offerPrice.toFixed(2)}</span>` 
-                        : `$${product.price.toFixed(2)}`}</td>
-                    <td>${product.forceZero ? '0' : product.quantity}</td>
-                    <td><span class="status-badge ${product.forceZero || product.quantity < 1 ? 'status-out-of-stock' : 'status-in-stock'}">
-                        ${product.forceZero || product.quantity < 1 ? 'Out of Stock' : 'In Stock'}
-                    </span></td>
-                    <td class="actions">
-                        <button class="btn btn-primary" onclick="editProduct('${product.id}')">Edit</button>
-                        <button class="btn btn-danger" onclick="deleteProduct('${product.id}')">Delete</button>
-                    </td>
-                `;
+
+                // Helper to safely extract image src if someone pasted an <img> tag
+                const extractImageSrc = (val) => {
+                    if (!val) return '';
+                    if (typeof val !== 'string') return '';
+                    const m = val.match(/<img[^>]+src=["']?([^"' >]+)["']?/i);
+                    if (m && m[1]) return m[1];
+                    return val;
+                };
+
+                const imgUrl = extractImageSrc(product.image) || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><rect width="50" height="50" fill="%23eee"/><text x="25" y="25" font-family="Arial" font-size="14" text-anchor="middle" dominant-baseline="middle">📦</text></svg>';
+
+                const tdImg = document.createElement('td');
+                const imgEl = document.createElement('img');
+                imgEl.src = imgUrl;
+                imgEl.alt = product.title || '';
+                imgEl.style.width = '50px';
+                imgEl.style.height = '50px';
+                imgEl.style.objectFit = 'cover';
+                imgEl.style.borderRadius = '4px';
+                tdImg.appendChild(imgEl);
+
+                const tdTitle = document.createElement('td');
+                tdTitle.textContent = product.title || '';
+
+                const tdPrice = document.createElement('td');
+                if (product.offerPrice) {
+                    const strike = document.createElement('span');
+                    strike.style.textDecoration = 'line-through';
+                    strike.style.color = 'var(--muted)';
+                    strike.textContent = `$${Number(product.price).toFixed(2)}`;
+                    const offer = document.createElement('span');
+                    offer.style.color = 'var(--ok)';
+                    offer.style.marginLeft = '6px';
+                    offer.textContent = `$${Number(product.offerPrice).toFixed(2)}`;
+                    tdPrice.appendChild(strike);
+                    tdPrice.appendChild(offer);
+                } else {
+                    tdPrice.textContent = `$${Number(product.price).toFixed(2)}`;
+                }
+
+                const tdQty = document.createElement('td');
+                tdQty.textContent = product.forceZero ? '0' : String(product.quantity ?? 0);
+
+                const tdStatus = document.createElement('td');
+                const spanStatus = document.createElement('span');
+                const qtyNum = product.quantity ?? 0;
+                if (product.forceZero || qtyNum < 1) {
+                    spanStatus.className = 'status-badge status-out-of-stock';
+                    spanStatus.textContent = 'Out of Stock';
+                } else {
+                    spanStatus.className = 'status-badge status-in-stock';
+                    spanStatus.textContent = 'In Stock';
+                }
+                tdStatus.appendChild(spanStatus);
+
+                const tdActions = document.createElement('td');
+                tdActions.className = 'actions';
+                const btnEdit = document.createElement('button');
+                btnEdit.className = 'btn btn-primary';
+                btnEdit.textContent = 'Edit';
+                btnEdit.addEventListener('click', () => editProduct(product.id));
+                const btnDel = document.createElement('button');
+                btnDel.className = 'btn btn-danger';
+                btnDel.textContent = 'Delete';
+                btnDel.addEventListener('click', () => deleteProduct(product.id));
+                tdActions.appendChild(btnEdit);
+                tdActions.appendChild(btnDel);
+
+                tr.appendChild(tdImg);
+                tr.appendChild(tdTitle);
+                tr.appendChild(tdPrice);
+                tr.appendChild(tdQty);
+                tr.appendChild(tdStatus);
+                tr.appendChild(tdActions);
+
                 tbody.appendChild(tr);
             });
+        }
+
+        // Render products table (calls the UI-only refresher). This keeps rendering fast and localized
+        let _lastProductsRender = 0;
+        const PRODUCTS_RENDER_MIN_INTERVAL = 5000; // ms - minimum time between auto-renders
+
+        function renderProducts(force = false) {
+            try {
+                const now = Date.now();
+                if (!force && (now - _lastProductsRender) < PRODUCTS_RENDER_MIN_INTERVAL) {
+                    // Too soon since last render; skip to avoid rapid refreshes
+                    return;
+                }
+                _lastProductsRender = now;
+
+                // Show a lightweight loading state
+                const section = document.querySelector('.product-section');
+                if (section) section.style.opacity = '0.6';
+
+                const products = loadProducts();
+                refreshProductsUI(products);
+
+                if (section) section.style.opacity = '';
+            } catch (err) {
+                console.error('renderProducts error:', err);
+            }
         }
 
         // Open modal for adding new product
@@ -860,6 +1362,16 @@
             
             const products = loadProducts();
             const productId = document.getElementById('productId').value;
+            // sanitize image field: if the user pasted an <img ...> element, extract its src
+            const rawImage = document.getElementById('image').value;
+            const extractImageSrc = (val) => {
+                if (!val) return '';
+                if (typeof val !== 'string') return '';
+                const m = val.match(/<img[^>]+src=["']?([^"' >]+)["']?/i);
+                if (m && m[1]) return m[1];
+                return val;
+            };
+
             const newProduct = {
                 id: productId || Date.now().toString(),
                 title: document.getElementById('title').value,
@@ -867,7 +1379,7 @@
                 offerPrice: document.getElementById('offerPrice').value ? parseFloat(document.getElementById('offerPrice').value) : null,
                 quantity: parseInt(document.getElementById('quantity').value),
                 note: document.getElementById('note').innerHTML,
-                image: document.getElementById('image').value,
+                image: extractImageSrc(rawImage),
                 forceZero: document.getElementById('forceZero').checked
             };
 
@@ -883,7 +1395,7 @@
             }
 
             saveProducts(products);
-            renderProducts();
+            renderProducts(true);
             closeModal();
         }
 
@@ -894,28 +1406,246 @@
             const products = loadProducts();
             const filtered = products.filter(p => p.id !== id);
             saveProducts(filtered);
-            renderProducts();
+            renderProducts(true);
         }
 
-        // Image preview
-        document.getElementById('image').addEventListener('input', function(e) {
+        // Image preview (guarded in case element is not present)
+        (function(){
+            const imageInput = document.getElementById('image');
             const preview = document.getElementById('imagePreview');
-            if (e.target.value) {
-                preview.src = e.target.value;
-                preview.hidden = false;
-            } else {
-                preview.hidden = true;
+            if (!imageInput || !preview) return;
+            imageInput.addEventListener('input', function(e) {
+                if (e.target.value) {
+                    preview.src = e.target.value;
+                    preview.hidden = false;
+                } else {
+                    preview.hidden = true;
+                }
+            });
+        })();
+
+        // User Management Functions
+        async function loadUsers() {
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                const response = await fetch('http://localhost:3000/api/admin/users', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayUsers(data.users);
+                } else {
+                    console.error('Failed to load users:', data.message);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
             }
-        });
+        }
 
-        // Initialize
-        renderProducts();
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('editModal');
-            if (event.target === modal) {
-                closeModal();
+            users.forEach((user, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td><span class="role-badge role-${user.role}">${user.role}</span></td>
+                    <td><span class="status-badge status-${user.status || 'active'}">${user.status || 'active'}</span></td>
+                    <td>${user.lastLogin ? formatDate(user.lastLogin) : 'Never'}</td>
+                    <td class="actions">
+                        <button class="btn btn-primary btn-sm" onclick="editUser('${user.username}')">Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')">Delete</button>
+                        <button class="btn btn-info btn-sm" onclick="resetPassword('${user.username}')">Reset Password</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function addUser(event) {
+            event.preventDefault();
+            const username = document.getElementById('userUsername').value;
+            const email = document.getElementById('userEmail').value;
+            const role = document.getElementById('userRole').value;
+            const password = document.getElementById('userPassword').value;
+
+            if (!username || !email || !role || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                const response = await fetch('http://localhost:3000/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, email, role, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Clear form
+                    document.getElementById('userForm').reset();
+                    loadUsers();
+                    alert('User added successfully!');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error adding user:', error);
+                alert('Failed to add user');
+            }
+        }
+
+        async function editUser(username) {
+            // For now, just show an alert. In a full implementation, you'd fetch user data and populate the form
+            alert(`Edit user: ${username}\n\nThis would populate the form with user data for editing.`);
+        }
+
+        async function deleteUser(username) {
+            if (confirm(`Are you sure you want to delete user: ${username}?`)) {
+                try {
+                    const token = localStorage.getItem(AUTH_KEY);
+                    const response = await fetch(`http://localhost:3000/api/admin/users/${username}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        loadUsers();
+                        alert('User deleted successfully!');
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    alert('Failed to delete user');
+                }
+            }
+        }
+
+        async function resetPassword(username) {
+            const newPassword = prompt(`Enter new temporary password for ${username}:`);
+            if (newPassword) {
+                try {
+                    const token = localStorage.getItem(AUTH_KEY);
+                    const response = await fetch(`http://localhost:3000/api/admin/users/${username}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ password: newPassword })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert('Password reset successfully!');
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Error resetting password:', error);
+                    alert('Failed to reset password');
+                }
+            }
+        }
+
+        // Tab switching function
+        function switchTab(tabName) {
+            console.log('Switching to tab:', tabName);
+            
+            // Hide all tab contents
+            const tabs = document.querySelectorAll('.tab-content');
+            console.log('Found tabs:', tabs.length);
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Remove active class from all tab buttons
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            // Show selected tab
+            const targetTab = document.getElementById(tabName + 'Tab');
+            console.log('Target tab element:', targetTab);
+            if (targetTab) {
+                targetTab.classList.add('active');
+                console.log('Added active class to tab');
+            } else {
+                console.error('Tab not found:', tabName + 'Tab');
+            }
+            
+            // Add active class to clicked button
+            const clickedButton = document.querySelector(`[data-tab="${tabName}"]`);
+            console.log('Clicked button:', clickedButton);
+            if (clickedButton) {
+                clickedButton.classList.add('active');
+                console.log('Added active class to button');
+            }
+            
+            // Load data for the tab
+            if (tabName === 'users') {
+                loadUsers();
+            } else if (tabName === 'products') {
+                renderProducts();
+            } else if (tabName === 'news') {
+                loadAdminNews();
+            }
+            // Settings tab doesn't need to load data
+        }
+
+        // Update admin credentials
+        async function updateAdminCredentials(event) {
+            event.preventDefault();
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+
+            if (!username || !password) {
+                alert('Please fill in both username and password');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to change the admin credentials? You will need to log in again with the new credentials.')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                const response = await fetch('http://localhost:3000/api/admin/credentials', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Admin credentials updated successfully! Please log in again with the new credentials.');
+                    handleLogout();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error updating admin credentials:', error);
+                alert('Failed to update admin credentials');
             }
         }
     </script>

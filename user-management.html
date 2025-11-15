@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>User Management</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family:Segoe UI,Roboto,Arial;background:#f7f7fb;margin:0;color:#111}
+    .wrap{max-width:1100px;margin:24px auto;padding:12px}
+    .panel{display:flex;gap:16px}
+    .list{width:360px;background:#fff;border-radius:10px;padding:12px;border:1px solid #e6e9ee;min-height:440px}
+    .details{flex:1;background:#fff;border-radius:10px;padding:16px;border:1px solid #e6e9ee;min-height:440px}
+    .user-row{padding:10px;border-radius:8px;border:1px solid transparent;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+    .user-row:hover{background:#f3f4f6}
+    .user-name{font-weight:700;color:#2563eb}
+    .muted{color:#666;font-size:13px}
+    .controls{display:flex;gap:8px;margin-bottom:12px}
+    .btn{padding:8px 12px;border-radius:8px;border:1px solid #d1d5db;background:#fff;cursor:pointer}
+    .btn.primary{background:#2563eb;color:#fff;border-color:transparent}
+    label{display:block;font-size:13px;color:#333;margin-bottom:6px;font-weight:600}
+    input,select,textarea{width:100%;padding:8px;border:1px solid #e6e9ee;border-radius:6px;font-size:14px}
+    pre{background:#f8fafc;padding:12px;border-radius:6px;overflow:auto}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>User Management</h1>
+    <div class="controls">
+      <input id="search" placeholder="Search by name or email" style="padding:8px;border-radius:8px;border:1px solid #e6e9ee;flex:1" />
+      <button id="refreshBtn" class="btn">Refresh</button>
+      <button id="downloadBtn" class="btn">Download JSON</button>
+      <button id="addBtn" class="btn primary">Add User</button>
+    </div>
+
+    <div class="panel">
+      <div class="list">
+        <div style="margin-bottom:8px;font-size:13px;color:#666">Users</div>
+        <div id="usersList"></div>
+      </div>
+
+      <div class="details">
+        <div id="detailsEmpty" style="text-align:center;color:#999;padding-top:60px">Select a user to see details</div>
+        <div id="userDetailPane" style="display:none">
+          <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+            <div style="flex:1">
+              <div id="detailName" style="font-size:18px;font-weight:800;color:#111"></div>
+              <div id="detailEmail" class="muted" style="margin-top:4px"></div>
+            </div>
+            <div>
+              <select id="roleSelect">
+                <option value="customer">Customer</option>
+                <option value="subscriber">Subscriber</option>
+                <option value="member">Member</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label>Full Name</label>
+              <input id="inpFullName" />
+            </div>
+            <div>
+              <label>Phone</label>
+              <input id="inpPhone" />
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label>Email</label>
+            <input id="inpEmail" />
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label>Country</label>
+            <input id="inpCountry" />
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label>Notes / Extra</label>
+            <textarea id="inpExtra" rows="3"></textarea>
+          </div>
+
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button id="saveBtn" class="btn primary">Save Changes</button>
+            <button id="deleteBtn" class="btn" style="background:#fff;color:#dc3545">Delete User</button>
+          </div>
+
+          <hr style="margin:16px 0" />
+
+          <h3 style="margin:0 0 8px 0">Raw Data</h3>
+          <pre id="rawData" style="height:160px"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let users = [];
+    let selectedIndex = -1;
+
+    document.getElementById('refreshBtn').addEventListener('click', loadUsers);
+    document.getElementById('downloadBtn').addEventListener('click', downloadJSON);
+    document.getElementById('addBtn').addEventListener('click', newUser);
+    document.getElementById('search').addEventListener('input', renderList);
+
+    document.getElementById('saveBtn').addEventListener('click', saveChanges);
+    document.getElementById('deleteBtn').addEventListener('click', deleteUser);
+
+    async function loadUsers() {
+      // Try to fetch the file (only works when served over HTTP)
+      try {
+        const resp = await fetch('registered_users.json');
+        if (resp.ok) {
+          users = await resp.json();
+          localStorage.setItem('registered_users', JSON.stringify(users));
+          console.log('Loaded users from registered_users.json');
+        } else {
+          throw new Error('HTTP ' + resp.status);
+        }
+      } catch (e) {
+        // Fallback to localStorage
+        try {
+          users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+          console.log('Loaded users from localStorage');
+        } catch (err) {
+          users = [];
+        }
+      }
+      renderList();
+      showEmptyDetail();
+    }
+
+    function renderList() {
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      const el = document.getElementById('usersList');
+      el.innerHTML = '';
+      users.forEach((u, i) => {
+        const name = (u.fullName || u.name || u.email || 'Unknown');
+        if (q && !(name.toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q))) return;
+        const row = document.createElement('div');
+        row.className = 'user-row';
+        row.innerHTML = `<div>
+            <div class='user-name'>${escapeHtml(name)}</div>
+            <div class='muted' style='font-size:13px'>${escapeHtml(u.email||'')}</div>
+          </div>
+          <div class='muted'>${escapeHtml(u.role||'customer')}</div>`;
+        row.addEventListener('click', () => selectUser(i));
+        el.appendChild(row);
+      });
+    }
+
+    function selectUser(i) {
+      selectedIndex = i;
+      const u = users[i];
+      document.getElementById('detailsEmpty').style.display = 'none';
+      document.getElementById('userDetailPane').style.display = 'block';
+      document.getElementById('detailName').textContent = u.fullName || u.name || '';
+      document.getElementById('detailEmail').textContent = u.email || '';
+      document.getElementById('inpFullName').value = u.fullName || u.name || '';
+      document.getElementById('inpPhone').value = u.phone || '';
+      document.getElementById('inpEmail').value = u.email || '';
+      document.getElementById('inpCountry').value = u.country || '';
+      document.getElementById('inpExtra').value = u.extra || '';
+      document.getElementById('roleSelect').value = (u.role || 'customer');
+      document.getElementById('rawData').textContent = JSON.stringify(u, null, 2);
+    }
+
+    function newUser(){
+      selectedIndex = -1;
+      document.getElementById('detailsEmpty').style.display = 'none';
+      document.getElementById('userDetailPane').style.display = 'block';
+      document.getElementById('detailName').textContent = 'New User';
+      document.getElementById('detailEmail').textContent = '';
+      document.getElementById('inpFullName').value = '';
+      document.getElementById('inpPhone').value = '';
+      document.getElementById('inpEmail').value = '';
+      document.getElementById('inpCountry').value = '';
+      document.getElementById('inpExtra').value = '';
+      document.getElementById('roleSelect').value = 'customer';
+      document.getElementById('rawData').textContent = '{}';
+    }
+
+    function showEmptyDetail(){
+      document.getElementById('detailsEmpty').style.display = 'block';
+      document.getElementById('userDetailPane').style.display = 'none';
+    }
+
+    function saveChanges(){
+      // If selectedIndex === -1 => create new user
+      if (selectedIndex === -1) {
+        const newUser = {
+          fullName: document.getElementById('inpFullName').value.trim() || 'Unnamed',
+          phone: document.getElementById('inpPhone').value.trim() || '',
+          email: document.getElementById('inpEmail').value.trim() || ('user' + Date.now() + '@local'),
+          country: document.getElementById('inpCountry').value.trim() || '',
+          extra: document.getElementById('inpExtra').value.trim() || '',
+          role: document.getElementById('roleSelect').value || 'customer',
+          authType: 'email',
+          createdAt: new Date().toISOString()
+        };
+        users.push(newUser);
+        selectedIndex = users.length - 1;
+        try { localStorage.setItem('registered_users', JSON.stringify(users)); } catch(e){}
+
+        // Try to POST to backend save-user endpoint (unprotected)
+        fetch('http://localhost:3000/api/save-user', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newUser)
+        }).then(r=>r.json()).then(res=>{
+          if (res && res.success) {
+            alert('User created and saved to server');
+            document.getElementById('rawData').textContent = JSON.stringify(newUser, null, 2);
+            renderList(); selectUser(selectedIndex);
+          } else {
+            alert('Created locally (server rejected): ' + (res && res.message)); renderList(); selectUser(selectedIndex);
+          }
+        }).catch(err=>{
+          alert('Created locally (server unreachable)'); renderList(); selectUser(selectedIndex);
+        });
+        return;
+      }
+
+      // Update existing user
+      const u = users[selectedIndex];
+      u.fullName = document.getElementById('inpFullName').value.trim();
+      u.phone = document.getElementById('inpPhone').value.trim();
+      u.email = document.getElementById('inpEmail').value.trim();
+      u.country = document.getElementById('inpCountry').value.trim();
+      u.extra = document.getElementById('inpExtra').value.trim();
+      u.role = document.getElementById('roleSelect').value;
+      // Save locally
+      try { localStorage.setItem('registered_users', JSON.stringify(users)); } catch(e){}
+
+      // Try to save to backend (admin protected). If admin token present, send PUT
+      const token = localStorage.getItem('admin_auth');
+      if (token) {
+        fetch('http://localhost:3000/api/admin/users/' + encodeURIComponent(u.email), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify(u)
+        }).then(r=>r.json()).then(res=>{
+          if (res && res.success) {
+            alert('Saved to server');
+            document.getElementById('rawData').textContent = JSON.stringify(u, null, 2);
+            renderList();
+          } else {
+            alert('Saved locally (server rejected): ' + (res && res.message));
+            renderList();
+          }
+        }).catch(err=>{
+          alert('Saved locally (server unreachable)');
+          renderList();
+        });
+      } else {
+        alert('Saved locally. Start server and login as admin to sync to file.');
+        renderList();
+      }
+    }
+
+    function deleteUser(){
+      if (selectedIndex === -1) return alert('Select a user first');
+      if (!confirm('Permanently delete this user?')) return;
+      const u = users[selectedIndex];
+      users.splice(selectedIndex,1);
+      selectedIndex = -1;
+      try { localStorage.setItem('registered_users', JSON.stringify(users)); } catch(e){}
+      // Attempt server delete if token
+      const token = localStorage.getItem('admin_auth');
+      if (token) {
+        fetch('http://localhost:3000/api/admin/users/' + encodeURIComponent(u.email), { method: 'DELETE', headers: { 'Authorization':'Bearer '+token } })
+          .then(r=>r.json()).then(res=>{ if (res && res.success) alert('Deleted on server'); else alert('Deleted locally'); renderList(); showEmptyDetail(); }).catch(()=>{ alert('Deleted locally (server unreachable)'); renderList(); showEmptyDetail(); });
+      } else {
+        alert('Deleted locally'); renderList(); showEmptyDetail();
+      }
+    }
+
+    function downloadJSON(){
+      const blob = new Blob([JSON.stringify(users, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'registered_users.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // Init
+    loadUsers();
+  </script>
+</body>
+</html>

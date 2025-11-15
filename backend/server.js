@@ -1,16 +1,327 @@
 const express = require('express');
+const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
+const { verifyAdmin, createUser, getAllUsers, updateUser, deleteUser, verifyToken, storeUserToken, updateAdminCredentials } = require('./admin-auth');
+
+// Users file path
+const USERS_FILE = path.join(__dirname, '../registered_users.json');
+
+// Helper to read all users
+function readAllUsers() {
+    try {
+        if (fs.existsSync(USERS_FILE)) {
+            const data = fs.readFileSync(USERS_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (e) {
+        console.error('Error reading registered_users.json:', e);
+    }
+    return [];
+}
+
+// Helper to write all users
+function writeAllUsers(users) {
+    try {
+        fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error writing registered_users.json:', e);
+        return false;
+    }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
+
+// Security headers
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    next();
+});
+
+// Authentication middleware
+const authenticateAdmin = async (req, res, next) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'No token provided' });
+    }
+    
+    try {
+        const result = await verifyToken(token);
+        if (result.success) {
+            req.user = result.user;
+            next();
+        } else {
+            res.status(401).json({ success: false, message: 'Invalid token' });
+        }
+    } catch (error) {
+        res.status(401).json({ success: false, message: 'Authentication failed' });
+    }
+};
+
+// Protected route for admin.html (must come before static middleware)
+app.get('/admin.html', authenticateAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'admin.html'));
+});
+
+// Add a less obvious admin route as well
+app.get('/dashboard', authenticateAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'admin.html'));
+});
+
+// Serve static files from the parent directory (where admin.html is located)
+app.use(express.static(path.join(__dirname, '..')));
+
+// Admin login endpoint
+app.post('/api/admin-login', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ success: false, message: 'Username and password required' });
+    }
+    try {
+        const result = await verifyAdmin(username, password);
+        if (result.success) {
+            // Generate a secure token
+            const token = await bcrypt.hash(Date.now().toString() + username, 8);
+            
+            // Store token for the user
+            await storeUserToken(username, token);
+            
+            res.json({ 
+                success: true, 
+                token,
+                user: result.user
+            });
+        } else {
+            res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+    } catch (e) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// User management endpoints
+app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
+    try {
+        const users = getAllUsers();
+        res.json({ success: true, users });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to fetch users' });
+    }
+});
+
+app.post('/api/admin/users', authenticateAdmin, async (req, res) => {
+    const { username, email, role, password } = req.body;
+    if (!username || !email || !role || !password) {
+        return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+    
+    try {
+        const result = await createUser({ username, email, role, password });
+        if (result.success) {
+            res.json({ success: true, user: result.user });
+        } else {
+            res.status(400).json({ success: false, message: result.message });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to create user' });
+    }
+});
+
+app.put('/api/admin/users/:username', authenticateAdmin, async (req, res) => {
+    const { username } = req.params;
+    const updateData = req.body;
+    
+    try {
+        const result = await updateUser(username, updateData);
+        if (result.success) {
+            res.json({ success: true, user: result.user });
+        } else {
+            res.status(404).json({ success: false, message: result.message });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to update user' });
+    }
+});
+
+app.delete('/api/admin/users/:username', authenticateAdmin, (req, res) => {
+    const { username } = req.params;
+    
+    try {
+        const result = deleteUser(username);
+        if (result.success) {
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ success: false, message: result.message });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to delete user' });
+    }
+});
+
+app.put('/api/admin/credentials', authenticateAdmin, async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ success: false, message: 'Username and password are required' });
+    }
+    
+    try {
+        const result = await updateAdminCredentials(username, password);
+        if (result.success) {
+            res.json({ success: true, message: 'Admin credentials updated successfully' });
+        } else {
+            res.status(500).json({ success: false, message: result.message });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to update admin credentials' });
+    }
+});
+
+// API to save a new user
+app.post('/api/save-user', (req, res) => {
+    const user = req.body;
+    if (!user || !user.email) {
+        return res.status(400).json({ success: false, message: 'User data missing or invalid' });
+    }
+    const users = readAllUsers();
+    if (users.some(u => u.email === user.email)) {
+        return res.status(409).json({ success: false, message: 'User already exists' });
+    }
+    users.push(user);
+    if (writeAllUsers(users)) {
+        res.json({ success: true, message: 'User saved successfully' });
+    } else {
+        res.status(500).json({ success: false, message: 'Failed to save user' });
+    }
+});
+
+
+// Orders file path
+const ORDERS_FILE = path.join(__dirname, '../orders.json');
+
+// Admin notification email (site owner)
+const ADMIN_EMAIL = 'info.buypva@gmail.com';
+// Helper to read all orders
+function readAllOrders() {
+    try {
+        if (fs.existsSync(ORDERS_FILE)) {
+            const data = fs.readFileSync(ORDERS_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (e) {
+        console.error('Error reading orders.json:', e);
+    }
+    return [];
+}
+
+// Helper to write all orders
+function writeAllOrders(orders) {
+    try {
+        fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error writing orders.json:', e);
+        return false;
+    }
+}
+
+
+// API to save a new order
+app.post('/api/save-order', (req, res) => {
+    const order = req.body;
+    if (!order || !order.orderId) {
+        return res.status(400).json({ success: false, message: 'Order data missing or invalid' });
+    }
+    const orders = readAllOrders();
+    orders.push(order);
+    if (writeAllOrders(orders)) {
+        // After saving the order, attempt to send ADMIN-only notification (customer delivery email
+        // will be sent later when admin marks order as 'Completed')
+        (async () => {
+            if (!transporter || !emailConfig) {
+                console.warn('Email not configured. Skipping admin notification for new order.');
+                return;
+            }
+
+            try {
+                // Build items HTML for admin message
+                let itemsHTML = '';
+                (order.items || []).forEach(item => {
+                    const unitPrice = item.unitPrice || item.price || 0;
+                    const itemTotal = item.total || (unitPrice * (item.quantity || 1));
+                    itemsHTML += `\n                        <tr>\n                            <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>\n                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity || 1}</td>\n                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Number(unitPrice).toFixed(2)}</td>\n                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Number(itemTotal).toFixed(2)}</td>\n                        </tr>\n                    `;
+                });
+
+                const adminMail = {
+                    from: { name: 'BuyPvaAccount', address: emailConfig.email },
+                    to: ADMIN_EMAIL,
+                    subject: `New Order Placed #${order.orderId}`,
+                    html: `<!doctype html><html><body><h2>New order received</h2>\n                        <p>Order #: <strong>${order.orderId}</strong></p>\n                        <p>Customer: <strong>${order.customer?.fullName || order.customer?.email || order.email}</strong></p>\n                        <p>Email: ${order.customer?.email || order.email || 'N/A'}</p>\n                        <p>Phone: ${order.customer?.phone || 'N/A'}</p>\n                        <h3>Items</h3>\n                        <table style="width:100%; border-collapse:collapse;">${itemsHTML}</table>\n                        <p>Total: <strong>$${(order.totals && order.totals.tot) ? Number(order.totals.tot).toFixed(2) : '0.00'}</strong></p>\n                        <p>View orders in admin dashboard.</p>\n                        </body></html>`,
+                    text: `New order #${order.orderId} placed by ${order.customer?.fullName || order.customer?.email || 'N/A'}`
+                };
+
+                try {
+                    await transporter.sendMail(adminMail);
+                    console.log(`✅ Admin notification sent for order ${order.orderId}`);
+                } catch (sendErr) {
+                    console.error(`❌ Failed to send admin notification for order ${order.orderId}:`, sendErr);
+                }
+
+                // Attempt to send order confirmation to the customer (immediate confirmation)
+                try {
+                    const customerEmail = order.customer?.email || order.email;
+                    if (customerEmail) {
+                        const customerMail = {
+                            from: { name: 'BuyPvaAccount', address: emailConfig.email },
+                            to: customerEmail,
+                            subject: `Order Confirmation - #${order.orderId}`,
+                            html: `<!doctype html><html><body><h2>Thank you for your order</h2>
+                                <p>Order #: <strong>${order.orderId}</strong></p>
+                                <p>Hello ${order.customer?.fullName || customerEmail},</p>
+                                <p>We have received your order. Here are the details:</p>
+                                <h3>Items</h3>
+                                <table style="width:100%; border-collapse:collapse;">${itemsHTML}</table>
+                                <p>Total: <strong>$${(order.totals && order.totals.tot) ? Number(order.totals.tot).toFixed(2) : '0.00'}</strong></p>
+                                <p>We will notify you when your order is delivered.</p>
+                                <p>Best regards,<br/>BuyPvaAccount Team</p>
+                                </body></html>`,
+                            text: `Order Confirmation - #${order.orderId}\n\nThank you for your order. We will notify you when your order is delivered.`
+                        };
+
+                        try {
+                            await transporter.sendMail(customerMail);
+                            console.log(`✅ Order confirmation sent to customer ${customerEmail} for order ${order.orderId}`);
+                        } catch (custErr) {
+                            console.error(`❌ Failed to send order confirmation to ${customerEmail} for order ${order.orderId}:`, custErr);
+                        }
+                    } else {
+                        console.warn(`No customer email provided for order ${order.orderId}; skipping customer confirmation.`);
+                    }
+                } catch (custPrepareErr) {
+                    console.error('Error preparing customer confirmation email:', custPrepareErr);
+                }
+            } catch (emailErr) {
+                console.error('Error preparing admin notification email:', emailErr);
+            }
+        })();
+
+        res.json({ success: true, message: 'Order saved successfully' });
+    } else {
+        res.status(500).json({ success: false, message: 'Failed to save order' });
+    }
+});
+
 
 // Email configuration file path
 const EMAIL_CONFIG_FILE = path.join(__dirname, 'email-config.json');
@@ -665,6 +976,171 @@ BuyPvaAccount Team
             success: false, 
             message: 'Failed to send order delivery confirmation email'
         });
+    }
+});
+
+// Helper to send delivery email for an order (used by endpoint and status update)
+async function sendDeliveryEmail(orderData) {
+    if (!transporter || !emailConfig) {
+        throw new Error('Email service not configured');
+    }
+
+    // Build order items HTML
+    let itemsHTML = '';
+    (orderData.items || []).forEach(item => {
+        const unitPrice = item.unitPrice || item.price || 0;
+        const itemTotal = item.total || (unitPrice * item.quantity);
+        itemsHTML += `
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Number(unitPrice).toFixed(2)}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Number(itemTotal).toFixed(2)}</td>
+            </tr>
+        `;
+    });
+
+    const mailOptions = {
+        from: { name: 'BuyPvaAccount', address: emailConfig.email },
+        to: orderData.customer?.email || orderData.email,
+        subject: `🎉 Order Delivered Successfully #${orderData.orderId} - BuyPvaAccount`,
+        html: `<!doctype html><html><body><h2>Order Delivered</h2><p>Order #: <strong>${orderData.orderId}</strong></p><table style="width:100%; border-collapse:collapse;">${itemsHTML}</table><p>Total: <strong>$${(orderData.totals && orderData.totals.tot) ? Number(orderData.totals.tot).toFixed(2) : '0.00'}</strong></p><p>Thank you for your purchase.</p></body></html>`,
+        text: `Your order #${orderData.orderId} has been delivered. Total: $${(orderData.totals && orderData.totals.tot) ? Number(orderData.totals.tot).toFixed(2) : '0.00'}`
+    };
+
+    return transporter.sendMail(mailOptions);
+}
+
+// Endpoint to update order status and persist to orders.json
+app.put('/api/orders/:orderId/status', async (req, res) => {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    if (!orderId || !status) {
+        return res.status(400).json({ success: false, message: 'orderId and status are required' });
+    }
+
+    try {
+        const orders = readAllOrders();
+        const idx = orders.findIndex(o => String(o.orderId) === String(orderId));
+        if (idx === -1) return res.status(404).json({ success: false, message: 'Order not found' });
+
+        const oldStatus = orders[idx].status;
+        orders[idx].status = status;
+        // Add/update status change timestamp
+        orders[idx].statusUpdatedAt = new Date().toISOString();
+
+        const writeOk = writeAllOrders(orders);
+        if (!writeOk) return res.status(500).json({ success: false, message: 'Failed to persist order status' });
+
+        // If status moved to completed, attempt to send delivery email (non-blocking)
+        if (status === 'completed') {
+            (async () => {
+                try {
+                    await sendDeliveryEmail(orders[idx]);
+                    console.log(`✅ Delivery email sent for order ${orderId}`);
+                } catch (e) {
+                    console.error(`❌ Failed to send delivery email for order ${orderId}:`, e.message || e);
+                }
+            })();
+        }
+
+        return res.json({ success: true, message: 'Order status updated', order: orders[idx], orders });
+    } catch (err) {
+        console.error('Error updating order status:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Endpoint to delete an order (persist deletion to orders.json)
+app.delete('/api/orders/:orderId', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        if (!orderId) return res.status(400).json({ success: false, message: 'orderId required' });
+
+        const orders = readAllOrders();
+        const idx = orders.findIndex(o => String(o.orderId) === String(orderId));
+        if (idx === -1) return res.status(404).json({ success: false, message: 'Order not found' });
+
+        const removed = orders.splice(idx, 1)[0];
+        const ok = writeAllOrders(orders);
+        if (!ok) return res.status(500).json({ success: false, message: 'Failed to persist deletion' });
+
+        console.log(`🗑️ Order deleted: ${orderId}`);
+        return res.json({ success: true, message: 'Order deleted', order: removed, orders });
+    } catch (err) {
+        console.error('Error deleting order:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Endpoint to reset a user's password (updates registered_users.json)
+app.post('/api/reset-password', (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ success: false, message: 'Email and password are required' });
+        }
+
+        const users = readAllUsers();
+        const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
+        if (idx === -1) {
+            return res.status(404).json({ success: false, message: 'No account found for this email' });
+        }
+
+        // Store password as base64 to match existing format used by the frontend
+        try {
+            users[idx].password = Buffer.from(String(password)).toString('base64');
+        } catch (e) {
+            users[idx].password = btoa ? btoa(String(password)) : Buffer.from(String(password)).toString('base64');
+        }
+
+        const ok = writeAllUsers(users);
+        if (!ok) return res.status(500).json({ success: false, message: 'Failed to persist new password' });
+
+        console.log(`🔐 Password reset for ${email}`);
+        return res.json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        console.error('Error in /api/reset-password:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Public login endpoint for clients
+app.post('/api/login', (req, res) => {
+    try {
+        const { email, password } = req.body || {};
+        if (!email || !password) {
+            return res.status(400).json({ success: false, message: 'Email and password are required' });
+        }
+
+        const users = readAllUsers();
+        const lowerEmail = String(email).toLowerCase();
+        const user = users.find(u => (u.email || '').toLowerCase() === lowerEmail && (u.authType === 'email' || !u.authType));
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'No account found with this email' });
+        }
+
+        // Compare password: stored passwords are base64 encoded in this project
+        const encoded = Buffer.from(String(password)).toString('base64');
+        const stored = String(user.password || '');
+        if (stored !== encoded) {
+            return res.status(401).json({ success: false, message: 'Incorrect password' });
+        }
+
+        // Return minimal user profile
+        const safeUser = {
+            email: user.email,
+            fullName: user.fullName,
+            phone: user.phone,
+            country: user.country,
+            authType: user.authType || 'email'
+        };
+
+        return res.json({ success: true, user: safeUser });
+    } catch (err) {
+        console.error('/api/login error:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 

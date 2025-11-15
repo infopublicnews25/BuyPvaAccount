@@ -1,8 +1,149 @@
-{
-    "password":  "dGVzdDEyMw==",
-    "fullName":  "Test Customer",
-    "phone":  "01700000000",
-    "authType":  "email",
-    "email":  "test@customer.com",
-    "country":  "Bangladesh"
-}
+[
+  {
+    "password": "dGVzdDEyMw==",
+    "fullName": "Test Customer",
+    "phone": "01700000000",
+    "authType": "email",
+    "email": "test@customer.com",
+    "country": "Bangladesh"
+  },
+  {
+    "fullName": "sagor",
+    "email": "sagor@gmail.com",
+    "phone": "+880179372454",
+    "country": "Bangladesh",
+    "password": "WngxMTIyMzM=",
+    "authType": "email",
+    "createdAt": "2025-11-14T10:50:37.041Z"
+  },
+  {
+    "fullName": "Sagormia123",
+    "email": "sagormia123@gmail.com",
+    "phone": "+88017937244125",
+    "country": "Bangladesh",
+    "password": "WngxMTIyMzM=",
+    "authType": "email",
+    "createdAt": "2025-11-14T10:51:48.546Z"
+  },
+  {
+    "fullName": "fsdfgdsfg sdgfgdsfgdfgdsg",
+    "email": "sdfgdfgdsg@gmail.com",
+    "phone": "",
+    "country": "Bangladesh",
+    "password": "QXV0bzBldXp5Nzdr",
+    "authType": "email",
+    "autoCreated": true,
+    "createdAt": "2025-11-15T12:20:46.421Z"
+  },
+  {
+    "fullName": "dsfdsfafs",
+    "email": "dsfsafsf@gmail.com",
+    "phone": "+8801793765476",
+    "country": "Bangladesh",
+    "password": "WngxMTIyMzM=",
+    "authType": "email",
+    "createdAt": "2025-11-15T12:26:52.652Z"
+  },
+  {
+    "fullName": "asdfasdfsdf",
+    "email": "sdfsdfdsfgdf@gmail.com",
+    "phone": "456464564565",
+    "country": "Barbados",
+    "password": "WngxMTIyMzM=",
+    "authType": "email",
+    "createdAt": "2025-11-15T12:30:08.783Z"
+  },
+  {
+    "fullName": "sdgdfgdgdsgd",
+    "email": "sdgdfgdgdsgd@gmail.com",
+    "phone": "+88017937249",
+    "country": "Bhutan",
+    "password": "WngxMTIyMzM=",
+    "authType": "email",
+    "createdAt": "2025-11-15T12:35:12.094Z"
+  },
+  {
+    "fullName": "ertwtw",
+    "email": "fasdgfsgdfgf@gmail.com",
+    "phone": "7654r764536346456",
+    "country": "Burundi",
+    "password": "WngxMTIyMzM=",
+    "authType": "email",
+    "createdAt": "2025-11-15T12:36:49.350Z"
+  },
+  {
+    "fullName": "asfsdfsfsafd",
+    "email": "fasdfaerw@gmail.com",
+    "phone": "546453456",
+    "country": "Cyprus",
+    "password": "WngxMTIyMzM=",
+    "authType": "email",
+    "createdAt": "2025-11-15T12:38:26.717Z"
+  },
+  {
+    "fullName": "asdfgsdgdsf",
+    "email": "dsffsdffsfa@gmail.com",
+    "phone": "6546546",
+    "country": "Belgium",
+    "password": "WngxMTIyIyM=",
+    "authType": "email",
+    "createdAt": "2025-11-15T12:41:41.334Z"
+  },
+  {
+    "fullName": "aserwrer",
+    "email": "sfsdfdsg@gmail.com",
+    "phone": "5435345435",
+    "country": "Belize",
+    "password": "WngxMTIyMzM=",
+    "authType": "email",
+    "createdAt": "2025-11-15T12:43:44.917Z"
+  },
+  {
+    "fullName": "erertwt3",
+    "email": "fsafsdfgert4@gmail.com",
+    "phone": "543645",
+    "country": "Belize",
+    "password": "WngxMTIyMzM=",
+    "authType": "email",
+    "createdAt": "2025-11-15T12:50:53.878Z"
+  },
+  {
+    "fullName": "Sahadat Hossen",
+    "email": "createsads@gmail.com",
+    "phone": "",
+    "country": "Bangladesh",
+    "password": "dGVzdDEyMw==",
+    "authType": "email",
+    "autoCreated": true,
+    "createdAt": "2025-11-15T12:52:52.601Z"
+  },
+  {
+    "fullName": "khan mia",
+    "email": "khanmia5465r@gmail.com",
+    "phone": "3152365456456",
+    "country": "Bangladesh",
+    "password": "QXV0b3h4NGhpMWds",
+    "authType": "email",
+    "autoCreated": true,
+    "createdAt": "2025-11-15T13:52:47.953Z"
+  },
+  {
+    "fullName": "fgfdgdfgs",
+    "email": "sdfgdsfgdfsg@gmail.com",
+    "phone": "546546456546",
+    "country": "Barbados",
+    "password": "WngxMTIyMzM=",
+    "authType": "email",
+    "createdAt": "2025-11-15T14:27:51.945Z"
+  },
+  {
+    "fullName": "bacho vai",
+    "email": "financetoinvestment@gmail.com",
+    "phone": "+45646546546",
+    "country": "Azerbaijan",
+    "password": "WngxMTIyMzM=",
+    "authType": "email",
+    "autoCreated": true,
+    "createdAt": "2025-11-15T14:30:13.956Z"
+  }
+]

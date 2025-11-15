@@ -327,70 +327,85 @@
     const MAX_STOCK=500;
 
     // Demo items (replace with your catalog)
+    // DEFAULT_PRODUCTS: used to supplement the catalog for logged-in users
+    const DEFAULT_PRODUCTS = [
+      {title:'Gmail Account', price:0.25, note:'Good quality gmail<br>easy Access<br>Fast Login', image: 'path/to/gmail.jpg', quantity: 100},
+      {title:'Landing Page Kit', price:9, note:'HTML/CSS responsive sections.', quantity: 100},
+      {title:'Yahoo Account', price:0.20, note:'Fresh Yahoo accounts for registration.', quantity: 80},
+      {title:'Outlook Account', price:0.30, note:'Secure Outlook accounts with recovery set.', quantity: 60},
+      {title:'Facebook Account', price:0.75, note:'Verified-ish Facebook pages/accounts.', quantity: 120},
+      {title:'Instagram Account', price:0.85, note:'Active Instagram accounts with followers.', quantity: 40}
+    ];
+
     const PRODUCTS = (() => {
       try {
-        const stored = localStorage.getItem('admin_products_v1');
-        if (stored) {
-          return JSON.parse(stored);
+        const storedRaw = localStorage.getItem('admin_products_v1');
+        const stored = storedRaw ? JSON.parse(storedRaw) : null;
+
+        // Merge DEFAULT_PRODUCTS with stored admin products so guests and
+        // logged-in users see the same catalog. Stored items override defaults.
+        const map = new Map();
+        DEFAULT_PRODUCTS.forEach(p => map.set((p.title||'').toLowerCase(), Object.assign({}, p)));
+        if (Array.isArray(stored)) {
+          stored.forEach(p => map.set((p.title||'').toLowerCase(), Object.assign({}, p)));
         }
+        const merged = Array.from(map.values());
+        if (merged.length) return merged;
       } catch (e) {
         console.error('Error loading products:', e);
       }
-      return [
-        {title:'Gmail Account', price:0.25, note:'Good quality gmail<br>easy Access<br>Fast Login', image: 'path/to/gmail.jpg'},
-        {title:'Landing Page Kit', price:9, note:'HTML/CSS responsive sections.'}
-      ];
+      // Fallback to defaults (show all default products)
+      return DEFAULT_PRODUCTS.slice();
     })();
 
-    // Stock updates every 30 minutes with small random quantities
-    function seeded(s){ 
-      const d = new Date();
-      // Use 30-minute intervals instead of hours
-      d.setMinutes(Math.floor(d.getMinutes()/30) * 30, 0, 0); 
-      s = s+'|'+d.toISOString();
-      let x=0; 
-      for(let i=0;i<s.length;i++) x=(x*31+s.charCodeAt(i))>>>0;
-      return ()=>{ x^=x<<13; x^=x>>>17; x^=x<<5; return (x>>>0)/4294967296; };
+
+    // --- Stock update logic ---
+    function getRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
     }
+
+    function updateStockRandomSubset() {
+      // Pick a random number of items to update (at least 1, up to half the products)
+      const numToUpdate = Math.max(1, Math.floor(Math.random() * Math.ceil(PRODUCTS.length / 2)));
+      // Shuffle product indices
+      const indices = PRODUCTS.map((_, i) => i).sort(() => Math.random() - 0.5);
+      let changed = false;
+      for (let j = 0; j < numToUpdate; j++) {
+        const i = indices[j];
+        const p = PRODUCTS[i];
+        if (typeof p.quantity !== 'number') p.quantity = 100;
+        // Reduce stock by random 3,4,10,20
+        let reduceBy = getRandom([3,4,10,20]);
+        p.quantity = Math.max(0, p.quantity - reduceBy);
+        // If stock drops to 10 or below, refill to random 50,60,70,80,90
+        if (p.quantity <= 10) {
+          p.quantity = getRandom([50,60,70,80,90]);
+        }
+        // Never allow stock to go to 0
+        if (p.quantity === 0) {
+          p.quantity = getRandom([50,60,70,80,90]);
+        }
+        changed = true;
+      }
+      if (changed) {
+        localStorage.setItem('admin_products_v1', JSON.stringify(PRODUCTS));
+      }
+    }
+
+    // Only update stock every 15 minutes, not on page load
+    setInterval(() => {
+      updateStockRandomSubset();
+      render();
+    }, 15 * 60 * 1000);
+
     function qtyFor(p){
       if(p.forceZero) return 0;
       return p.quantity || 0;
     }
-    
+
     // Function to render product row and details
     function renderProduct(p) {
-      // Create main row
-      const row = document.createElement('div');
-      row.className = 'row cols';
-      row.dataset.id = idOf(p.title);
-      row.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 12px;">
-          ${p.image ? `<img src="${p.image}" alt="${p.title}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">` : ''}
-          <div class="title" role="button" tabindex="0" aria-expanded="false">${p.title}</div>
-        </div>
-        <div class="qty">${qtyFor(p)}</div>
-        <div class="price">${money(p.price)}</div>
-        <div class="buy"><button type="button">Buy Now</button></div>
-      `;
-
-      // Create details section
-      const det = document.createElement('div');
-      det.className = 'details';
-      det.innerHTML = `
-        <div class="inner" style="padding: 20px;">
-          <div style="display: flex; gap: 16px; align-items: flex-start;">
-            ${p.image ? 
-              `<img src="${p.image}" alt="${p.title}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">` :
-              `<div class="d-logo">📦</div>`
-            }
-            <div class="muted" style="margin-top: 8px;">
-              ${p.note || 'Delivery: Email + Password + Login instructions'}
-            </div>
-          </div>
-        </div>
-      `;
-
-      return { row, det };
+      // ...existing code...
     }
 
     const rowsHost=document.getElementById('rows');
@@ -527,6 +542,21 @@
       const qty = Math.max(1, parseInt(mcQty.value||'1',10)||1);
       const item = { id: currentItem.id, name: currentItem.name, unitPrice: currentItem.unitPrice, quantity: qty, currency:'USD' };
       addToCart(item);
+      // Reduce product quantity after purchase
+      const product = PRODUCTS.find(p => idOf(p.title) === item.id);
+      if (product && typeof product.quantity === 'number') {
+        product.quantity = Math.max(0, product.quantity - qty);
+        // If stock drops to 10 or below, refill to random 50,60,70,80,90
+        if (product.quantity <= 10) {
+          product.quantity = getRandom([50,60,70,80,90]);
+        }
+        // Never allow stock to go to 0
+        if (product.quantity === 0) {
+          product.quantity = getRandom([50,60,70,80,90]);
+        }
+        localStorage.setItem('admin_products_v1', JSON.stringify(PRODUCTS));
+        render();
+      }
       overlay.style.display='none'; document.body.style.overflow='';
       location.href = CART_URL;
     });

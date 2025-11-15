@@ -240,30 +240,49 @@
     // ---------- auto-register user from billing details ----------
     function autoRegisterUser(email, fullName, phone, country) {
       try {
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        
+        // Use the repository-compatible key 'registered_users' so UI and server
+        // code can discover new users. Also attempt to notify backend to persist.
+        const key = 'registered_users';
+        const users = JSON.parse(localStorage.getItem(key) || '[]');
+
         // Check if user already exists with this email
-        const existingUser = users.find(u => u.email === email);
+        const existingUser = users.find(u => (u.email || '').toLowerCase() === (email || '').toLowerCase());
         if (existingUser) {
           console.log('User already exists with email:', email);
           return false; // User already exists, no need to create
         }
-        
-        // Create new user profile with auto-generated password
+
+        // Create new user profile with auto-generated password (base64 placeholder)
         const autoPassword = 'Auto' + Math.random().toString(36).substr(2, 8);
         const newUser = {
           fullName: fullName,
           email: email,
           phone: phone || '',
           country: country || '',
-          password: btoa(autoPassword), // Base64 encoded password
+          password: btoa(autoPassword), // Base64 encoded placeholder password
           authType: 'email',
           autoCreated: true, // Flag to indicate auto-created account
           createdAt: new Date().toISOString()
         };
-        
+
         users.push(newUser);
-        localStorage.setItem('users', JSON.stringify(users));
+        try { localStorage.setItem(key, JSON.stringify(users)); } catch(e) { console.warn('Could not save registered_users locally', e); }
+
+        // Try to persist on backend (non-protected endpoint /api/save-user)
+        fetch('http://localhost:3000/api/save-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newUser)
+        }).then(r=>r.json()).then(res=>{
+          if (res && res.success) {
+            console.log('Auto-registered user persisted to server:', email);
+          } else {
+            console.warn('Server rejected saving auto-registered user:', res && res.message);
+          }
+        }).catch(err=>{
+          console.warn('Could not reach backend to save auto-registered user:', err);
+        });
+
         console.log('Auto-created user profile for:', email);
         return true; // New user created
       } catch (error) {
@@ -329,6 +348,20 @@
           loginTime: new Date().toISOString()
         };
         localStorage.setItem('client_auth', JSON.stringify(authData));
+        // Send order to backend for persistent storage
+        fetch('http://localhost:3000/api/save-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(order)
+        }).then(r => r.json()).then(result => {
+          if (!result.success) {
+            console.error('Failed to save order to backend:', result.message);
+          } else {
+            console.log('Order saved to backend.');
+          }
+        }).catch(err => {
+          console.error('Error saving order to backend:', err);
+        });
       } catch(err) {
         console.error('Error saving order:', err);
       }
@@ -419,7 +452,7 @@
     // Send order confirmation email
     async function sendOrderConfirmationEmail(email, orderData) {
       try {
-        const response = await fetch('http://localhost:3000/api/send-order-confirmation', {
+        const response = await fetch('http://localhost:3001/api/send-order-confirmation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, orderData })

@@ -49,7 +49,9 @@
         <div class="links">Don''t have an account? <a href="signup.html">Sign up here</a></div>
     </div>
     <script>
-        document.getElementById("loginForm").addEventListener("submit", function(e) {
+        const BACKEND_URL = 'http://localhost:3000';
+
+        document.getElementById("loginForm").addEventListener("submit", async function(e) {
             e.preventDefault();
             const email = document.getElementById("email").value.trim().toLowerCase();
             const password = document.getElementById("password").value;
@@ -57,31 +59,42 @@
                 showMessage("Please enter both email and password", "error");
                 return;
             }
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing in...';
+
             try {
-                const users = JSON.parse(localStorage.getItem("users") || "[]");
-                const user = users.find(u => u.email === email && u.authType === "email");
-                if (!user) {
-                    showMessage("No account found with this email. Please sign up first.", "error");
-                    return;
+                const resp = await fetch(`${BACKEND_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const result = await resp.json();
+                if (resp.ok && result.success) {
+                    const user = result.user;
+                    const authData = {
+                        email: user.email,
+                        fullName: user.fullName,
+                        phone: user.phone,
+                        country: user.country,
+                        authType: user.authType,
+                        loginTime: new Date().toISOString()
+                    };
+                    localStorage.setItem('client_auth', JSON.stringify(authData));
+                    showMessage('Login successful! Redirecting...', 'success');
+                    setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
+                } else {
+                    // Show server message or fallback
+                    showMessage(result.message || 'No account found with this email. Please sign up first.', 'error');
                 }
-                if (btoa(password) !== user.password) {
-                    showMessage("Incorrect password. Please try again.", "error");
-                    return;
-                }
-                const authData = {
-                    email: user.email,
-                    fullName: user.fullName,
-                    phone: user.phone,
-                    country: user.country,
-                    authType: "email",
-                    loginTime: new Date().toISOString()
-                };
-                localStorage.setItem("client_auth", JSON.stringify(authData));
-                showMessage("Login successful! Redirecting...", "success");
-                setTimeout(() => { window.location.href = "profile.html"; }, 1500);
-            } catch (error) {
-                console.error("Login error:", error);
-                showMessage("An error occurred during login. Please try again.", "error");
+            } catch (err) {
+                console.error('Login request failed:', err);
+                showMessage('Unable to contact server. Please try again later.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Login';
             }
         });
         function showMessage(text, type) {

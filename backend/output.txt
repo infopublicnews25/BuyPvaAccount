@@ -1,0 +1,4 @@
+🚀 Password reset server running on http://localhost:3000
+📧 Ready to send emails from: info.buypva@gmail.com
+✅ Email server is ready to send messages
+📧 Sending from: info.buypva@gmail.com
