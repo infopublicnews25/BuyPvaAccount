@@ -561,6 +561,8 @@
             <div class="tab-navigation" style="margin-bottom: 24px; border-bottom: 2px solid var(--line);">
                 <button class="tab-btn active" data-tab="products" onclick="switchTab('products')">📦 Products</button>
                 <button class="tab-btn" data-tab="users" onclick="switchTab('users')">👥 User Management</button>
+                <button class="tab-btn" data-tab="pages" onclick="switchTab('pages')">📄 Pages</button>
+                <button class="tab-btn" data-tab="posts" onclick="switchTab('posts')">📝 Posts</button>
                 <button class="tab-btn" data-tab="news" onclick="switchTab('news')">📰 News & Updates</button>
                 <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">⚙️ Settings</button>
             </div>
@@ -642,6 +644,125 @@
                             <!-- Users will be loaded here -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Pages Tab -->
+            <div id="pagesTab" class="tab-content">
+                <div class="pages-management-section" style="width: 100%;">
+                    <h2>📄 Pages Management</h2>
+                    
+                    <!-- Add Page Form -->
+                    <form id="pageForm" onsubmit="addPage(event)" style="margin-bottom: 20px; background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--line);">
+                        <h3 id="pageFormTitle">Add New Page</h3>
+                        <input type="hidden" id="pageEditId" value="">
+                        <div class="form-group">
+                            <label for="pageTitle">Title</label>
+                            <input type="text" id="pageTitle" required placeholder="Enter page title">
+                        </div>
+                        <div class="form-group">
+                            <label for="pageSlug">Slug</label>
+                            <input type="text" id="pageSlug" required placeholder="Enter page slug (e.g., about-us)">
+                        </div>
+                        <div class="form-group">
+                            <label for="pageContent">Content</label>
+                            <textarea id="pageContent" required placeholder="Enter page content (HTML allowed)" rows="10"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="pageStatus">Status</label>
+                            <select id="pageStatus" required>
+                                <option value="draft">Draft</option>
+                                <option value="published">Published</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="pageSubmitBtn">Add Page</button>
+                            <button type="button" class="btn btn-secondary" id="pageCancelBtn" onclick="cancelPageEdit()" style="display: none;">Cancel</button>
+                        </div>
+                    </form>
+
+                    <!-- Pages List -->
+                    <div style="background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--line);">
+                        <h3>Current Pages</h3>
+                        <table class="product-list" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Slug</th>
+                                    <th>Status</th>
+                                    <th>Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pagesTableBody">
+                                <!-- Pages will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Posts Tab -->
+            <div id="postsTab" class="tab-content">
+                <div class="posts-management-section" style="width: 100%;">
+                    <h2>📝 Posts Management</h2>
+                    
+                    <!-- Add Post Form -->
+                    <form id="postForm" onsubmit="addPost(event)" style="margin-bottom: 20px; background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--line);">
+                        <h3 id="postFormTitle">Add New Post</h3>
+                        <input type="hidden" id="postEditId" value="">
+                        <div class="form-group">
+                            <label for="postTitle">Title</label>
+                            <input type="text" id="postTitle" required placeholder="Enter post title">
+                        </div>
+                        <div class="form-group">
+                            <label for="postSlug">Slug</label>
+                            <input type="text" id="postSlug" required placeholder="Enter post slug (e.g., my-first-post)">
+                        </div>
+                        <div class="form-group">
+                            <label for="postContent">Content</label>
+                            <textarea id="postContent" required placeholder="Enter post content (HTML allowed)" rows="10"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="postCategories">Categories (comma-separated)</label>
+                            <input type="text" id="postCategories" placeholder="e.g., news, updates">
+                        </div>
+                        <div class="form-group">
+                            <label for="postTags">Tags (comma-separated)</label>
+                            <input type="text" id="postTags" placeholder="e.g., important, featured">
+                        </div>
+                        <div class="form-group">
+                            <label for="postStatus">Status</label>
+                            <select id="postStatus" required>
+                                <option value="draft">Draft</option>
+                                <option value="published">Published</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="postSubmitBtn">Add Post</button>
+                            <button type="button" class="btn btn-secondary" id="postCancelBtn" onclick="cancelPostEdit()" style="display: none;">Cancel</button>
+                        </div>
+                    </form>
+
+                    <!-- Posts List -->
+                    <div style="background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--line);">
+                        <h3>Current Posts</h3>
+                        <table class="product-list" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Slug</th>
+                                    <th>Categories</th>
+                                    <th>Status</th>
+                                    <th>Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="postsTableBody">
+                                <!-- Posts will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -1567,6 +1688,295 @@
             }
         }
 
+        // Pages Management Functions
+        async function loadPages() {
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                const response = await fetch('http://localhost:3000/api/pages', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    renderPages(data.pages);
+                } else {
+                    console.error('Failed to load pages:', data.message);
+                }
+            } catch (error) {
+                console.error('Error loading pages:', error);
+            }
+        }
+
+        function renderPages(pages) {
+            const tbody = document.getElementById('pagesTableBody');
+            tbody.innerHTML = '';
+            
+            pages.forEach(page => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${page.title}</td>
+                    <td>${page.slug}</td>
+                    <td><span class="status-badge status-${page.status === 'published' ? 'active' : 'inactive'}">${page.status}</span></td>
+                    <td>${new Date(page.updatedAt).toLocaleDateString()}</td>
+                    <td class="actions">
+                        <button class="btn-edit" onclick="editPage('${page.id}')">Edit</button>
+                        <button class="btn-delete" onclick="deletePage('${page.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function addPage(event) {
+            event.preventDefault();
+            const title = document.getElementById('pageTitle').value;
+            const slug = document.getElementById('pageSlug').value;
+            const content = document.getElementById('pageContent').value;
+            const status = document.getElementById('pageStatus').value;
+            const editId = document.getElementById('pageEditId').value;
+
+            if (!title || !slug || !content) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                const method = editId ? 'PUT' : 'POST';
+                const url = editId ? `http://localhost:3000/api/pages/${editId}` : 'http://localhost:3000/api/pages';
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ title, slug, content, status })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('pageForm').reset();
+                    document.getElementById('pageEditId').value = '';
+                    document.getElementById('pageFormTitle').textContent = 'Add New Page';
+                    document.getElementById('pageSubmitBtn').textContent = 'Add Page';
+                    document.getElementById('pageCancelBtn').style.display = 'none';
+                    loadPages();
+                    alert(editId ? 'Page updated successfully!' : 'Page added successfully!');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error saving page:', error);
+                alert('Failed to save page');
+            }
+        }
+
+        async function editPage(id) {
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                const response = await fetch(`http://localhost:3000/api/pages`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const page = data.pages.find(p => p.id === id);
+                    if (page) {
+                        document.getElementById('pageEditId').value = page.id;
+                        document.getElementById('pageTitle').value = page.title;
+                        document.getElementById('pageSlug').value = page.slug;
+                        document.getElementById('pageContent').value = page.content;
+                        document.getElementById('pageStatus').value = page.status;
+                        document.getElementById('pageFormTitle').textContent = 'Edit Page';
+                        document.getElementById('pageSubmitBtn').textContent = 'Update Page';
+                        document.getElementById('pageCancelBtn').style.display = 'inline-block';
+                        document.getElementById('pageTitle').focus();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading page for edit:', error);
+            }
+        }
+
+        function cancelPageEdit() {
+            document.getElementById('pageForm').reset();
+            document.getElementById('pageEditId').value = '';
+            document.getElementById('pageFormTitle').textContent = 'Add New Page';
+            document.getElementById('pageSubmitBtn').textContent = 'Add Page';
+            document.getElementById('pageCancelBtn').style.display = 'none';
+        }
+
+        async function deletePage(id) {
+            if (confirm('Are you sure you want to delete this page?')) {
+                try {
+                    const token = localStorage.getItem(AUTH_KEY);
+                    const response = await fetch(`http://localhost:3000/api/pages/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        loadPages();
+                        alert('Page deleted successfully!');
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Error deleting page:', error);
+                    alert('Failed to delete page');
+                }
+            }
+        }
+
+        // Posts Management Functions
+        async function loadPosts() {
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                const response = await fetch('http://localhost:3000/api/posts', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    renderPosts(data.posts);
+                } else {
+                    console.error('Failed to load posts:', data.message);
+                }
+            } catch (error) {
+                console.error('Error loading posts:', error);
+            }
+        }
+
+        function renderPosts(posts) {
+            const tbody = document.getElementById('postsTableBody');
+            tbody.innerHTML = '';
+            
+            posts.forEach(post => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${post.title}</td>
+                    <td>${post.slug}</td>
+                    <td>${post.categories ? post.categories.join(', ') : ''}</td>
+                    <td><span class="status-badge status-${post.status === 'published' ? 'active' : 'inactive'}">${post.status}</span></td>
+                    <td>${new Date(post.updatedAt).toLocaleDateString()}</td>
+                    <td class="actions">
+                        <button class="btn-edit" onclick="editPost('${post.id}')">Edit</button>
+                        <button class="btn-delete" onclick="deletePost('${post.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function addPost(event) {
+            event.preventDefault();
+            const title = document.getElementById('postTitle').value;
+            const slug = document.getElementById('postSlug').value;
+            const content = document.getElementById('postContent').value;
+            const categories = document.getElementById('postCategories').value.split(',').map(c => c.trim()).filter(c => c);
+            const tags = document.getElementById('postTags').value.split(',').map(t => t.trim()).filter(t => t);
+            const status = document.getElementById('postStatus').value;
+            const editId = document.getElementById('postEditId').value;
+
+            if (!title || !slug || !content) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                const method = editId ? 'PUT' : 'POST';
+                const url = editId ? `http://localhost:3000/api/posts/${editId}` : 'http://localhost:3000/api/posts';
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ title, slug, content, status, categories, tags })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('postForm').reset();
+                    document.getElementById('postEditId').value = '';
+                    document.getElementById('postFormTitle').textContent = 'Add New Post';
+                    document.getElementById('postSubmitBtn').textContent = 'Add Post';
+                    document.getElementById('postCancelBtn').style.display = 'none';
+                    loadPosts();
+                    alert(editId ? 'Post updated successfully!' : 'Post added successfully!');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error saving post:', error);
+                alert('Failed to save post');
+            }
+        }
+
+        async function editPost(id) {
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                const response = await fetch(`http://localhost:3000/api/posts`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const post = data.posts.find(p => p.id === id);
+                    if (post) {
+                        document.getElementById('postEditId').value = post.id;
+                        document.getElementById('postTitle').value = post.title;
+                        document.getElementById('postSlug').value = post.slug;
+                        document.getElementById('postContent').value = post.content;
+                        document.getElementById('postCategories').value = post.categories ? post.categories.join(', ') : '';
+                        document.getElementById('postTags').value = post.tags ? post.tags.join(', ') : '';
+                        document.getElementById('postStatus').value = post.status;
+                        document.getElementById('postFormTitle').textContent = 'Edit Post';
+                        document.getElementById('postSubmitBtn').textContent = 'Update Post';
+                        document.getElementById('postCancelBtn').style.display = 'inline-block';
+                        document.getElementById('postTitle').focus();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading post for edit:', error);
+            }
+        }
+
+        function cancelPostEdit() {
+            document.getElementById('postForm').reset();
+            document.getElementById('postEditId').value = '';
+            document.getElementById('postFormTitle').textContent = 'Add New Post';
+            document.getElementById('postSubmitBtn').textContent = 'Add Post';
+            document.getElementById('postCancelBtn').style.display = 'none';
+        }
+
+        async function deletePost(id) {
+            if (confirm('Are you sure you want to delete this post?')) {
+                try {
+                    const token = localStorage.getItem(AUTH_KEY);
+                    const response = await fetch(`http://localhost:3000/api/posts/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        loadPosts();
+                        alert('Post deleted successfully!');
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Error deleting post:', error);
+                    alert('Failed to delete post');
+                }
+            }
+        }
+
         // Tab switching function
         function switchTab(tabName) {
             console.log('Switching to tab:', tabName);
@@ -1605,6 +2015,10 @@
                 renderProducts();
             } else if (tabName === 'news') {
                 loadAdminNews();
+            } else if (tabName === 'pages') {
+                loadPages();
+            } else if (tabName === 'posts') {
+                loadPosts();
             }
             // Settings tab doesn't need to load data
         }

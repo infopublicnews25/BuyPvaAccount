@@ -35,6 +35,60 @@ function writeAllUsers(users) {
     }
 }
 
+// Pages file path
+const PAGES_FILE = path.join(__dirname, '../pages.json');
+
+// Helper to read all pages
+function readAllPages() {
+    try {
+        if (fs.existsSync(PAGES_FILE)) {
+            const data = fs.readFileSync(PAGES_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (e) {
+        console.error('Error reading pages.json:', e);
+    }
+    return [];
+}
+
+// Helper to write all pages
+function writeAllPages(pages) {
+    try {
+        fs.writeFileSync(PAGES_FILE, JSON.stringify(pages, null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error writing pages.json:', e);
+        return false;
+    }
+}
+
+// Posts file path
+const POSTS_FILE = path.join(__dirname, '../posts.json');
+
+// Helper to read all posts
+function readAllPosts() {
+    try {
+        if (fs.existsSync(POSTS_FILE)) {
+            const data = fs.readFileSync(POSTS_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (e) {
+        console.error('Error reading posts.json:', e);
+    }
+    return [];
+}
+
+// Helper to write all posts
+function writeAllPosts(posts) {
+    try {
+        fs.writeFileSync(POSTS_FILE, JSON.stringify(posts, null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error writing posts.json:', e);
+        return false;
+    }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -1141,6 +1195,178 @@ app.post('/api/login', (req, res) => {
     } catch (err) {
         console.error('/api/login error:', err);
         return res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Pages endpoints (admin protected)
+app.get('/api/pages', authenticateAdmin, (req, res) => {
+    try {
+        const pages = readAllPages();
+        res.json({ success: true, pages });
+    } catch (err) {
+        console.error('Error fetching pages:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch pages' });
+    }
+});
+
+app.post('/api/pages', authenticateAdmin, (req, res) => {
+    try {
+        const { title, slug, content, status = 'draft' } = req.body;
+        if (!title || !slug) {
+            return res.status(400).json({ success: false, message: 'Title and slug are required' });
+        }
+
+        const pages = readAllPages();
+        const newPage = {
+            id: Date.now().toString(),
+            title,
+            slug,
+            content: content || '',
+            status,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        pages.push(newPage);
+        if (writeAllPages(pages)) {
+            res.json({ success: true, message: 'Page created successfully', page: newPage });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to save page' });
+        }
+    } catch (err) {
+        console.error('Error creating page:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+app.put('/api/pages/:id', authenticateAdmin, (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, slug, content, status } = req.body;
+
+        const pages = readAllPages();
+        const idx = pages.findIndex(p => p.id === id);
+        if (idx === -1) {
+            return res.status(404).json({ success: false, message: 'Page not found' });
+        }
+
+        pages[idx] = { ...pages[idx], title, slug, content, status, updatedAt: new Date().toISOString() };
+        if (writeAllPages(pages)) {
+            res.json({ success: true, message: 'Page updated successfully', page: pages[idx] });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to update page' });
+        }
+    } catch (err) {
+        console.error('Error updating page:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+app.delete('/api/pages/:id', authenticateAdmin, (req, res) => {
+    try {
+        const { id } = req.params;
+        const pages = readAllPages();
+        const idx = pages.findIndex(p => p.id === id);
+        if (idx === -1) {
+            return res.status(404).json({ success: false, message: 'Page not found' });
+        }
+
+        const removed = pages.splice(idx, 1)[0];
+        if (writeAllPages(pages)) {
+            res.json({ success: true, message: 'Page deleted successfully' });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to delete page' });
+        }
+    } catch (err) {
+        console.error('Error deleting page:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Posts endpoints (admin protected)
+app.get('/api/posts', authenticateAdmin, (req, res) => {
+    try {
+        const posts = readAllPosts();
+        res.json({ success: true, posts });
+    } catch (err) {
+        console.error('Error fetching posts:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch posts' });
+    }
+});
+
+app.post('/api/posts', authenticateAdmin, (req, res) => {
+    try {
+        const { title, slug, content, status = 'draft', categories = [], tags = [] } = req.body;
+        if (!title || !slug) {
+            return res.status(400).json({ success: false, message: 'Title and slug are required' });
+        }
+
+        const posts = readAllPosts();
+        const newPost = {
+            id: Date.now().toString(),
+            title,
+            slug,
+            content: content || '',
+            status,
+            categories,
+            tags,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        posts.push(newPost);
+        if (writeAllPosts(posts)) {
+            res.json({ success: true, message: 'Post created successfully', post: newPost });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to save post' });
+        }
+    } catch (err) {
+        console.error('Error creating post:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+app.put('/api/posts/:id', authenticateAdmin, (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, slug, content, status, categories, tags } = req.body;
+
+        const posts = readAllPosts();
+        const idx = posts.findIndex(p => p.id === id);
+        if (idx === -1) {
+            return res.status(404).json({ success: false, message: 'Post not found' });
+        }
+
+        posts[idx] = { ...posts[idx], title, slug, content, status, categories, tags, updatedAt: new Date().toISOString() };
+        if (writeAllPosts(posts)) {
+            res.json({ success: true, message: 'Post updated successfully', post: posts[idx] });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to update post' });
+        }
+    } catch (err) {
+        console.error('Error updating post:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+app.delete('/api/posts/:id', authenticateAdmin, (req, res) => {
+    try {
+        const { id } = req.params;
+        const posts = readAllPosts();
+        const idx = posts.findIndex(p => p.id === id);
+        if (idx === -1) {
+            return res.status(404).json({ success: false, message: 'Post not found' });
+        }
+
+        const removed = posts.splice(idx, 1)[0];
+        if (writeAllPosts(posts)) {
+            res.json({ success: true, message: 'Post deleted successfully' });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to delete post' });
+        }
+    } catch (err) {
+        console.error('Error deleting post:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
