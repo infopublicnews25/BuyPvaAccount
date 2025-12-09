@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - BuyPvaAccount</title>
+    <meta name="description" content="Create your BuyPvaAccount account. Join our marketplace for premium PVA accounts and start your social media marketing journey.">
+    <meta name="keywords" content="signup, register, account, BuyPvaAccount, marketplace, PVA accounts">
+    <meta name="author" content="BuyPvaAccount">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
@@ -277,8 +282,14 @@
             strengthIndicator.textContent = password.length > 0 ? "Password strength: " + strength : "";
             strengthIndicator.className = "password-strength " + className;
         });
-        document.getElementById("signupForm").addEventListener("submit", function(e) {
+        document.getElementById("signupForm").addEventListener("submit", async function(e) {
             e.preventDefault();
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            
+            // Disable button and show loading
+            submitButton.disabled = true;
+            submitButton.textContent = 'Creating Account...';
+            
             const formData = {
                 fullName: document.getElementById("fullName").value.trim(),
                 email: document.getElementById("email").value.trim().toLowerCase(),
@@ -291,41 +302,87 @@
             };
             if (!formData.fullName || !formData.email || !formData.phone || !formData.country) {
                 showMessage("Please fill in all required fields", "error");
+                submitButton.disabled = false;
+                submitButton.textContent = 'Create Account';
                 return;
             }
             if (formData.password.length < 6) {
                 showMessage("Password must be at least 6 characters long", "error");
+                submitButton.disabled = false;
+                submitButton.textContent = 'Create Account';
                 return;
             }
             if (formData.password !== formData.confirmPassword) {
                 showMessage("Passwords do not match", "error");
+                submitButton.disabled = false;
+                submitButton.textContent = 'Create Account';
                 return;
             }
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(formData.email)) {
                 showMessage("Please enter a valid email address", "error");
+                submitButton.disabled = false;
+                submitButton.textContent = 'Create Account';
                 return;
             }
             try {
+                // Check if user already exists on backend
+                let backendCheckFailed = false;
+                try {
+                    // Get CSRF token first
+                    const csrfResponse = await fetch('http://localhost:3000/api/csrf-token');
+                    const csrfData = await csrfResponse.json();
+
+                    if (csrfData.success) {
+                        const checkResponse = await fetch('http://localhost:3000/api/check-user', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: formData.email,
+                                sessionId: csrfData.sessionId,
+                                _csrf: csrfData.csrfToken
+                            })
+                        });
+                        if (checkResponse.ok) {
+                            const checkResult = await checkResponse.json();
+                            if (checkResult.exists) {
+                                showMessage("An account with this email already exists. Please login.", "error");
+                                submitButton.disabled = false;
+                                submitButton.textContent = 'Create Account';
+                                return;
+                            }
+                        } else {
+                            backendCheckFailed = true;
+                        }
+                    } else {
+                        backendCheckFailed = true;
+                    }
+                } catch (e) {
+                    backendCheckFailed = true;
+                }
+                if (backendCheckFailed) {
+                    showMessage("Warning: Could not verify with server. Proceeding with signup.", "error");
+                    // Wait a bit
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+
                 // Use the shared `registered_users` key so the admin UI and other pages
                 // see the same user list. If backend is available, POST to it for
                 // repository persistence. Fallback: keep user in localStorage.
                 const users = JSON.parse(localStorage.getItem("registered_users") || "[]");
-                if (users.some(u => u.email === formData.email)) {
-                    showMessage("An account with this email already exists. Please login.", "error");
-                    return;
-                }
+                // Remove any existing entry for this email to avoid duplicates
+                const filteredUsers = users.filter(u => u.email !== formData.email);
                 const newUser = {
                     fullName: formData.fullName,
                     email: formData.email,
                     phone: formData.phone,
                     country: formData.country,
-                    password: btoa(formData.password),
+                    password: formData.password,
                     authType: "email",
                     createdAt: formData.createdAt
                 };
-                users.push(newUser);
-                localStorage.setItem("registered_users", JSON.stringify(users));
+                filteredUsers.push(newUser);
+                localStorage.setItem("registered_users", JSON.stringify(filteredUsers));
                 // Also update legacy `users` key for pages that still read it
                 try {
                     const legacy = JSON.parse(localStorage.getItem("users") || "[]");
@@ -335,24 +392,38 @@
                     localStorage.setItem("users", JSON.stringify([newUser]));
                 }
                 // Try to persist to backend at port 3000 (the project's server)
-                fetch('http://localhost:3000/api/save-user', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newUser)
-                }).then(async r => {
-                    try {
-                        const result = await r.json();
-                        if (!result || !result.success) {
-                            console.warn('Backend save-user returned failure or unexpected response', result);
-                        } else {
-                            console.log('User saved to backend.');
-                        }
-                    } catch (err) {
-                        console.warn('Could not parse backend response for save-user', err);
+                try {
+                    // Get CSRF token first
+                    const csrfResponse = await fetch('http://localhost:3000/api/csrf-token');
+                    const csrfData = await csrfResponse.json();
+
+                    if (csrfData.success) {
+                        fetch('http://localhost:3000/api/save-user', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                ...newUser,
+                                sessionId: csrfData.sessionId,
+                                _csrf: csrfData.csrfToken
+                            })
+                        }).then(async r => {
+                            try {
+                                const result = await r.json();
+                                if (!result || !result.success) {
+                                    console.warn('Backend save-user returned failure or unexpected response', result);
+                                } else {
+                                    console.log('User saved to backend.');
+                                }
+                            } catch (err) {
+                                console.warn('Could not parse backend response for save-user', err);
+                            }
+                        }).catch(err => {
+                            console.warn('Error saving user to backend (server may be down):', err);
+                        });
                     }
-                }).catch(err => {
-                    console.warn('Error saving user to backend (server may be down):', err);
-                });
+                } catch (csrfErr) {
+                    console.warn('Error getting CSRF token for save-user:', csrfErr);
+                }
                 // Remove any existing client-side auth so the login page is shown
                 // instead of immediately redirecting to the profile.
                 try { localStorage.removeItem('client_auth'); localStorage.removeItem('clientAuth'); } catch (e) {}
@@ -367,6 +438,8 @@
             } catch (error) {
                 console.error("Signup error:", error);
                 showMessage("An error occurred during signup. Please try again.", "error");
+                submitButton.disabled = false;
+                submitButton.textContent = 'Create Account';
             }
         });
         function showMessage(text, type) {

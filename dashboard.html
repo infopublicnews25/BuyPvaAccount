@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Dashboard - BuyPvaAccount</title>
+    <link rel="stylesheet" href="dashboard-styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .category-tag:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .category-tag button:hover {
+            color: #b71c1c !important;
+            transform: scale(1.1);
+        }
+    </style>
+    <script>
+        // Admin authentication check - Only logged-in admins can access this page
+        if (!localStorage.getItem('adminLoggedIn') || localStorage.getItem('adminLoggedIn') !== 'true') {
+            window.location.href = 'admin.html';
+        }
+
+        // Additional security: Check admin token
+        const adminToken = localStorage.getItem('adminToken');
+        if (!adminToken) {
+            window.location.href = 'admin.html';
+        }
+    </script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+            </div>
+            <div class="sidebar-menu">
+                <div class="menu-section">
+                    <h3><i class="fas fa-file-alt"></i> Website Pages</h3>
+                    <ul id="pages-list">
+                        <!-- Pages will be populated by JavaScript -->
+                    </ul>
+                </div>
+                <div class="menu-section">
+                    <h3><i class="fas fa-folder"></i> File Manager</h3>
+                    <ul id="file-tree">
+                        <!-- File tree will be populated by JavaScript -->
+                    </ul>
+                </div>
+                <div class="menu-section">
+                    <h3><i class="fas fa-cog"></i> Quick Actions</h3>
+                    <ul>
+                        <li><a href="#" onclick="refreshFiles()"><i class="fas fa-sync"></i> Refresh</a></li>
+                        <li><a href="#" onclick="createNewFile()"><i class="fas fa-plus"></i> New File</a></li>
+                        <li><a href="#" onclick="createNewFolder()"><i class="fas fa-folder-plus"></i> New Folder</a></li>
+                        <li><a href="admin.html" target="_blank"><i class="fas fa-user-shield"></i> Admin Panel</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="header-info">
+                        <h1><i class="fas fa-tachometer-alt"></i> Website Management Dashboard</h1>
+                        <div class="breadcrumb">
+                            <span id="current-path">/</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Search files...">
+                        <button onclick="searchFiles()"><i class="fas fa-search"></i></button>
+                    </div>
+                    <div class="header-actions">
+                        <button onclick="window.open('admin.html', '_blank')" class="admin-btn" title="Admin Panel">
+                            <i class="fas fa-user-shield"></i>
+                        </button>
+                        <button onclick="window.open('ordermanagement.html', '_blank')" class="orders-btn" title="Order Management">
+                            <i class="fas fa-shopping-cart"></i>
+                        </button>
+                        <button onclick="window.open('notifications.html', '_blank')" class="notifications-btn" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                        </button>
+                        <button onclick="logout()" class="logout-btn" title="Logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+
+
+                <!-- Pages Overview -->
+                <div class="pages-overview">
+                    <div class="section-header">
+                        <h3><i class="fas fa-file-alt"></i> Website Pages</h3>
+                        <p>Quick access to all your website pages for editing</p>
+                    </div>
+                    <div id="pages-grid" class="pages-grid">
+                        <!-- Pages will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Content Widgets -->
+                <div class="widgets-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-cubes"></i> Content Widgets</h3>
+                        <p>Create and manage website components</p>
+                    </div>
+                    <div class="widgets-grid">
+                        <div class="page-card">
+                            <div class="page-icon" style="color: #f39c12">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>create post</h4>
+                                <p>Create Post</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="viewPage('create-post.html'); event.stopPropagation();" class="view-btn" title="View with Live Server">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button onclick="editPage('create-post.html'); event.stopPropagation();" class="edit-btn" title="Edit in VS Code">
+                                    <i class="fas fa-code"></i> Edit in VS Code
+                                </button>
+                                <button onclick="quickEditPage('create-post.html'); event.stopPropagation();" class="quick-edit-btn" title="Quick Edit in Dashboard">
+                                    <i class="fas fa-edit"></i> Quick Edit
+                                </button>
+                            </div>
+                        </div>
+                        <div class="page-card">
+                            <div class="page-icon" style="color: #f1c40f">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>create product review</h4>
+                                <p>Create Product Review</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="alert('Product review feature coming soon!'); event.stopPropagation();" class="view-btn" title="View">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button onclick="alert('Product review feature coming soon!'); event.stopPropagation();" class="edit-btn" title="Edit">
+                                    <i class="fas fa-code"></i> Edit
+                                </button>
+                                <button onclick="alert('Product review feature coming soon!'); event.stopPropagation();" class="quick-edit-btn" title="Quick Edit">
+                                    <i class="fas fa-edit"></i> Quick Edit
+                                </button>
+                            </div>
+                        </div>
+                        <div class="page-card">
+                            <div class="page-icon" style="color: #e74c3c">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>Create reminder</h4>
+                                <p>Create Reminder</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="openReminderModal(); event.stopPropagation();" class="view-btn" title="Create Reminder">
+                                    <i class="fas fa-plus"></i> Create
+                                </button>
+                                <button onclick="alert('View reminders coming soon!'); event.stopPropagation();" class="edit-btn" title="View Reminders">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button onclick="alert('Reminder settings coming soon!'); event.stopPropagation();" class="quick-edit-btn" title="Settings">
+                                    <i class="fas fa-cogs"></i> Settings
+                                </button>
+                            </div>
+                        </div>
+                        <div class="page-card">
+                            <div class="page-icon" style="color: #9b59b6">
+                                <i class="fas fa-sticky-note"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>create note</h4>
+                                <p>Create Note</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="openNoteModal(); event.stopPropagation();" class="view-btn" title="Create Note">
+                                    <i class="fas fa-plus"></i> Create
+                                </button>
+                                <button onclick="alert('View notes coming soon!'); event.stopPropagation();" class="edit-btn" title="View Notes">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button onclick="alert('Note settings coming soon!'); event.stopPropagation();" class="quick-edit-btn" title="Settings">
+                                    <i class="fas fa-cogs"></i> Settings
+                                </button>
+                            </div>
+                        </div>
+                        <div class="page-card">
+                            <div class="page-icon" style="color: #3498db">
+                                <i class="fas fa-comment"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>create comment</h4>
+                                <p>Create Comment</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="openCommentModal(); event.stopPropagation();" class="view-btn" title="Create Comment">
+                                    <i class="fas fa-plus"></i> Create
+                                </button>
+                                <button onclick="alert('View comments coming soon!'); event.stopPropagation();" class="edit-btn" title="View Comments">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button onclick="alert('Comment moderation coming soon!'); event.stopPropagation();" class="quick-edit-btn" title="Moderate">
+                                    <i class="fas fa-shield-alt"></i> Moderate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Send And Reminder -->
+                <div class="send-reminder-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-paper-plane"></i> Send And Reminder</h3>
+                        <p>Send notifications and manage reminders</p>
+                    </div>
+                    <div class="send-reminder-content">
+                        <!-- Send Cards Grid -->
+                        <div class="send-cards-grid">
+                            <!-- Send Notification Card -->
+                            <div class="page-card" onclick="openNotificationModal()" style="cursor: pointer;">
+                                <div class="page-icon" style="color: #007bff">
+                                    <i class="fas fa-paper-plane"></i>
+                                </div>
+                                <div class="page-info">
+                                    <h4>Send Notification</h4>
+                                    <p>Send notifications to customers</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Send Delivery Card -->
+                            <div class="page-card" onclick="openDeliveryModal()" style="cursor: pointer;">
+                                <div class="page-icon" style="color: #28a745">
+                                    <i class="fas fa-truck"></i>
+                                </div>
+                                <div class="page-info">
+                                    <h4>Send Delivery File</h4>
+                                    <p>Send delivery files to customers</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Section -->
+                <div class="products-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-box"></i> Products</h3>
+                        <p>Manage and showcase your products</p>
+                    </div>
+                    <div class="products-grid">
+                        <div class="page-card">
+                            <div class="page-icon" style="color: #e74c3c">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>Add Product</h4>
+                                <p>Add new product to catalog</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="openProductModal(); event.stopPropagation();" class="view-btn" title="Add Product">
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
+                                <button onclick="window.location.href='products.html'; event.stopPropagation();" class="edit-btn" title="Manage Products">
+                                    <i class="fas fa-cogs"></i> Manage
+                                </button>
+                                <button onclick="window.location.href='marketplace.html'; event.stopPropagation();" class="quick-edit-btn" title="View Catalog">
+                                    <i class="fas fa-list"></i> Catalog
+                                </button>
+                            </div>
+                        </div>
+                        <div class="page-card">
+                            <div class="page-icon" style="color: #f39c12">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>Product Categories</h4>
+                                <p>Organize products by categories</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="openCategoryViewModal(); event.stopPropagation();" class="view-btn" title="View Categories">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button onclick="openCategoryEditModal(); event.stopPropagation();" class="edit-btn" title="Manage Categories">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button onclick="openCategoryEditModal(); event.stopPropagation();" class="quick-edit-btn" title="Manage Categories">
+                                    <i class="fas fa-cogs"></i> Manage
+                                </button>
+                            </div>
+                        </div>
+                        <div class="page-card">
+                            <div class="page-icon" style="color: #2ecc71">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>Inventory</h4>
+                                <p>Manage product stock</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="openInventoryViewModal(); event.stopPropagation();" class="view-btn" title="View Stock">
+                                    <i class="fas fa-eye"></i> Stock
+                                </button>
+                                <button onclick="openInventoryUpdateModal(); event.stopPropagation();" class="edit-btn" title="Update Stock">
+                                    <i class="fas fa-edit"></i> Update
+                                </button>
+                                <button onclick="alert('Stock alerts coming soon!'); event.stopPropagation();" class="quick-edit-btn" title="Alerts">
+                                    <i class="fas fa-bell"></i> Alerts
+                                </button>
+                            </div>
+                        </div>
+                        <div class="page-card">
+                            <div class="page-icon" style="color: #9b59b6">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>Product Analytics</h4>
+                                <p>Track product performance</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="openProductAnalyticsModal(); event.stopPropagation();" class="view-btn" title="View Analytics">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button onclick="openProductAnalyticsModal(); event.stopPropagation();" class="edit-btn" title="Reports">
+                                    <i class="fas fa-chart-bar"></i> Reports
+                                </button>
+                                <button onclick="openProductAnalyticsModal(); event.stopPropagation();" class="quick-edit-btn" title="Dashboard">
+                                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                                </button>
+                            </div>
+                        </div>
+                        <div class="page-card">
+                            <div class="page-icon" style="color: #3498db">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>Product Reviews</h4>
+                                <p>Manage customer reviews</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="alert('Reviews feature coming soon!'); event.stopPropagation();" class="view-btn" title="View Reviews">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button onclick="alert('Reviews management coming soon!'); event.stopPropagation();" class="edit-btn" title="Moderate">
+                                    <i class="fas fa-shield-alt"></i> Moderate
+                                </button>
+                                <button onclick="alert('Reviews coming soon!'); event.stopPropagation();" class="quick-edit-btn" title="Settings">
+                                    <i class="fas fa-cogs"></i> Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Editor -->
+                <div id="file-editor" class="file-editor" style="display: none;">
+                    <div class="editor-header">
+                        <div class="editor-info">
+                            <span id="editing-file">No file selected</span>
+                            <span id="file-size"></span>
+                        </div>
+                        <div class="editor-actions">
+                            <button onclick="saveFile()" class="save-btn">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                            <button onclick="closeEditor()">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                        </div>
+                    </div>
+                    <div class="editor-content">
+                        <textarea id="file-content" placeholder="File content will appear here..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="new-file-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New File</h3>
+                <span class="close" onclick="closeModal('new-file-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="new-file-name" placeholder="Enter file name (e.g., index.html)">
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('new-file-modal')">Cancel</button>
+                <button onclick="confirmCreateFile()" class="primary">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="new-folder-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Folder</h3>
+                <span class="close" onclick="closeModal('new-folder-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="new-folder-name" placeholder="Enter folder name">
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('new-folder-modal')">Cancel</button>
+                <button onclick="confirmCreateFolder()" class="primary">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-confirm-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirm Delete</h3>
+                <span class="close" onclick="closeModal('delete-confirm-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="delete-item-name"></strong>?</p>
+                <p class="warning">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('delete-confirm-modal')">Cancel</button>
+                <button onclick="confirmDelete()" class="danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div id="notification-modal" class="modal">
+        <div class="modal-content notification-modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-paper-plane"></i> Send Notification</h3>
+                <span class="close" onclick="closeModal('notification-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="notificationFormModal" onsubmit="sendNotificationModal(event)">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Customer Email</label>
+                        <input type="email" id="notificationEmailModal" required="" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;" placeholder="customer@email.com">
+                        <small style="color: #666; font-size: 12px;">Enter the customer's email address</small>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Notification Icon</label>
+                        <select id="notificationIconModal" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            <option value="🔔">🔔 Bell</option>
+                            <option value="📢">📢 Announcement</option>
+                            <option value="⚠️">⚠️ Warning</option>
+                            <option value="✅">✅ Success</option>
+                            <option value="📦">📦 Package</option>
+                            <option value="💬">💬 Message</option>
+                            <option value="🎉">🎉 Celebration</option>
+                            <option value="ℹ️">ℹ️ Info</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Notification Title</label>
+                        <input type="text" id="notificationTitleModal" required="" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;" placeholder="Important Update">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Message</label>
+                        <textarea id="notificationMessageModal" required="" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; min-height: 120px; font-size: 14px; box-sizing: border-box; font-family: inherit;" placeholder="Your message to the customer..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('notification-modal')">Cancel</button>
+                <button type="submit" form="notificationFormModal" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Send Notification
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reminder Modal -->
+    <div id="reminder-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-clock"></i> Create Reminder</h3>
+                <span class="close" onclick="closeModal('reminder-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="saveReminder(); return false;">
+                    <div class="form-group">
+                        <label for="reminder-title">Title *</label>
+                        <input type="text" id="reminder-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reminder-description">Description</label>
+                        <textarea id="reminder-description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="reminder-due-date">Due Date</label>
+                        <input type="datetime-local" id="reminder-due-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="reminder-priority">Priority</label>
+                        <select id="reminder-priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('reminder-modal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Reminder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notification-modal" class="modal">
+        <div class="modal-content notification-modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-paper-plane"></i> Send Notification</h3>
+                <span class="close" onclick="closeModal('notification-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="notificationFormModal" onsubmit="sendNotificationModal(event)">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Customer Email</label>
+                        <input type="email" id="notificationEmailModal" required="" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;" placeholder="customer@email.com">
+                        <small style="color: #666; font-size: 12px;">Enter the customer's email address</small>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Notification Icon</label>
+                        <select id="notificationIconModal" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            <option value="🔔">🔔 Bell</option>
+                            <option value="📢">📢 Announcement</option>
+                            <option value="⚠️">⚠️ Warning</option>
+                            <option value="✅">✅ Success</option>
+                            <option value="📦">📦 Package</option>
+                            <option value="💬">💬 Message</option>
+                            <option value="🎉">🎉 Celebration</option>
+                            <option value="ℹ️">ℹ️ Info</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Notification Title</label>
+                        <input type="text" id="notificationTitleModal" required="" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;" placeholder="Important Update">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Message</label>
+                        <textarea id="notificationMessageModal" required="" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; min-height: 120px; font-size: 14px; box-sizing: border-box; font-family: inherit;" placeholder="Your message to the customer..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('notification-modal')">Cancel</button>
+                <button type="submit" form="notificationFormModal" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Send Notification
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery Modal -->
+    <div id="delivery-modal" class="modal">
+        <div class="modal-content delivery-modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-truck"></i> Send Delivery File</h3>
+                <span class="close" onclick="closeModal('delivery-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="deliveryForm" onsubmit="sendDeliveryFile(event)">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Order ID</label>
+                        <input type="text" id="deliveryOrderId" required="" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="ORD-1234567890">
+                        <small style="color: #666; font-size: 12px;">Enter the specific Order ID</small>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Customer Email</label>
+                        <input type="email" id="deliveryEmail" required="" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="customer@email.com">
+                        <small style="color: #666; font-size: 12px;">Enter customer's email address</small>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">File URL or Description</label>
+                        <textarea id="deliveryFileUrl" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; min-height: 80px;" placeholder="Enter download link or file description"></textarea>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Attach Files (Optional)</label>
+                        <input type="file" id="deliveryFiles" multiple="" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <div id="filesList" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('delivery-modal')">Cancel</button>
+                <button type="submit" form="deliveryForm" class="btn btn-success">
+                    <i class="fas fa-paper-plane"></i> Send File
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comment Modal -->
+    <div id="comment-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-comment"></i> Create Comment</h3>
+                <span class="close" onclick="closeModal('comment-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="saveComment(); return false;">
+                    <div class="form-group">
+                        <label for="comment-author">Author Name *</label>
+                        <input type="text" id="comment-author" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="comment-email">Email</label>
+                        <input type="email" id="comment-email">
+                    </div>
+                    <div class="form-group">
+                        <label for="comment-content">Comment *</label>
+                        <textarea id="comment-content" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="comment-post">Related Post/Page</label>
+                        <select id="comment-post">
+                            <option value="" selected>Select a page...</option>
+                            <!-- Pages will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('comment-modal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Post Comment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div id="note-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-sticky-note"></i> Create Note</h3>
+                <span class="close" onclick="closeModal('note-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="saveNote(); return false;">
+                    <div class="form-group">
+                        <label for="note-title">Title *</label>
+                        <input type="text" id="note-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="note-content">Content *</label>
+                        <textarea id="note-content" rows="6" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="note-category">Category</label>
+                        <select id="note-category">
+                            <option value="general" selected>General</option>
+                            <option value="work">Work</option>
+                            <option value="personal">Personal</option>
+                            <option value="ideas">Ideas</option>
+                            <option value="reminders">Reminders</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('note-modal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Note</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div id="quick-edit-modal" class="modal">
+        <div class="quick-edit-modal-content">
+            <div class="quick-edit-header">
+                <h3><i class="fas fa-edit"></i> Quick Edit: <span id="quick-edit-filename"></span></h3>
+                <div class="quick-edit-actions">
+                    <button onclick="saveQuickEdit()" class="btn btn-success">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <button onclick="closeQuickEditModal()" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+            <div class="quick-edit-body">
+                <div class="code-editor-section">
+                    <div class="code-editor-header">
+                        <span>Code Editor</span>
+                        <div class="code-actions">
+                            <button onclick="formatCode()" title="Format Code">
+                                <i class="fas fa-magic"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="quick-edit-code" class="code-textarea" placeholder="Loading code..."></textarea>
+                </div>
+                <div class="live-preview-section">
+                    <div class="preview-header">
+                        <span>Live Preview</span>
+                        <div class="preview-actions">
+                            <button onclick="refreshPreview()" title="Refresh Preview">
+                                <i class="fas fa-sync"></i>
+                            </button>
+                            <button onclick="togglePreviewSize()" title="Toggle Preview Size">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <iframe id="live-preview-iframe" class="preview-iframe" src="about:blank"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category View Modal -->
+    <div id="category-view-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-eye"></i> View Categories</h3>
+                <span class="close" onclick="closeModal('category-view-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px;">
+                    <p style="color: #666; margin-bottom: 16px;">Here are all your current product categories:</p>
+                    <div id="viewCategoriesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;">
+                        <!-- Categories will be loaded here -->
+                    </div>
+                </div>
+                <div style="padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+                    <h5 style="margin: 0 0 8px 0; color: #007bff;"><i class="fas fa-info-circle"></i> Total Categories</h5>
+                    <p style="margin: 0; font-size: 18px; font-weight: bold; color: #007bff;" id="totalCategoriesCount">0</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('category-view-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory View Modal -->
+    <div id="inventory-view-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-warehouse"></i> Product Inventory</h3>
+                <span class="close" onclick="closeModal('inventory-view-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px;">
+                    <p style="color: #666; margin-bottom: 16px;">Current stock levels for all products:</p>
+                    <div id="inventoryList" style="max-height: 400px; overflow-y: auto;">
+                        <!-- Inventory items will be loaded here -->
+                    </div>
+                </div>
+                <div style="padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+                    <h5 style="margin: 0 0 8px 0; color: #007bff;"><i class="fas fa-info-circle"></i> Inventory Summary</h5>
+                    <div style="display: flex; gap: 20px;">
+                        <p style="margin: 0; font-size: 14px; color: #666;">Total Products: <strong id="totalProductsCount">0</strong></p>
+                        <p style="margin: 0; font-size: 14px; color: #666;">Low Stock Items: <strong id="lowStockCount" style="color: #dc3545;">0</strong></p>
+                        <p style="margin: 0; font-size: 14px; color: #666;">Out of Stock: <strong id="outOfStockCount" style="color: #dc3545;">0</strong></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('inventory-view-modal')">Close</button>
+                <button type="button" class="btn btn-primary" onclick="openInventoryUpdateModal(); closeModal('inventory-view-modal');">
+                    <i class="fas fa-edit"></i> Update Stock
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Update Modal -->
+    <div id="inventory-update-modal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Update Product Stock</h3>
+                <span class="close" onclick="closeModal('inventory-update-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px;">
+                    <p style="color: #666; margin-bottom: 16px;">Update stock quantities for products:</p>
+                    <!-- Search Box -->
+                    <div style="margin-bottom: 16px;">
+                        <input type="text" id="inventorySearch" placeholder="Search products by name or category..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                    </div>
+                    <div id="inventoryUpdateList" style="max-height: 400px; overflow-y: auto;">
+                        <!-- Inventory update items will be loaded here -->
+                    </div>
+                </div>
+                <div style="padding: 16px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; color: #856404;">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>Tip:</strong> Use the + and - buttons to adjust quantities. Changes are saved automatically.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('inventory-update-modal')">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="saveInventoryChanges()">
+                    <i class="fas fa-save"></i> Save All Changes
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="category-edit-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Manage Categories</h3>
+                <span class="close" onclick="closeModal('category-edit-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <!-- Add New Category Section -->
+                <div style="margin-bottom: 30px; padding: 20px; background: #f7fafc; border-radius: 12px;">
+                    <h4 style="margin-bottom: 16px; color: #2c3e50;"><i class="fas fa-plus-circle"></i> Add New Category</h4>
+                    <form onsubmit="addDashboardCategory(event)">
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <input type="text" id="modalNewCategory" placeholder="Enter category name (e.g., Snapchat, Discord)" style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;" required>
+                            <button type="submit" class="btn btn-success" style="padding: 12px 24px;">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Current Categories Section -->
+                <div style="padding: 20px; background: white; border-radius: 12px; border: 1px solid #e9ecef;">
+                    <h4 style="margin-bottom: 16px; color: #2c3e50;"><i class="fas fa-list"></i> Current Categories</h4>
+                    <div id="editCategoriesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;">
+                        <!-- Categories will be loaded here -->
+                    </div>
+                    <div style="margin-top: 20px; padding: 16px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; color: #856404;">
+                        <i class="fas fa-info-circle"></i> <strong>Note:</strong> Categories are shared across the admin panel and product management. Changes here will affect all product forms.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('category-edit-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+    <div id="product-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus-circle"></i> Add New Product</h3>
+                <span class="close" onclick="closeModal('product-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="tab-navigation" style="display: flex; margin-bottom: 20px; border-bottom: 1px solid #ecf0f1;">
+                    <div class="tab-nav-item active" onclick="switchProductTab('basic')" style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s ease;">Basic Info</div>
+                    <div class="tab-nav-item" onclick="switchProductTab('languages')" style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s ease;">Languages</div>
+                    <div class="tab-nav-item" onclick="switchProductTab('media')" style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s ease;">Media</div>
+                </div>
+
+                <form id="dashboardProductForm" onsubmit="saveDashboardProduct(event)">
+                    <!-- Basic Info Tab -->
+                    <div id="productBasicTab" class="tab-content active" style="display: block;">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="dashboardProductTitle" style="display: block; margin-bottom: 5px; font-weight: 500;">Product Title (English) *</label>
+                            <input type="text" id="dashboardProductTitle" name="title" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="dashboardProductCategory" style="display: block; margin-bottom: 5px; font-weight: 500;">Category *</label>
+                            <select id="dashboardProductCategory" name="category" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                                <option value="">Select Category</option>
+                                <option value="Gmail">Gmail</option>
+                                <option value="Facebook">Facebook</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="Twitter">Twitter</option>
+                                <option value="LinkedIn">LinkedIn</option>
+                                <option value="YouTube">YouTube</option>
+                                <option value="TikTok">TikTok</option>
+                                <option value="Telegram">Telegram</option>
+                                <option value="WhatsApp">WhatsApp</option>
+                                <option value="Other">Other</option>
+                                <option value="Open phone">Open phone</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="dashboardProductPrice" style="display: block; margin-bottom: 5px; font-weight: 500;">Price ($) *</label>
+                            <input type="number" id="dashboardProductPrice" name="price" step="0.01" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="dashboardProductQuantity" style="display: block; margin-bottom: 5px; font-weight: 500;">Quantity *</label>
+                            <input type="number" id="dashboardProductQuantity" name="quantity" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="dashboardProductOfferPrice" style="display: block; margin-bottom: 5px; font-weight: 500;">Offer Price ($) (Optional)</label>
+                            <input type="number" id="dashboardProductOfferPrice" name="offerPrice" step="0.01" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        </div>
+                    </div>
+
+                    <!-- Languages Tab -->
+                    <div id="productLanguagesTab" class="tab-content" style="display: none;">
+                        <div class="language-tabs" style="display: flex; margin-bottom: 15px; border-bottom: 1px solid #ecf0f1;">
+                            <div class="lang-tab active" onclick="switchProductLanguage('en')" style="padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s ease;">English</div>
+                            <div class="lang-tab" onclick="switchProductLanguage('ru')" style="padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s ease;">Russian</div>
+                            <div class="lang-tab" onclick="switchProductLanguage('zh')" style="padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s ease;">Chinese</div>
+                            <div class="lang-tab" onclick="switchProductLanguage('ar')" style="padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s ease;">Arabic</div>
+                        </div>
+
+                        <div id="productLangEn" class="lang-content active" style="display: block;">
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="dashboardTitleEn" style="display: block; margin-bottom: 5px; font-weight: 500;">Title (English)</label>
+                                <input type="text" id="dashboardTitleEn" name="title_en" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="dashboardNoteEn" style="display: block; margin-bottom: 5px; font-weight: 500;">Description (English)</label>
+                                <textarea id="dashboardNoteEn" name="note_en" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; resize: vertical;"></textarea>
+                            </div>
+                        </div>
+
+                        <div id="productLangRu" class="lang-content" style="display: none;">
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="dashboardTitleRu" style="display: block; margin-bottom: 5px; font-weight: 500;">Title (Russian)</label>
+                                <input type="text" id="dashboardTitleRu" name="title_ru" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="dashboardNoteRu" style="display: block; margin-bottom: 5px; font-weight: 500;">Description (Russian)</label>
+                                <textarea id="dashboardNoteRu" name="note_ru" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; resize: vertical;"></textarea>
+                            </div>
+                        </div>
+
+                        <div id="productLangZh" class="lang-content" style="display: none;">
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="dashboardTitleZh" style="display: block; margin-bottom: 5px; font-weight: 500;">Title (Chinese)</label>
+                                <input type="text" id="dashboardTitleZh" name="title_zh" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="dashboardNoteZh" style="display: block; margin-bottom: 5px; font-weight: 500;">Description (Chinese)</label>
+                                <textarea id="dashboardNoteZh" name="note_zh" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; resize: vertical;"></textarea>
+                            </div>
+                        </div>
+
+                        <div id="productLangAr" class="lang-content" style="display: none;">
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="dashboardTitleAr" style="display: block; margin-bottom: 5px; font-weight: 500;">Title (Arabic)</label>
+                                <input type="text" id="dashboardTitleAr" name="title_ar" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="dashboardNoteAr" style="display: block; margin-bottom: 5px; font-weight: 500;">Description (Arabic)</label>
+                                <textarea id="dashboardNoteAr" name="note_ar" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; resize: vertical;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Media Tab -->
+                    <div id="productMediaTab" class="tab-content" style="display: none;">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="dashboardProductImage" style="display: block; margin-bottom: 5px; font-weight: 500;">Product Image URL</label>
+                            <input type="url" id="dashboardProductImage" name="image" placeholder="https://example.com/image.jpg" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="padding: 20px; border-top: 1px solid #ecf0f1; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('product-modal')">Cancel</button>
+                <button type="submit" form="dashboardProductForm" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Product
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard-script.js"></script>

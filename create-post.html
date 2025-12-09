@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Post - Blog Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5568d3;
+            --secondary: #764ba2;
+            --bg: #f7f7fb;
+            --card: #ffffff;
+            --text: #1a202c;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --success: #48bb78;
+            --danger: #ef4444;
+            --warning: #ed8936;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 30px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 150px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 5px;
+        }
+
+        .featured-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--success);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(26px);
+        }
+
+        .tag-input-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            min-height: 50px;
+        }
+
+        .tag {
+            background: var(--primary);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .add-tag-input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .editor-mode-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--border);
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .editor-mode-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .editor-container {
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-bottom: 2px solid var(--border);
+            align-items: center;
+        }
+
+        .toolbar-btn {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s;
+            min-width: 36px;
+            height: 36px;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .toolbar-select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+            min-width: 120px;
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+            margin: 0 4px;
+        }
+
+        .content-editor {
+            min-height: 400px;
+            padding: 20px;
+            background: white;
+            outline: none;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .content-editor[contenteditable]:empty:before {
+            content: attr(placeholder);
+            color: #999;
+        }
+
+        .code-editor {
+            font-family: 'Courier New', monospace;
+            background: #282c34;
+            color: #abb2bf;
+        }
+
+        .code-preview-container {
+            display: none;
+            gap: 10px;
+        }
+
+        .code-preview-container.active {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .code-panel,
+        .preview-panel {
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .code-panel-header,
+        .preview-panel-header {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-bottom: 2px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-content {
+            min-height: 400px;
+            padding: 20px;
+            background: white;
+            overflow-y: auto;
+            max-height: 500px;
+        }
+
+        .refresh-preview-btn {
+            padding: 4px 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .refresh-preview-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 40px 20px;
+        }
+
+        .modal-content {
+            background: white;
+            max-width: 600px;
+            margin: 0 auto;
+            border-radius: 16px;
+            padding: 40px;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .modal-close:hover {
+            color: var(--danger);
+        }
+
+        .category-list {
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .category-item:hover {
+            background: #e2e8f0;
+        }
+
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            display: none;
+            background: var(--success);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .emoji-btn {
+            font-size: 24px;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .emoji-btn:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="safe-html.js"></script>
+</head>
+
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>✍️ Create New Blog Post</h1>
+            <div style="display: flex; gap: 12px;">
+                <a href="blog-admin.html" class="btn btn-primary">← Back to Blog Admin</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="successMessage" class="success-message">
+            ✅ Post saved successfully! Redirecting...
+        </div>
+
+        <div class="card">
+            <form id="postForm" onsubmit="savePost(event)">
+                <input type="hidden" id="postId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="postTitle">Post Title *</label>
+                        <input type="text" id="postTitle" class="form-control" required placeholder="Enter post title">
+                    </div>
+                    <div class="form-group">
+                        <label for="postSlug">URL Slug *</label>
+                        <input type="text" id="postSlug" class="form-control" required placeholder="url-friendly-slug">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="postExcerpt">Excerpt / Short Description *</label>
+                    <textarea id="postExcerpt" class="form-control" required
+                        placeholder="Brief description (150-200 characters)" maxlength="250"
+                        oninput="updateCharCount('postExcerpt', 'excerptCount', 250)"></textarea>
+                    <div class="char-count" id="excerptCount">0 / 250</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="featuredImageUrl">Featured Image URL</label>
+                    <input type="url" id="featuredImageUrl" class="form-control"
+                        placeholder="https://example.com/image.jpg" oninput="previewFeaturedImage()">
+                    <img id="featuredImagePreview" class="image-preview" style="display: none;">
+                </div>
+
+                <div class="form-group">
+                    <label for="postContent">Full Content *</label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <button type="button" class="editor-mode-btn active" onclick="switchEditorMode('visual')"
+                            id="visualModeBtn">Visual</button>
+                        <button type="button" class="editor-mode-btn" onclick="switchEditorMode('code')"
+                            id="codeModeBtn">Code (HTML)</button>
+                    </div>
+
+                    <div id="visualEditor" class="editor-container">
+                        <div class="editor-toolbar">
+                            <select class="toolbar-select" onchange="formatBlock(this.value)" id="formatSelect">
+                                <option value="">Format</option>
+                                <option value="p">Paragraph</option>
+                                <option value="h1">Heading 1</option>
+                                <option value="h2">Heading 2</option>
+                                <option value="h3">Heading 3</option>
+                            </select>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('bold')"
+                                title="Bold"><b>B</b></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('italic')"
+                                title="Italic"><i>I</i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('underline')"
+                                title="Underline"><u>U</u></button>
+                            <span class="toolbar-divider">|</span>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyLeft')"
+                                title="Align Left">⫲</button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyCenter')"
+                                title="Center">≡</button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyRight')"
+                                title="Align Right">⫸</button>
+                            <span class="toolbar-divider">|</span>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('insertUnorderedList')"
+                                title="Bullet List">•</button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('insertOrderedList')"
+                                title="Numbered List">1.</button>
+                            <span class="toolbar-divider">|</span>
+                            <button type="button" class="toolbar-btn" onclick="openLinkModal()"
+                                title="Insert Link">🔗</button>
+                            <button type="button" class="toolbar-btn" onclick="openImageModal()"
+                                title="Insert Image">🖼️</button>
+                            <button type="button" class="toolbar-btn" onclick="openIconModal()"
+                                title="Insert Icon">😊</button>
+                        </div>
+                        <div id="contentEditor" class="content-editor" contenteditable="true"
+                            placeholder="Write your blog post content here..." oninput="syncContent()"></div>
+                    </div>
+
+                    <div id="codePreviewContainer" class="code-preview-container">
+                        <div class="code-panel">
+                            <div class="code-panel-header"><span>📝 HTML Code</span></div>
+                            <textarea id="postContent" class="form-control code-editor" required
+                                style="min-height: 400px; border: none;" oninput="updatePreview()"></textarea>
+                        </div>
+                        <div class="preview-panel">
+                            <div class="preview-panel-header">
+                                <span>👁️ Preview</span>
+                                <button type="button" class="refresh-preview-btn" onclick="updatePreview()">🔄
+                                    Refresh</button>
+                            </div>
+                            <div id="previewContent" class="preview-content">
+                                <p style="color: #999;">Preview will appear here...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="postCategory">Category *</label>
+                        <div style="display: flex; gap: 8px;">
+                            <select id="postCategory" class="form-control" required style="flex: 1;"></select>
+                            <button type="button" class="btn" style="background: var(--primary); color: white;"
+                                onclick="openCategoryModal()">⚙️ Manage</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <div class="tag-input-container" id="tagsContainer" onclick="focusTagInput()">
+                            <input type="text" id="tagInput" class="add-tag-input" placeholder="Type and press Enter"
+                                onkeydown="addTag(event)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="postStatus">Status *</label>
+                        <select id="postStatus" class="form-control" required>
+                            <option value="published">Published (Visible)</option>
+                            <option value="draft">Draft (Hidden)</option>
+                        </select>
+                        <small style="color: var(--text-light);">ℹ️ Only Published posts appear on blog.html</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Featured Post?</label>
+                        <div class="featured-toggle">
+                            <label class="switch">
+                                <input type="checkbox" id="postFeatured">
+                                <span class="slider"></span>
+                            </label>
+                            <span id="featuredLabel">No</span>
+                        </div>
+                        <small style="color: var(--text-light);">⭐ Featured posts highlight on blog.html</small>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 30px; justify-content: flex-end;">
+                    <a href="blog-admin.html" class="btn" style="background: var(--border);">Cancel</a>
+                    <button type="submit" class="btn btn-success" id="savePostBtn">💾 Publish Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Link Modal -->
+    <div id="linkModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="modal-close" onclick="closeLinkModal()">&times;</span>
+            <h2>🔗 Insert Link</h2>
+            <div class="form-group">
+                <label for="linkText">Link Text *</label>
+                <input type="text" id="linkText" class="form-control" placeholder="Click here" required>
+            </div>
+            <div class="form-group">
+                <label for="linkUrl">URL *</label>
+                <input type="url" id="linkUrl" class="form-control" placeholder="https://example.com" required>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" class="btn" style="background: var(--border);"
+                    onclick="closeLinkModal()">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="insertLinkFromModal()">Insert Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="modal-close" onclick="closeImageModal()">&times;</span>
+            <h2>🖼️ Insert Image</h2>
+            <div class="form-group">
+                <label for="imageUrl">Image URL *</label>
+                <input type="url" id="imageUrl" class="form-control" placeholder="https://example.com/image.jpg"
+                    required oninput="previewModalImage()">
+            </div>
+            <div class="form-group">
+                <label for="imageAlt">Image Description *</label>
+                <input type="text" id="imageAlt" class="form-control" placeholder="Describe the image" required>
+            </div>
+            <img id="modalImagePreview" class="image-preview" style="display: none;">
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" class="btn" style="background: var(--border);"
+                    onclick="closeImageModal()">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="insertImageFromModal()">Insert Image</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Icon Modal -->
+    <div id="iconModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeIconModal()">&times;</span>
+            <h2>😊 Insert Icon/Emoji</h2>
+            <p style="color: var(--text-light); margin-bottom: 15px;">Click on an emoji to insert it</p>
+            <div class="emoji-grid">
+                <button type="button" class="emoji-btn" onclick="insertEmoji('😊')">😊</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('🎉')">🎉</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('⭐')">⭐</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('❤️')">❤️</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('👍')">👍</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('🔥')">🔥</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('💡')">💡</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('✅')">✅</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('📌')">📌</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('🚀')">🚀</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('💰')">💰</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('📧')">📧</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('🌟')">🌟</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('🎯')">🎯</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('📱')">📱</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('💻')">💻</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('🎨')">🎨</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('📈')">📈</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('🔔')">🔔</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('⚡')">⚡</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('🎁')">🎁</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('🌈')">🌈</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('✨')">✨</button>
+                <button type="button" class="emoji-btn" onclick="insertEmoji('🏆')">🏆</button>
+            </div>
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="customEmoji">Or enter custom emoji/icon:</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="customEmoji" class="form-control" placeholder="Enter emoji or icon">
+                    <button type="button" class="btn btn-success"
+                        onclick="insertEmoji(document.getElementById('customEmoji').value)">Insert</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeCategoryModal()">&times;</span>
+            <h2>📁 Manage Categories</h2>
+            <div class="form-group">
+                <label for="newCategoryName">Add New Category</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="newCategoryName" class="form-control" placeholder="Category name"
+                        style="flex: 1;">
+                    <button type="button" class="btn btn-success" onclick="addCategory()">Add</button>
+                </div>
+            </div>
+            <div class="category-list" id="categoryList"></div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button type="button" class="btn btn-primary" onclick="closeCategoryModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api/posts';
+        let currentTags = [];
+        let currentEditorMode = 'visual';
+        let categories = JSON.parse(localStorage.getItem('blogCategories')) || ['Guides', 'Email Marketing', 'Social Media', 'News'];
+        let currentSelection = null;
+
+        // Check if editing existing post from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const editPostId = urlParams.get('edit');
+
+        // Link Modal Functions
+        function openLinkModal() {
+            saveSelection();
+            const selection = window.getSelection();
+            const selectedText = selection.toString().trim();
+            document.getElementById('linkText').value = selectedText || '';
+            document.getElementById('linkUrl').value = 'https://';
+            document.getElementById('linkModal').style.display = 'block';
+        }
+
+        function closeLinkModal() {
+            document.getElementById('linkModal').style.display = 'none';
+        }
+
+        function insertLinkFromModal() {
+            const text = document.getElementById('linkText').value.trim();
+            const url = document.getElementById('linkUrl').value.trim();
+
+            if (text && url && url !== 'https://') {
+                restoreSelection();
+                const link = `<a href="${url}" target="_blank" style="color: #667eea; text-decoration: underline;">${text}</a>&nbsp;`;
+                document.execCommand('insertHTML', false, link);
+                syncContent();
+                closeLinkModal();
+            }
+        }
+
+        // Image Modal Functions
+        function openImageModal() {
+            saveSelection();
+            document.getElementById('imageUrl').value = 'https://';
+            document.getElementById('imageAlt').value = '';
+            document.getElementById('modalImagePreview').style.display = 'none';
+            document.getElementById('imageModal').style.display = 'block';
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        function previewModalImage() {
+            const url = document.getElementById('imageUrl').value;
+            const preview = document.getElementById('modalImagePreview');
+            if (url && url !== 'https://') {
+                preview.src = url;
+                preview.style.display = 'block';
+                preview.onerror = () => preview.style.display = 'none';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        function insertImageFromModal() {
+            const url = document.getElementById('imageUrl').value.trim();
+            const alt = document.getElementById('imageAlt').value.trim();
+
+            if (url && url !== 'https://' && alt) {
+                restoreSelection();
+                const img = `<img src="${url}" alt="${alt}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; display: block;"><br>`;
+                document.execCommand('insertHTML', false, img);
+                syncContent();
+                closeImageModal();
+            }
+        }
+
+        // Icon Modal Functions
+        function openIconModal() {
+            saveSelection();
+            document.getElementById('customEmoji').value = '';
+            document.getElementById('iconModal').style.display = 'block';
+        }
+
+        function closeIconModal() {
+            document.getElementById('iconModal').style.display = 'none';
+        }
+
+        function insertEmoji(emoji) {
+            if (emoji && emoji.trim()) {
+                restoreSelection();
+                document.execCommand('insertHTML', false, `<span style="font-size: 24px; margin: 0 4px;">${emoji}</span>&nbsp;`);
+                syncContent();
+                closeIconModal();
+            }
+        }
+
+        // Selection Management
+        function saveSelection() {
+            const editor = document.getElementById('contentEditor');
+            editor.focus();
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                currentSelection = selection.getRangeAt(0);
+            }
+        }
+
+        function restoreSelection() {
+            const editor = document.getElementById('contentEditor');
+            editor.focus();
+            if (currentSelection) {
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(currentSelection);
+            }
+        }
+
+        function loadCategoryDropdown() {
+            const select = document.getElementById('postCategory');
+            const currentValue = select.value;
+            safeSetInnerHTML(select, '<option value="">Select Category</option>', true);
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                select.appendChild(option);
+            });
+            if (currentValue && categories.includes(currentValue)) select.value = currentValue;
+        }
+
+        function openCategoryModal() {
+            document.getElementById('categoryModal').style.display = 'block';
+            renderCategoryList();
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').style.display = 'none';
+            loadCategoryDropdown();
+        }
+
+        function renderCategoryList() {
+            const list = document.getElementById('categoryList');
+            safeSetInnerHTML(list, categories.map((cat, index) => `
+                <div class="category-item">
+                    <span><strong>${cat}</strong></span>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-warning" style="font-size: 12px; padding: 4px 12px;" onclick="editCategory(${index})">Edit</button>
+                        <button type="button" class="btn btn-danger" style="font-size: 12px; padding: 4px 12px;" onclick="deleteCategory(${index})">Delete</button>
+                    </div>
+                </div>
+            `).join(''), true);
+        }
+
+        function addCategory() {
+            const input = document.getElementById('newCategoryName');
+            const name = input.value.trim();
+            if (name && !categories.includes(name)) {
+                categories.push(name);
+                localStorage.setItem('blogCategories', JSON.stringify(categories));
+                input.value = '';
+                renderCategoryList();
+                alert('✅ Category added!');
+            }
+        }
+
+        function editCategory(index) {
+            const newName = prompt('Edit category:', categories[index]);
+            if (newName && newName.trim()) {
+                categories[index] = newName.trim();
+                localStorage.setItem('blogCategories', JSON.stringify(categories));
+                renderCategoryList();
+            }
+        }
+
+        function deleteCategory(index) {
+            if (confirm(`Delete "${categories[index]}"?`)) {
+                categories.splice(index, 1);
+                localStorage.setItem('blogCategories', JSON.stringify(categories));
+                renderCategoryList();
+            }
+        }
+
+        function previewFeaturedImage() {
+            const url = document.getElementById('featuredImageUrl').value;
+            const preview = document.getElementById('featuredImagePreview');
+            if (url) {
+                preview.src = url;
+                preview.style.display = 'block';
+                preview.onerror = () => preview.style.display = 'none';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        function switchEditorMode(mode) {
+            currentEditorMode = mode;
+            const visualEditor = document.getElementById('visualEditor');
+            const codePreviewContainer = document.getElementById('codePreviewContainer');
+            const visualBtn = document.getElementById('visualModeBtn');
+            const codeBtn = document.getElementById('codeModeBtn');
+
+            if (mode === 'visual') {
+                visualEditor.style.display = 'block';
+                codePreviewContainer.classList.remove('active');
+                visualBtn.classList.add('active');
+                codeBtn.classList.remove('active');
+                safeSetInnerHTML(document.getElementById('contentEditor'), document.getElementById('postContent').value, true);
+            } else {
+                visualEditor.style.display = 'none';
+                codePreviewContainer.classList.add('active');
+                visualBtn.classList.remove('active');
+                codeBtn.classList.add('active');
+                document.getElementById('postContent').value = document.getElementById('contentEditor').innerHTML;
+                updatePreview();
+            }
+        }
+
+        function updatePreview() {
+            const code = document.getElementById('postContent').value;
+            safeSetInnerHTML(document.getElementById('previewContent'), code.trim() || '<p style="color: #999;">Preview will appear here...</p>', true);
+        }
+
+        function syncContent() {
+            document.getElementById('postContent').value = document.getElementById('contentEditor').innerHTML;
+        }
+
+        function execCmd(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('contentEditor').focus();
+            syncContent();
+        }
+
+        function formatBlock(tag) {
+            if (tag) {
+                document.execCommand('formatBlock', false, tag);
+                syncContent();
+            }
+            document.getElementById('formatSelect').value = '';
+        }
+
+        async function savePost(event) {
+            event.preventDefault();
+            if (currentEditorMode === 'visual') syncContent();
+
+            const postId = document.getElementById('postId').value;
+            const post = {
+                id: postId || 'post-' + Date.now(),
+                title: document.getElementById('postTitle').value,
+                slug: document.getElementById('postSlug').value,
+                excerpt: document.getElementById('postExcerpt').value,
+                content: document.getElementById('postContent').value,
+                author: 'Admin',
+                authorEmail: 'admin@buypvaaccount.com',
+                category: document.getElementById('postCategory').value,
+                tags: currentTags,
+                featured: document.getElementById('postFeatured').checked,
+                featuredImage: document.getElementById('featuredImageUrl').value,
+                metaTitle: document.getElementById('postTitle').value,
+                metaDescription: document.getElementById('postExcerpt').value,
+                metaKeywords: currentTags.join(', '),
+                status: document.getElementById('postStatus').value,
+                views: 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            try {
+                const method = postId ? 'PUT' : 'POST';
+                const url = postId ? `${API_URL}/${postId}` : API_URL;
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(post)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const successMsg = document.getElementById('successMessage');
+                    successMsg.style.display = 'block';
+                    setTimeout(() => {
+                        window.location.href = 'blog-admin.html';
+                    }, 1500);
+                }
+            } catch (error) {
+                alert('❌ Error saving post!');
+            }
+        }
+
+        function addTag(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const tag = event.target.value.trim();
+                if (tag && !currentTags.includes(tag)) {
+                    currentTags.push(tag);
+                    event.target.value = '';
+                    renderTags();
+                }
+            }
+        }
+
+        function removeTag(tag) {
+            currentTags = currentTags.filter(t => t !== tag);
+            renderTags();
+        }
+
+        function renderTags() {
+            const container = document.getElementById('tagsContainer');
+            const input = document.getElementById('tagInput');
+            safeSetInnerHTML(container, currentTags.map(tag => `<span class="tag">${tag}<span class="tag-remove" onclick="removeTag('${tag}')">&times;</span></span>`).join('') + input.outerHTML, true);
+        }
+
+        function focusTagInput() {
+            document.getElementById('tagInput').focus();
+        }
+
+        function updateCharCount(inputId, countId, max) {
+            const input = document.getElementById(inputId);
+            document.getElementById(countId).textContent = `${input.value.length} / ${max}`;
+        }
+
+        document.getElementById('postTitle').addEventListener('input', function () {
+            document.getElementById('postSlug').value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        });
+
+        document.getElementById('postFeatured').addEventListener('change', function () {
+            document.getElementById('featuredLabel').textContent = this.checked ? 'Yes' : 'No';
+        });
+
+        if (editPostId) {
+            loadPostForEdit(editPostId);
+        }
+
+        async function loadPostForEdit(postId) {
+            try {
+                const response = await fetch(`${API_URL}/${postId}`);
+                const data = await response.json();
+                if (data.success && data.post) {
+                    const post = data.post;
+                    document.getElementById('postId').value = post.id;
+                    document.getElementById('postTitle').value = post.title;
+                    document.getElementById('postSlug').value = post.slug;
+                    document.getElementById('postExcerpt').value = post.excerpt;
+                    document.getElementById('postContent').value = post.content;
+                    safeSetInnerHTML(document.getElementById('contentEditor'), post.content, true);
+                    document.getElementById('featuredImageUrl').value = post.featuredImage || '';
+                    previewFeaturedImage();
+                    document.getElementById('postCategory').value = post.category;
+                    document.getElementById('postStatus').value = post.status;
+                    document.getElementById('postFeatured').checked = post.featured;
+                    document.getElementById('featuredLabel').textContent = post.featured ? 'Yes' : 'No';
+                    document.getElementById('savePostBtn').textContent = '✏️ Update Post';
+                    currentTags = post.tags || [];
+                    renderTags();
+                    updateCharCount('postExcerpt', 'excerptCount', 250);
+                }
+            } catch (error) {
+                console.error('Error loading post:', error);
+            }
+        }
+
+        loadCategoryDropdown();
+    </script>
+</body>
+
+</html>

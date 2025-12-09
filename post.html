@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Loading... | BuyPvaAccount Blog</title>
+    <meta name="description" id="pageDescription" content="">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #2d3748;
+            line-height: 1.7;
+            font-size: 16px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 25%, #4c51bf 50%, #2d3748 75%, #1a202c 100%);
+            color: white;
+            padding: 60px 0;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: white;
+        }
+
+        .post-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            line-height: 1.2;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .post-meta {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .post-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin: -40px auto 40px;
+            padding: 60px;
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: none;
+        }
+
+        .post-content {
+            margin-bottom: 40px;
+        }
+
+        .post-content h1,
+        .post-content h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 24px 0 12px;
+            color: #1a202c;
+            line-height: 1.3;
+        }
+
+        .post-content h3 {
+            font-size: 22px;
+            font-weight: 600;
+            margin: 20px 0 10px;
+            color: #2d3748;
+            line-height: 1.4;
+        }
+
+        .post-content h4 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 16px 0 8px;
+            color: #4a5568;
+        }
+
+        .post-content p {
+            margin-bottom: 6px;
+            color: #4a5568;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .post-content ul,
+        .post-content ol {
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+
+        .post-content li {
+            margin-bottom: 10px;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+
+        .post-content a {
+            color: #4c51bf;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .post-content a:hover {
+            color: #2d3748;
+            text-decoration: underline;
+        }
+
+        .post-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            margin: 30px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .post-content blockquote {
+            border-left: 4px solid #4c51bf;
+            padding-left: 24px;
+            margin: 30px 0;
+            color: #718096;
+            font-style: italic;
+            background: #f7fafc;
+            padding: 20px 24px;
+            border-radius: 8px;
+            font-size: 18px;
+        }
+
+        .post-content code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .post-content pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 24px;
+            border-radius: 12px;
+            overflow-x: auto;
+            margin: 30px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .post-content pre code {
+            background: transparent;
+            color: #e2e8f0;
+            padding: 0;
+        }
+
+        .related-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 40px;
+            margin-top: 40px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .related-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #1a202c;
+            text-align: center;
+        }
+
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .related-item {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+
+        .related-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        }
+
+        .related-link {
+            color: #1a202c;
+            text-decoration: none;
+            display: block;
+        }
+
+        .related-link h4 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #2d3748;
+            line-height: 1.4;
+        }
+
+        .related-link p {
+            font-size: 15px;
+            color: #718096;
+            line-height: 1.6;
+        }
+
+        .related-link:hover h4 {
+            color: #4c51bf;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-size: 18px;
+            color: #718096;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+
+            .hero-section {
+                padding: 40px 0;
+            }
+
+            .post-title {
+                font-size: 28px;
+            }
+
+            .content-section {
+                margin: -20px auto 20px;
+                padding: 30px 20px;
+            }
+
+            .post-content h1,
+            .post-content h2 {
+                font-size: 24px;
+            }
+
+            .post-content h3 {
+                font-size: 20px;
+            }
+
+            .related-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .related-section {
+                padding: 20px;
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="safe-html.js"></script>
+</head>
+
+<body>
+    <div class="loading" id="loading">
+        <div>Loading article...</div>
+    </div>
+
+    <div id="articleContent" style="display: none;">
+        <div class="hero-section">
+            <div class="hero-content">
+                <a href="blog.html" class="back-link">← Back to Blog</a>
+                <h1 class="post-title" id="postTitle"></h1>
+                <div class="post-meta">
+                    <span id="postCategory"></span>
+                    <span id="postDate"></span>
+                    <span id="postViews"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="content-section">
+                <div class="post-content" id="postContent"></div>
+            </div>
+
+            <div class="related-section">
+                <h3 class="related-title">Suggested Articles</h3>
+                <div class="related-grid" id="relatedPosts"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api/posts';
+        const urlParams = new URLSearchParams(window.location.search);
+        const postSlug = urlParams.get('id');
+
+        async function loadPost() {
+            if (!postSlug) {
+                window.location.href = 'blog.html';
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+
+                if (data.success) {
+                    const post = data.posts.find(p => p.slug === postSlug);
+
+                    if (post) {
+                        document.getElementById('pageTitle').textContent = post.title + ' | BuyPvaAccount Blog';
+                        document.getElementById('pageDescription').content = post.excerpt;
+
+                        document.getElementById('postTitle').textContent = post.title;
+                        document.getElementById('postCategory').textContent = '📂 ' + post.category;
+                        document.getElementById('postDate').textContent = '📅 ' + new Date(post.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        document.getElementById('postViews').textContent = '👁️ ' + (post.views || 0) + ' views';
+                        safeSetInnerHTML(document.getElementById('postContent'), post.content, true);
+
+                        await fetch(`${API_URL}/${post.id}/view`, { method: 'POST' }).catch(() => { });
+
+                        loadRelatedPosts(data.posts, post);
+
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('articleContent').style.display = 'block';
+                    } else {
+                        window.location.href = 'blog.html';
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                window.location.href = 'blog.html';
+            }
+        }
+
+        function loadRelatedPosts(allPosts, currentPost) {
+            const related = allPosts
+                .filter(p => p.id !== currentPost.id && p.status === 'published')
+                .sort((a, b) => {
+                    // Prioritize same category, then by date
+                    if (a.category === currentPost.category && b.category !== currentPost.category) return -1;
+                    if (b.category === currentPost.category && a.category !== currentPost.category) return 1;
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                })
+                .slice(0, 3);
+
+            const relatedContainer = document.getElementById('relatedPosts');
+
+            if (related.length === 0) {
+                safeSetInnerHTML(relatedContainer, '<div style="text-align: center; color: #718096; font-size: 16px; padding: 40px;">No related articles found</div>', true);
+                return;
+            }
+
+            safeSetInnerHTML(relatedContainer, related.map(post => `
+                <div class="related-item">
+                    <a href="post.html?id=${post.slug}" class="related-link">
+                        <h4>${post.title}</h4>
+                        <p>${post.excerpt}</p>
+                    </a>
+                </div>
+            `).join(''), true);
+        }
+
+        loadPost();
+    </script>
+</body>
+
+</html>

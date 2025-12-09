@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog - Latest News & Guides | BuyPvaAccount</title>
+    <meta name="description"
+        content="Stay updated with the latest guides, tips, and news about PVA accounts, email marketing, and social media strategies.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-light: #7c8ff0;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --shadow: rgba(0, 0, 0, 0.04);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 20px 0;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .content-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 32px;
+        }
+
+        .main-content {
+            min-width: 0;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 24px;
+            height: fit-content;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--text);
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: var(--bg);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .widget {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .widget-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .update-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .update-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .update-item:first-child {
+            padding-top: 0;
+        }
+
+        .update-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .update-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .update-text {
+            font-size: 13px;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        .update-date {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 6px;
+        }
+
+        .category-list {
+            list-style: none;
+        }
+
+        .category-item {
+            padding: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .category-item:hover {
+            color: var(--primary);
+        }
+
+        .category-count {
+            background: var(--bg);
+            color: var(--text-light);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        .featured-grid,
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .blog-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .blog-card:hover {
+            box-shadow: 0 4px 12px var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .blog-card.featured {
+            border-color: var(--primary);
+            border-width: 2px;
+        }
+
+        .blog-image {
+            width: 100%;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            font-weight: 600;
+            color: white;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .featured-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: white;
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .blog-content {
+            padding: 20px;
+        }
+
+        .blog-meta {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .category-badge {
+            background: var(--bg);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .meta-item {
+            color: var(--text-light);
+            font-size: 13px;
+        }
+
+        .blog-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text);
+            line-height: 1.4;
+        }
+
+        .blog-excerpt {
+            color: var(--text-light);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .blog-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .read-more {
+            color: var(--primary);
+            font-weight: 500;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .read-more:hover {
+            color: var(--primary-light);
+        }
+
+        .tags {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tag {
+            background: var(--bg);
+            color: var(--text-light);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--primary);
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            font-size: 20px;
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .back-to-top:hover {
+            transform: translateY(-3px);
+        }
+
+        @media (max-width: 1024px) {
+            .content-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .featured-grid,
+            .blog-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar {
+                flex-direction: column;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .filter-buttons {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="safe-html.js"></script>
+</head>
+
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📝 Blog</h1>
+            <a href="marketplace.html" class="header-link">← Back to Home</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content-layout">
+            <div class="main-content">
+                <div class="toolbar">
+                    <div class="search-box"><input type="text" id="searchInput" placeholder="Search articles..." />
+                    </div>
+                    <div class="filter-buttons" id="filterButtons"></div>
+                </div>
+                <div class="featured-section" id="featuredSection" style="display: none;">
+                    <h2 class="section-title">Featured Posts</h2>
+                    <div class="featured-grid" id="featuredGrid"></div>
+                </div>
+                <div>
+                    <h2 class="section-title">All Posts</h2>
+                    <div class="blog-grid" id="blogGrid"></div>
+                </div>
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <h3>No posts found</h3>
+                    <p>Try adjusting your search or filters</p>
+                </div>
+            </div>
+            <div class="sidebar">
+                <div class="widget">
+                    <div class="widget-title">📢 Latest Updates</div>
+                    <div id="latestUpdatesContainer"></div>
+                </div>
+                <div class="widget">
+                    <div class="widget-title">📁 Categories</div>
+                    <ul class="category-list" id="categoriesList"></ul>
+                </div>
+                <div class="widget">
+                    <div class="widget-title">🔗 Quick Links</div>
+                    <ul class="category-list" id="quickLinksList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="back-to-top" id="backToTop">↑</div>
+
+    <script>
+        let allPosts = [];
+        let currentCategory = 'all';
+        let searchQuery = '';
+        const categories = JSON.parse(localStorage.getItem('blogCategories')) || ['Guides', 'Email Marketing', 'Social Media', 'News'];
+
+        function loadWidgets() {
+            const updates = JSON.parse(localStorage.getItem('blogLatestUpdates')) || [];
+            const updatesContainer = document.getElementById('latestUpdatesContainer');
+            if (updates.length === 0) {
+                safeSetInnerHTML(updatesContainer, '<p style="color: var(--text-light); font-size: 13px;">No updates available</p>', true);
+            } else {
+                safeSetInnerHTML(updatesContainer, updates.map(u => {
+                    const date = new Date(u.date);
+                    const now = new Date();
+                    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+                    const timeAgo = diffDays === 0 ? 'Today' : diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+                    return `<div class="update-item"><span class="update-badge">NEW</span><div class="update-title">${u.title}</div>${u.link ? '<div class="update-text"><a href="' + u.link + '" style="color: var(--primary);">Learn more →</a></div>' : ''}<div class="update-date">${timeAgo}</div></div>`;
+                }).join(''), true);
+            }
+
+            const categoriesList = document.getElementById('categoriesList');
+            const allCount = `<li class="category-item" data-category="all"><span>All Posts</span><span class="category-count" id="countAll">0</span></li>`;
+            const catItems = categories.map(cat => {
+                const id = 'count' + cat.replace(/\s+/g, '');
+                return `<li class="category-item" data-category="${cat}"><span>${cat}</span><span class="category-count" id="${id}">0</span></li>`;
+            }).join('');
+            safeSetInnerHTML(categoriesList, allCount + catItems, true);
+
+            const links = JSON.parse(localStorage.getItem('blogQuickLinks')) || [];
+            const quickLinksList = document.getElementById('quickLinksList');
+            if (links.length === 0) {
+                safeSetInnerHTML(quickLinksList, '<li class="category-item" onclick="window.location.href=\'index.html\'"><span>Home</span></li><li class="category-item" onclick="window.location.href=\'marketplace.html\'"><span>Marketplace</span></li><li class="category-item" onclick="window.location.href=\'blog-admin.html\'"><span>Admin Panel</span></li>', true);
+            } else {
+                safeSetInnerHTML(quickLinksList, links.map(l => `<li class="category-item" onclick="window.location.href='${l.url}'"><span>${l.title}</span></li>`).join(''), true);
+            }
+
+            document.querySelectorAll('.category-item[data-category]').forEach(item => {
+                item.addEventListener('click', () => {
+                    currentCategory = item.dataset.category;
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    const btn = document.querySelector(`.filter-btn[data-category="${currentCategory}"]`);
+                    if (btn) btn.classList.add('active');
+                    renderPosts();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            });
+        }
+
+        async function loadPosts() {
+            try {
+                const response = await fetch('http://localhost:3000/api/posts');
+                const data = await response.json();
+                if (data.success) {
+                    allPosts = data.posts.filter(post => post.status === 'published');
+                    allPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    createFilterButtons();
+                    updateCategoryCounts();
+                    renderPosts();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                safeSetInnerHTML(document.getElementById('blogGrid'), '<p style="text-align: center; color: #999;">Unable to load posts.</p>', true);
+            }
+        }
+
+        function createFilterButtons() {
+            const filterButtons = document.getElementById('filterButtons');
+            const buttons = ['<button class="filter-btn active" data-category="all">All</button>'];
+            categories.forEach(cat => {
+                buttons.push(`<button class="filter-btn" data-category="${cat}">${cat}</button>`);
+            });
+            safeSetInnerHTML(filterButtons, buttons.join(''), true);
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentCategory = btn.dataset.category;
+                    renderPosts();
+                });
+            });
+        }
+
+        function updateCategoryCounts() {
+            document.getElementById('countAll').textContent = allPosts.length;
+            categories.forEach(cat => {
+                const id = 'count' + cat.replace(/\s+/g, '');
+                const el = document.getElementById(id);
+                if (el) el.textContent = allPosts.filter(p => p.category === cat).length;
+            });
+        }
+
+        function renderPosts() {
+            const filtered = filterPosts();
+            const featured = filtered.filter(post => post.featured);
+            const featuredSection = document.getElementById('featuredSection');
+            const featuredGrid = document.getElementById('featuredGrid');
+
+            if (featured.length > 0) {
+                featuredSection.style.display = 'block';
+                safeSetInnerHTML(featuredGrid, featured.map(post => createPostCard(post, true)).join(''), true);
+            } else {
+                featuredSection.style.display = 'none';
+            }
+
+            const blogGrid = document.getElementById('blogGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (filtered.length > 0) {
+                safeSetInnerHTML(blogGrid, filtered.map(post => createPostCard(post, false)).join(''), true);
+                blogGrid.style.display = 'grid';
+                emptyState.style.display = 'none';
+            } else {
+                blogGrid.style.display = 'none';
+                emptyState.style.display = 'block';
+            }
+        }
+
+        function filterPosts() {
+            return allPosts.filter(post => {
+                const matchesCategory = currentCategory === 'all' || post.category === currentCategory;
+                const matchesSearch = searchQuery === '' ||
+                    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (post.tags && post.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
+                return matchesCategory && matchesSearch;
+            });
+        }
+
+        function createPostCard(post, isFeatured) {
+            const date = new Date(post.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            const firstLetter = post.title.charAt(0).toUpperCase();
+
+            const hasImage = post.featuredImage && post.featuredImage.trim() !== '';
+            const imageStyle = hasImage
+                ? `background-image: url('${post.featuredImage}'); background-size: cover; background-position: center;`
+                : `background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);`;
+
+            return `
+                <div class="blog-card ${isFeatured ? 'featured' : ''}" onclick="window.location.href='post.html?id=${post.slug}'">
+                    <div class="blog-image" style="${imageStyle}">
+                        ${isFeatured ? '<div class="featured-badge">Featured</div>' : ''}
+                        ${!hasImage ? firstLetter : ''}
+                    </div>
+                    <div class="blog-content">
+                        <div class="blog-meta">
+                            <span class="category-badge">${post.category}</span>
+                            <span class="meta-item">${date}</span>
+                            <span class="meta-item">${post.views || 0} views</span>
+                        </div>
+                        <h3 class="blog-title">${post.title}</h3>
+                        <p class="blog-excerpt">${post.excerpt}</p>
+                        <div class="blog-footer">
+                            <a href="post.html?id=${post.slug}" class="read-more" onclick="event.stopPropagation()">Read More →</a>
+                            <div class="tags">
+                                ${post.tags ? post.tags.slice(0, 2).map(tag => `<span class="tag">#${tag}</span>`).join('') : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderPosts();
+        });
+
+        const backToTop = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => {
+            backToTop.classList.toggle('visible', window.scrollY > 300);
+        });
+        backToTop.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        loadWidgets();
+        loadPosts();
+    </script>
+</body>
+
+</html>

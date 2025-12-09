@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support - BuyPvaAccount</title>
+    <meta name="description" content="Get support for your PVA account orders. Submit tickets, track issues, and access our knowledgebase.">
+    <meta name="keywords" content="support, help, tickets, PVA accounts, customer service">
+    <meta name="author" content="BuyPvaAccount">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #2d3748;
+            line-height: 1.7;
+            font-size: 16px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 25%, #4c51bf 50%, #2d3748 75%, #1a202c 100%);
+            color: white;
+            padding: 60px 0;
+            text-align: center;
+            border-radius: 16px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .hero-title {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .support-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .support-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+
+        .support-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .card-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1a202c;
+        }
+
+        .card-description {
+            color: #718096;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 14px 30px;
+            background: linear-gradient(135deg, #4c51bf 0%, #2d3748 100%);
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 81, 191, 0.4);
+        }
+
+        .btn.secondary {
+            background: #e2e8f0;
+            color: #4c51bf;
+        }
+
+        .btn.secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .ticket-form-section {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+            display: none;
+        }
+
+        .ticket-form-section.active {
+            display: block;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-header h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #1a202c;
+        }
+
+        .form-header p {
+            color: #718096;
+        }
+
+        .form-row {
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group.full-width {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+            background: #f8fafc;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4c51bf;
+            background: white;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 150px;
+            line-height: 1.5;
+        }
+
+        .file-upload {
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: border-color 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: #4c51bf;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .view-ticket-section {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+            display: none;
+        }
+
+        .view-ticket-section.active {
+            display: block;
+        }
+
+        .view-ticket-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .view-form-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .view-form-header h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #1a202c;
+        }
+
+        .view-form-header p {
+            color: #718096;
+        }
+
+        .view-form-group {
+            margin-bottom: 20px;
+        }
+
+        .view-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 14px;
+        }
+
+        .view-form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        .view-form-group input:focus {
+            outline: none;
+            border-color: #4c51bf;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .forgot-link {
+            color: #4c51bf;
+            text-decoration: none;
+            font-size: 14px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .ticket-results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .ticket-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .ticket-id {
+            font-weight: 600;
+            color: #4c51bf;
+            font-size: 16px;
+        }
+
+        .ticket-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-open {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-resolved {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-closed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .ticket-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 15px;
+        }
+
+        .ticket-subject {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .ticket-message {
+            color: #4a5568;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .ticket-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .kb-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .kb-header h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #1a202c;
+        }
+
+        .back-btn {
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .back-btn.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .hero-section {
+                padding: 40px 0;
+            }
+
+            .hero-title {
+                font-size: 32px;
+            }
+
+            .support-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ticket-form-section {
+                padding: 20px;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+        }
+
+        /* Help Section Styles */
+        .help-section {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+
+        .help-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .help-header h2 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1a202c;
+        }
+
+        .help-header p {
+            color: #718096;
+            font-size: 18px;
+        }
+
+        .help-categories {
+            display: grid;
+            gap: 30px;
+        }
+
+        .help-category {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .help-category h3 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .help-articles {
+            display: grid;
+            gap: 20px;
+        }
+
+        .help-article {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .help-article:hover {
+            border-color: #4c51bf;
+            box-shadow: 0 4px 12px rgba(76, 81, 191, 0.1);
+        }
+
+        .help-article h4 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+
+        .help-article p {
+            color: #718096;
+            line-height: 1.6;
+        }
+
+        .help-footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .help-footer p {
+            color: #718096;
+            margin-bottom: 15px;
+        }
+
+        .help-footer a {
+            color: #4c51bf;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .help-footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .help-section {
+                padding: 20px;
+            }
+
+            .help-header h2 {
+                font-size: 24px;
+            }
+
+            .help-category {
+                padding: 20px;
+            }
+
+            .help-category h3 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero-section">
+            <h1 class="hero-title">BuyPvaAccount Support</h1>
+            <p class="hero-subtitle">Get instant help with your PVA account purchases. Our support team is here to assist you 24/7.</p>
+        </div>
+
+        <div class="support-grid">
+            <div class="support-card">
+                <span class="card-icon">🎫</span>
+                <h3 class="card-title">Create Support Request</h3>
+                <p class="card-description">Need help with your order? Account issues? Payment problems? Submit a detailed support request.</p>
+                <button class="btn" onclick="showTicketForm()">New Support Request</button>
+            </div>
+
+            <div class="support-card">
+                <span class="card-icon">📋</span>
+                <h3 class="card-title">Check Request Status</h3>
+                <p class="card-description">Track your existing support requests and view responses from our team.</p>
+                <button class="btn secondary" onclick="viewTickets()">View My Requests</button>
+            </div>
+
+            <div class="support-card">
+                <span class="card-icon">📚</span>
+                <h3 class="card-title">Help & Guides</h3>
+                <p class="card-description">Browse our comprehensive guides for PVA account usage, troubleshooting, and best practices.</p>
+                <button class="btn secondary" onclick="toggleHelpSection()">Browse Help Center</button>
+            </div>
+        </div>
+
+        <!-- Help & Guides Section -->
+        <div class="help-section" id="helpSection" style="display: none;">
+            <button class="btn back-btn" onclick="toggleHelpSection()">← Back to Support Center</button>
+            <div class="help-header">
+                <h2>📚 Help Center & Guides</h2>
+                <p>Find answers to common questions and learn best practices for using your PVA accounts.</p>
+            </div>
+
+            <div class="help-categories">
+                <div class="help-category">
+                    <h3>🚀 Getting Started</h3>
+                    <div class="help-articles">
+                        <div class="help-article">
+                            <h4>What are PVA Accounts?</h4>
+                            <p>Phone Verified Accounts (PVA) are social media accounts that have been verified using a real phone number. This verification process ensures the account is legitimate and reduces the risk of being flagged as spam by the platform.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>How to Use Your PVA Account</h4>
+                            <p>After receiving your PVA account, change the password immediately. Use a strong, unique password and enable 2FA if available. Start with light usage to avoid triggering platform algorithms.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>Account Delivery Process</h4>
+                            <p>Orders are typically processed within 24-48 hours. You'll receive account details via email with login credentials and recovery information. All accounts come with full access and verification status.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-category">
+                    <h3>🔧 Troubleshooting</h3>
+                    <div class="help-articles">
+                        <div class="help-article">
+                            <h4>Login Issues</h4>
+                            <p>If you can't log in, try these steps: 1) Check if caps lock is on, 2) Clear browser cache, 3) Try a different browser, 4) Contact support if the account was delivered more than 7 days ago.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>Account Suspended/Restricted</h4>
+                            <p>If your account gets restricted, it may be due to unusual activity. Wait 24-48 hours before attempting to log in again. Avoid using VPNs or proxies that may trigger security flags.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>Phone Verification Issues</h4>
+                            <p>Our PVA accounts come pre-verified. If you're asked to verify again, this usually means the platform detected suspicious activity. Contact support immediately for assistance.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>Password Reset Problems</h4>
+                            <p>If you need to reset your password, use the platform's official password reset process. Never share your recovery email or phone number with anyone.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-category">
+                    <h3>💰 Payment & Refunds</h3>
+                    <div class="help-articles">
+                        <div class="help-article">
+                            <h4>Payment Methods</h4>
+                            <p>We accept various payment methods including cryptocurrency, bank transfers, and digital wallets. All payments are processed securely and instantly.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>Refund Policy</h4>
+                            <p>Refunds are available within 7 days of delivery if the account is inaccessible due to our error. Accounts suspended due to user misuse are not eligible for refunds.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>Processing Times</h4>
+                            <p>Payments are processed instantly. Account delivery takes 24-48 hours. Refunds, when approved, are processed within 3-5 business days.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-category">
+                    <h3>🛡️ Best Practices</h3>
+                    <div class="help-articles">
+                        <div class="help-article">
+                            <h4>Account Security</h4>
+                            <p>Always use strong passwords, enable 2FA, and never share account credentials. Use the account from the same IP/location initially to avoid security flags.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>Usage Guidelines</h4>
+                            <p>Start with minimal activity for the first 48 hours. Gradually increase usage over time. Avoid spammy behavior, excessive posting, or automated actions.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>Avoiding Detection</h4>
+                            <p>Use realistic posting patterns, engage naturally with content, and avoid using multiple accounts from the same IP. Never use bots or automation tools.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>Long-term Success</h4>
+                            <p>Build accounts gradually over time. Focus on quality interactions rather than quantity. Maintain consistent activity patterns that mimic real users.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-category">
+                    <h3>📞 Contact & Support</h3>
+                    <div class="help-articles">
+                        <div class="help-article">
+                            <h4>How to Get Support</h4>
+                            <p>Use the "Create Support Request" form above to submit detailed issues. Include your order number, account details, and screenshots if applicable.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>Response Times</h4>
+                            <p>Support tickets are typically responded to within 2-4 hours during business hours. Complex issues may take up to 24 hours to resolve.</p>
+                        </div>
+                        <div class="help-article">
+                            <h4>Emergency Issues</h4>
+                            <p>For urgent account suspension issues, include "URGENT" in your ticket subject and provide all relevant details immediately.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-footer">
+                <p>Can't find what you're looking for? <a href="#" onclick="showTicketForm(); toggleHelpSection();">Create a support ticket</a> and our team will assist you personally.</p>
+            </div>
+        </div>
+
+        <div class="ticket-form-section" id="ticketForm">
+            <button class="btn back-btn" onclick="hideTicketForm()">← Back to Support Center</button>
+            <div class="form-header">
+                <h2>Create New Support Request</h2>
+                <p>Fill out the form below to submit a support request. Our team typically responds within 2-4 hours.</p>
+            </div>
+
+            <form id="supportForm">
+                <div class="form-group">
+                    <label for="name">Your Full Name *</label>
+                    <input type="text" id="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="priority">Request Priority *</label>
+                    <select id="priority" required>
+                        <option value="">-- Choose Priority Level --</option>
+                        <option value="low">Low - General inquiry</option>
+                        <option value="medium">Medium - Account issue</option>
+                        <option value="high">High - Payment problem</option>
+                        <option value="urgent">Urgent - Account suspended/blocked</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Request Type *</label>
+                    <select id="category" required>
+                        <option value="">-- Select Request Category --</option>
+                        <option value="refunds">Refund Request</option>
+                        <option value="inquiries">General Questions</option>
+                        <option value="replacements">Account Replacement</option>
+                        <option value="collaboration">Business Partnership</option>
+                        <option value="payment">Payment Issues</option>
+                        <option value="suppliers">Supplier Problems</option>
+                        <option value="other">Other Issues</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="accountType">Account Platform</label>
+                    <input type="text" id="accountType" placeholder="e.g., Gmail, Facebook, Instagram, LinkedIn">
+                </div>
+
+                <div class="form-group">
+                    <label for="accountLink">Order/Account URL</label>
+                    <input type="url" id="accountLink" placeholder="https://buypvaaccount.com/order/12345">
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentDate">Purchase Date</label>
+                    <input type="date" id="paymentDate">
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentMethod">Payment Method Used</label>
+                    <select id="paymentMethod">
+                        <option value="">-- Select Payment Method --</option>
+                        <option value="usdt">USDT (Tether)</option>
+                        <option value="btc">Bitcoin (BTC)</option>
+                        <option value="eth">Ethereum (ETH)</option>
+                        <option value="cash">Cash on Delivery</option>
+                        <option value="other">Other Cryptocurrency</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentDetails">Transaction Details</label>
+                    <input type="text" id="paymentDetails" placeholder="Transaction hash, payment ID, or reference number">
+                </div>
+
+                <div class="form-group">
+                    <label for="subject">Request Subject *</label>
+                    <input type="text" id="subject" required placeholder="Brief summary of your issue">
+                </div>
+
+                <div class="form-group">
+                    <label for="message">Detailed Description *</label>
+                    <textarea id="message" required placeholder="Please provide detailed information about your issue. Include:
+• What problem are you experiencing?
+• When did it start?
+• Steps you've already tried
+• Any error messages you received
+• Your order number if applicable
+
+This helps us resolve your issue faster!"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Attach Files (optional)</label>
+                    <div class="file-upload" onclick="document.getElementById('file1').click()">
+                        <p>Click to upload screenshots or documents</p>
+                        <p style="font-size: 12px; color: #718096; margin-top: 5px;">Maximum 5 files, 3MB each total</p>
+                        <input type="file" id="file1" multiple accept="image/*,.pdf,.doc,.docx,.txt,.zip" onchange="handleFileSelect(event)">
+                    </div>
+                    <div id="fileList" style="margin-top: 10px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="captcha">Security Verification *</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="captcha" required placeholder="Enter the security code" style="flex: 1;">
+                        <div id="captchaDisplay" style="background: #f8fafc; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #4c51bf; border: 1px solid #e2e8f0;">
+                            A7B2X9
+                        </div>
+                        <button type="button" class="btn secondary" style="padding: 8px 12px;" onclick="refreshCaptcha()">↻</button>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button type="submit" class="btn">Submit Support Request</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="view-ticket-section" id="viewTicket">
+            <button class="btn back-btn" onclick="hideViewTicket()">← Back to Support Center</button>
+            <div class="view-form-header">
+                <h2>Check Request Status</h2>
+                <p>Enter your request tracking ID and email address to view your support request details and check for updates from our team.</p>
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #2196f3;">
+                    <strong>💡 Tip:</strong> Your tracking ID was sent to your email when you created the support request. Check your email for the confirmation message.
+                </div>
+            </div>
+
+            <form class="view-ticket-form" id="viewTicketForm">
+                <div class="view-form-group">
+                    <label for="trackingId">Request Tracking ID *</label>
+                    <input type="text" id="trackingId" required placeholder="e.g., PVA-ABC-12345">
+                </div>
+
+                <div class="view-form-group">
+                    <label for="viewEmail">Email Address *</label>
+                    <input type="email" id="viewEmail" required placeholder="Enter your registered email">
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="rememberEmail" checked>
+                    <label for="rememberEmail">Save my email for future requests</label>
+                </div>
+
+                <a href="#" class="forgot-link" onclick="showForgotIdHelp()">Lost your tracking ID?</a>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button type="submit" class="btn">Check Request Status</button>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                    <p style="color: #666; margin-bottom: 10px;">Can't find your request?</p>
+                    <button type="button" class="btn secondary" onclick="createNewTicket()">Create New Support Request</button>
+                </div>
+            </form>
+
+            <div class="ticket-results" id="ticketResults">
+                <!-- Ticket details will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTicketForm() {
+            document.getElementById('ticketForm').classList.add('active');
+            document.querySelector('.support-grid').style.display = 'none';
+        }
+
+        function hideTicketForm() {
+            document.getElementById('ticketForm').classList.remove('active');
+            document.querySelector('.support-grid').style.display = 'grid';
+        }
+
+        function viewTickets() {
+            document.getElementById('viewTicket').classList.add('active');
+            document.querySelector('.support-grid').style.display = 'none';
+
+            // Load remembered email if available
+            const rememberedEmail = localStorage.getItem('remembered_email');
+            if (rememberedEmail) {
+                document.getElementById('viewEmail').value = rememberedEmail;
+            }
+        }
+
+        function hideViewTicket() {
+            document.getElementById('viewTicket').classList.remove('active');
+            document.querySelector('.support-grid').style.display = 'grid';
+            document.getElementById('ticketResults').style.display = 'none';
+            document.getElementById('viewTicketForm').reset();
+        }
+
+        function createNewTicket() {
+            hideViewTicket();
+            showTicketForm();
+        }
+
+        function showForgotIdHelp() {
+            alert('Forgot your tracking ID?\n\nCheck your email for the ticket confirmation. The tracking ID is also in the format: XXX-XXX-XXXX\n\nExample: GEV-DRD-26U1\n\nIf you still can\'t find it, contact support with your email address.');
+        }
+
+        // Configuration
+        const REQUESTS_KEY = 'account_requests';
+        const SECURE_LINKS_KEY = 'secure_ticket_links';
+
+        // Generate secure token
+        function generateSecureToken() {
+            return 'tk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Create secure link for ticket
+        function createSecureLink(trackingId) {
+            const token = generateSecureToken();
+            const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
+
+            // Store the mapping
+            secureLinks[token] = trackingId;
+            localStorage.setItem(SECURE_LINKS_KEY, JSON.stringify(secureLinks));
+
+            return `support-ticket.html?token=${token}`;
+        }
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            const fileList = document.getElementById('fileList');
+            const maxFiles = 5;
+            const maxSize = 3 * 1024 * 1024; // 3MB in bytes
+
+            fileList.innerHTML = '';
+
+            if (files.length > maxFiles) {
+                alert(`Maximum ${maxFiles} files allowed`);
+                event.target.value = '';
+                return;
+            }
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+
+                if (file.size > maxSize) {
+                    alert(`File "${file.name}" is too large. Maximum size is 3MB.`);
+                    event.target.value = '';
+                    return;
+                }
+
+                const fileItem = document.createElement('div');
+                fileItem.style.cssText = 'display: flex; align-items: center; gap: 10px; padding: 5px; background: #f8fafc; border-radius: 4px; margin-bottom: 5px;';
+                fileItem.innerHTML = `
+                    <span style="font-size: 12px;">📎 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)</span>
+                    <button type="button" onclick="removeFile(${i})" style="background: #e2e8f0; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">×</button>
+                `;
+                fileList.appendChild(fileItem);
+            }
+        }
+
+        function removeFile(index) {
+            const input = document.getElementById('file1');
+            const dt = new DataTransfer();
+            const files = input.files;
+
+            for (let i = 0; i < files.length; i++) {
+                if (i !== index) {
+                    dt.items.add(files[i]);
+                }
+            }
+
+            input.files = dt.files;
+            handleFileSelect({target: input});
+        }
+
+        function saveFormData() {
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                priority: document.getElementById('priority').value,
+                category: document.getElementById('category').value,
+                accountType: document.getElementById('accountType').value,
+                accountLink: document.getElementById('accountLink').value,
+                paymentDate: document.getElementById('paymentDate').value,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                paymentDetails: document.getElementById('paymentDetails').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value,
+                savedAt: new Date().toISOString()
+            };
+
+            localStorage.setItem('support_form_draft', JSON.stringify(formData));
+        }
+
+        function loadFormData() {
+            const savedData = localStorage.getItem('support_form_draft');
+            if (savedData) {
+                const formData = JSON.parse(savedData);
+
+                document.getElementById('name').value = formData.name || '';
+                document.getElementById('email').value = formData.email || '';
+                document.getElementById('priority').value = formData.priority || '';
+                document.getElementById('category').value = formData.category || '';
+                document.getElementById('accountType').value = formData.accountType || '';
+                document.getElementById('accountLink').value = formData.accountLink || '';
+                document.getElementById('paymentDate').value = formData.paymentDate || '';
+                document.getElementById('paymentMethod').value = formData.paymentMethod || '';
+                document.getElementById('paymentDetails').value = formData.paymentDetails || '';
+                document.getElementById('subject').value = formData.subject || '';
+                document.getElementById('message').value = formData.message || '';
+
+                console.log('Form data loaded from draft');
+            }
+        }
+
+        document.getElementById('supportForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Validate captcha first
+            const enteredCaptcha = document.getElementById('captcha').value.trim();
+            const expectedCaptcha = localStorage.getItem('currentCaptcha');
+
+            if (!enteredCaptcha || enteredCaptcha !== expectedCaptcha) {
+                alert('Please enter the correct security code.');
+                document.getElementById('captcha').focus();
+                return;
+            }
+
+            // Generate tracking ID
+            const trackingId = generateTrackingId();
+
+            // Collect form data
+            const formData = {
+                trackingId: trackingId,
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                priority: document.getElementById('priority').value,
+                category: document.getElementById('category').value,
+                accountType: document.getElementById('accountType').value,
+                accountLink: document.getElementById('accountLink').value,
+                paymentDate: document.getElementById('paymentDate').value,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                paymentDetails: document.getElementById('paymentDetails').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value,
+                status: 'Open',
+                created: new Date().toISOString(),
+                attachments: Array.from(document.getElementById('file1').files).map(f => ({
+                    name: f.name,
+                    size: f.size,
+                    type: f.type
+                }))
+            };
+
+            // Send ticket confirmation email FIRST (synchronously like order notifications)
+            const secureLink = createSecureLink(trackingId);
+            console.log('Sending email to:', formData.email);
+            console.log('Ticket link:', window.location.origin + secureLink);
+
+            const emailResponse = await fetch('http://localhost:3000/api/send-ticket-confirmation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.email,
+                    ticketData: {
+                        trackingId: trackingId,
+                        name: formData.name,
+                        category: formData.category,
+                        priority: formData.priority,
+                        subject: formData.subject,
+                        message: formData.message,
+                        ticketLink: window.location.origin + secureLink,
+                        // Additional form data
+                        accountType: formData.accountType,
+                        accountLink: formData.accountLink,
+                        paymentDate: formData.paymentDate,
+                        paymentMethod: formData.paymentMethod,
+                        paymentDetails: formData.paymentDetails,
+                        attachments: formData.attachments
+                    }
+                })
+            });
+
+            if (!emailResponse.ok) {
+                const errorText = await emailResponse.text();
+                console.error('Email failed:', emailResponse.status, emailResponse.statusText, errorText);
+                alert('Failed to send confirmation email. Please try again or contact support.');
+                return; // Don't create ticket if email fails
+            }
+
+            const emailResult = await emailResponse.json();
+            console.log('✅ Email sent successfully:', emailResult);
+
+            // Only save ticket AFTER email is sent successfully
+            const tickets = JSON.parse(localStorage.getItem('support_tickets') || '[]');
+            tickets.push(formData);
+            localStorage.setItem('support_tickets', JSON.stringify(tickets));
+
+            // Also save to notifications for admin dashboard
+            const accountRequests = JSON.parse(localStorage.getItem('account_requests') || '[]');
+            const notificationData = {
+                // Customer Information
+                name: formData.name,
+                email: formData.email,
+
+                // Request Details
+                priority: formData.priority,
+                category: formData.category,
+                subject: formData.subject,
+                message: formData.message,
+
+                // Account/Order Information
+                accountType: formData.accountType,
+                accountLink: formData.accountLink,
+                paymentDate: formData.paymentDate,
+                paymentMethod: formData.paymentMethod,
+                paymentDetails: formData.paymentDetails,
+
+                // System Fields
+                quantity: '1', // Default quantity for support requests
+                status: 'new',
+                timestamp: new Date().toISOString(),
+                trackingId: trackingId,
+
+                // Attachments
+                attachments: formData.attachments
+            };
+            accountRequests.push(notificationData);
+            localStorage.setItem('account_requests', JSON.stringify(accountRequests));
+
+            // Clear the saved draft after successful submission
+            localStorage.removeItem('support_form_draft');
+
+            // Show success message with link to view ticket
+            const successMessage = `
+                <div style="background: #d1fae5; border: 1px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+                    <h3 style="color: #059669; margin: 0 0 10px 0;">✅ Ticket Submitted & Email Sent!</h3>
+                    <p style="margin: 0 0 15px 0; color: #065f46;">
+                        <strong>Tracking ID:</strong> ${trackingId}
+                    </p>
+                    <p style="margin: 0 0 15px 0; color: #065f46;">
+                        Your support ticket has been created and a confirmation email has been sent to ${formData.email}.
+                    </p>
+                    <a href="${secureLink}" style="background: #059669; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 10px;">
+                        👁️ View Your Ticket
+                    </a>
+                    <p style="margin: 15px 0 0 0; font-size: 14px; color: #065f46;">
+                        Please check your email for the confirmation link. You will receive updates about your ticket status.
+                    </p>
+                </div>
+            `;
+
+            // Insert success message at the top of the page
+            const container = document.querySelector('.container');
+            container.insertAdjacentHTML('afterbegin', successMessage);
+
+            // Scroll to top to show the message
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Reset form
+            this.reset();
+            document.getElementById('fileList').innerHTML = '';
+            hideTicketForm();
+        });
+
+        function generateTrackingId() {
+            const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+            const nums = '23456789';
+            let id = '';
+
+            // Generate pattern like GEV-DRD-26U1
+            for (let i = 0; i < 3; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            id += '-';
+            for (let i = 0; i < 3; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            id += '-';
+            for (let i = 0; i < 4; i++) {
+                id += nums.charAt(Math.floor(Math.random() * nums.length));
+            }
+
+            return id;
+        }
+
+        document.getElementById('viewTicketForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const trackingId = document.getElementById('trackingId').value.trim().toUpperCase();
+            const email = document.getElementById('viewEmail').value.trim();
+            const rememberEmail = document.getElementById('rememberEmail').checked;
+
+            // Save email if remember is checked
+            if (rememberEmail) {
+                localStorage.setItem('remembered_email', email);
+            } else {
+                localStorage.removeItem('remembered_email');
+            }
+
+            // Search for ticket
+            const tickets = JSON.parse(localStorage.getItem('support_tickets') || '[]');
+            const ticket = tickets.find(t => t.trackingId === trackingId && t.email.toLowerCase() === email.toLowerCase());
+
+            const resultsDiv = document.getElementById('ticketResults');
+
+            if (ticket) {
+                // Create secure link and redirect to ticket view (like admin View Details)
+                const secureLink = createSecureLink(ticket.trackingId);
+                window.location.href = secureLink;
+            } else {
+                resultsDiv.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #e53e3e; background: #fed7d7; border-radius: 8px; border: 1px solid #feb2b2;">
+                        <h3 style="margin-bottom: 10px; color: #c53030;">Ticket Not Found</h3>
+                        <p>Please check your tracking ID and email address.</p>
+                        <p style="font-size: 14px; margin-top: 10px;">Make sure the tracking ID format is correct (e.g., GEV-DRD-26U1)</p>
+                    </div>
+                `;
+                resultsDiv.style.display = 'block';
+            }
+        });
+
+        function displayTicketDetails(ticket, container) {
+            const statusClass = ticket.status.toLowerCase();
+            const createdDate = new Date(ticket.created).toLocaleString();
+            const updatedDate = ticket.updated ? new Date(ticket.updated).toLocaleString() : createdDate;
+
+            container.innerHTML = `
+                <div class="ticket-card">
+                    <div class="ticket-header">
+                        <span class="ticket-id">${ticket.trackingId}</span>
+                        <span class="ticket-status status-${statusClass}">${ticket.status}</span>
+                    </div>
+
+                    <div class="ticket-meta">
+                        <div><strong>Created:</strong> ${createdDate}</div>
+                        <div><strong>Updated:</strong> ${updatedDate}</div>
+                        <div><strong>Priority:</strong> ${ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}</div>
+                        <div><strong>Category:</strong> ${getCategoryName(ticket.category)}</div>
+                    </div>
+
+                    ${ticket.accountType ? `<div class="ticket-meta"><div><strong>Account Type:</strong> ${ticket.accountType}</div></div>` : ''}
+                    ${ticket.accountLink ? `<div class="ticket-meta"><div><strong>Account Link:</strong> <a href="${ticket.accountLink}" target="_blank">${ticket.accountLink}</a></div></div>` : ''}
+
+                    <div class="ticket-subject">${ticket.subject}</div>
+                    <div class="ticket-message">${ticket.message.replace(/\n/g, '<br>')}</div>
+
+                    ${ticket.attachments && ticket.attachments.length > 0 ? `
+                        <div style="margin-bottom: 15px;">
+                            <strong>Attachments:</strong>
+                            <ul style="margin-top: 5px;">
+                                ${ticket.attachments.map(att => `<li style="font-size: 14px;">${att.name} (${(att.size / 1024 / 1024).toFixed(2)}MB)</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+
+                    <div class="ticket-actions">
+                        <button class="btn secondary" onclick="refreshTicket('${ticket.trackingId}')">Refresh</button>
+                        ${ticket.status === 'Open' ? `<button class="btn" onclick="closeTicket('${ticket.trackingId}')">Close Ticket</button>` : ''}
+                    </div>
+                </div>
+            `;
+
+            container.style.display = 'block';
+        }
+
+        function getCategoryName(category) {
+            const categories = {
+                'refunds': 'Refunds/Returns',
+                'inquiries': 'General Inquiries',
+                'replacements': 'Account Replacements',
+                'collaboration': 'Partnership/Collaboration',
+                'payment': 'Payment Issues',
+                'suppliers': 'Supplier Issues',
+                'other': 'Other'
+            };
+            return categories[category] || category;
+        }
+
+        function refreshCaptcha() {
+            const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+            let captcha = '';
+            for (let i = 0; i < 6; i++) {
+                captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            localStorage.setItem('currentCaptcha', captcha);
+            document.getElementById('captchaDisplay').textContent = captcha;
+        }
+
+        function refreshTicket(trackingId) {
+            // Re-trigger the form submission to refresh ticket data
+            document.getElementById('viewTicketForm').dispatchEvent(new Event('submit'));
+        }
+
+        // Initialize captcha on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshCaptcha();
+            loadFormData();
+
+            // Auto-save form data on input changes
+            const formInputs = document.querySelectorAll('#supportForm input, #supportForm select, #supportForm textarea');
+            formInputs.forEach(input => {
+                input.addEventListener('input', saveFormData);
+                input.addEventListener('change', saveFormData);
+            });
+        });
+
+        function toggleHelpSection() {
+            const helpSection = document.getElementById('helpSection');
+            const supportGrid = document.querySelector('.support-grid');
+
+            if (helpSection.style.display === 'none' || helpSection.style.display === '') {
+                helpSection.style.display = 'block';
+                supportGrid.style.display = 'none';
+            } else {
+                helpSection.style.display = 'none';
+                supportGrid.style.display = 'grid';
+            }
+        }
+    </script>
+</body>
+</html>

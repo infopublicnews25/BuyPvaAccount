@@ -1,191 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
-  <title>Marketplace</title>
-  <meta id="mp-cart-url" data-url="Cartpage.html">
+  <title>BuyPvaAccount - Premium PVA Accounts Marketplace</title>
+  <meta name="description" content="Buy high-quality PVA accounts for social media marketing. Secure, verified accounts with fast delivery. Trusted marketplace for businesses and marketers.">
+  <meta name="keywords" content="PVA accounts, social media accounts, verified accounts, buy accounts, marketplace, marketing tools">
+  <meta name="author" content="BuyPvaAccount">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+  <meta id="mp-cart-url" data-url="Cartpage.html?lang=en">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root{
-      --bg:#f7f7fb; --text:#111827; --muted:#6b7280; --line:#e5e7eb; --ok:#16a34a; --primary:#2563eb;
-
-      /* layout */
-      --sidebar: 420px;   /* fixed width of right column */
-      --gap: 22px;        /* space between columns */
-
-      /* table column widths (narrow right-side columns so Title gets more space) */
-      --col-qty:   110px;
-      --col-price: 110px;
-      --col-buy:   136px;
-    }
-
-    body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,Tahoma,Arial,sans-serif}
-    .container{max-width:1280px;margin:24px auto;padding:0 16px}
-
-    /* GRID: left flexible, right fixed; separator line in the middle */
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr var(--sidebar);
-      gap: var(--gap);
-      position: relative;
-    }
-    .grid::before{
-      content:"";
-      position:absolute;
-      top:0; bottom:0;
-      left: calc(100% - var(--sidebar) - var(--gap)/2);
-      width:1px;
-      background: var(--line);
-      pointer-events:none;
-      z-index:0;
-    }
-    @media (max-width:1100px){
-      .grid{ grid-template-columns:1fr; }
-      .grid::before{ display:none; }
-    }
-
-    /* ===== Product list (transparent) ===== */
-    .list-wrap{display:flex;flex-direction:column;gap:10px}
-    .toolbar{display:flex;gap:8px;align-items:center;margin:0}
-    .search{flex:1}
-    .search input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
-
-    .list{border-radius:14px;overflow:hidden}
-    /* one source of truth for column widths */
-    .cols{
-      /* Title | Qty | Price | Buy */
-      grid-template-columns: minmax(420px, 1fr) var(--col-qty) var(--col-price) var(--col-buy);
-    }
-    .thead,.row{display:grid;align-items:center;gap:10px}
-    .thead{padding:12px 0;border-bottom:1px solid var(--line);font-weight:600;font-size:14px}
-    .thead > div{padding:0 16px}
-    .thead .center{text-align:center}
-    .row{display:grid;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer}
-    .row:hover{background-color:rgba(0,0,0,0.02)}
-    .row > div{padding:0 16px}
-
-    .title{font-weight:600;line-height:1.25;word-break:break-word}
-    
-    .short-desc{
-      color:var(--muted);
-      font-size:13px;
-      margin-top:2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 400px;
-    }
-    .note{
-      color:var(--muted);
-      font-size:13px;
-      margin-top:2px;
-      word-break:break-word;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .details .note {
-      white-space: normal;
-      overflow: visible;
-    }
-    .qty,.price{text-align:center;font-weight:600}
-
-    .buy{display:flex;justify-content:flex-end}
-    .buy button{
-      width:100%;max-width:var(--col-buy);
-      padding:8px 10px;border-radius:10px;background:var(--ok);color:#fff;border:0;font-weight:700;cursor:pointer
-    }
-
-    /* Details row (transparent) */
-    .details{
-        display:none;
-        border-top:1px dashed var(--line);
-        transition: all 0.3s ease;
-    }
-    .details.show {
-        display: block;
-    }
-    .details .inner{
-        display:grid;
-        grid-template-columns:72px 1fr;
-        gap:12px;
-        padding:12px 16px
-    }
-    /* Add arrow indicator for expandable rows */
-    .note {
-        color: var(--muted);
-        font-size: 13px;
-        margin-top: 2px;
-        word-break: break-word;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-    }
-    .row[aria-expanded="true"] .note {
-        -webkit-line-clamp: initial;
-    }
-    .d-logo{width:64px;height:64px;border-radius:12px;background:#eef2ff;display:grid;place-items:center;font-size:30px;overflow:hidden}
-    .d-logo img{width:100%;height:100%;object-fit:cover;border-radius:12px}
-    .d-title{margin:0 0 6px;font-weight:700}
-    .muted{color:var(--muted);font-size:13px}
-    .fmt{margin-top:4px}
-    .fmt b{font-weight:700}
-
-    /* ===== Sidebar (transparent cards) ===== */
-    .sidebar{display:flex;flex-direction:column;gap:16px}
-    .side{border:1px solid var(--line);border-radius:14px;padding:14px;background:transparent}
-    .side h3{margin:0 0 8px;font-size:22px}
-    
-    /* Request Box Styles */
-    .request-box {
-        background: white !important;
-        padding: 20px !important;
-    }
-    .request-box .muted {
-        font-size: 14px;
-        line-height: 1.5;
-        margin-bottom: 16px;
-    }
-    .form-control {
-        font-size: 14px;
-        font-family: inherit;
-    }
-    .form-control:focus {
-        outline: none;
-        border-color: var(--primary);
-    }
-    .news .item{padding:10px 0;border-top:1px dashed var(--line)}
-    .news .item:first-child{border-top:0}
-    .date{color:#f97316;font-weight:700}
-
-    /* Mini-cart Popup */
-    #mc-overlay{position:fixed;inset:0;background:rgba(0,0,0,.38);display:none;align-items:center;justify-content:center;z-index:999}
-    #mc{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);width:380px;max-width:92vw;padding:14px;color:var(--text)}
-    #mc .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-    #mc .ttl{font-weight:700}
-    #mc .x{border:1px solid var(--line);background:#fff;border-radius:8px;padding:2px 8px;cursor:pointer}
-    #mc .row{display:flex;justify-content:space-between;align-items:center;margin:10px 0;padding:0}
-    #mc input{width:120px;padding:8px;border:1px solid var(--line);border-radius:8px}
-    #mc .total{font-weight:800;font-size:16px}
-    #mc .go{width:100%;margin-top:6px;background:var(--ok);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
-
-    /* slight tighter on smaller desktops */
-    @media (max-width:1200px){
-      :root{ --col-qty:100px; --col-price:100px; --col-buy:128px; }
-      .cols{ grid-template-columns: minmax(340px, 1fr) var(--col-qty) var(--col-price) var(--col-buy); }
-    }
-  </style>
+  <link rel="stylesheet" href="marketplace-styles.css">
+  <script src="secure-storage.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+  <script src="safe-html.js"></script>
 </head>
+
 <body>
   <section aria-label="Marketplace">
     <div class="container">
+      <!-- Logo Section -->
+      <div class="logo-section" style="text-align: left; margin-bottom: 20px; padding: 10px 0;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
+          <span style="color: #2563eb;">Buy</span><span style="color: #7c3aed;">PVA</span><span style="color: #ea580c;">Account</span>.com
+        </h1>
+        <div style="font-size: 18px; font-weight: normal; color: #2563eb; margin-top: 5px;">Best place to buy bulk pva accounts</div>
+      </div>
+
+      <!-- Language Switcher -->
+      <div class="language-switcher notranslate" style="font-size: 14px; text-align: center; margin: 10px auto; padding: 5px; opacity: 1; font-family: system-ui, sans-serif; line-height: 1; width: fit-content; background: #f5f5f5; border-radius: 5px;">
+        <a href="marketplace-ru.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">Russian</a>
+        <span style="color: #666;">|</span>
+        <a href="marketplace.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">English</a>
+        <span style="color: #666;">|</span>
+        <a href="marketplace-zh.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">Chinese</a>
+        <span style="color: #666;">|</span>
+        <a href="marketplace-ar.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">Arabic</a>
+      </div>
+
+      <!-- Content Section -->
+      <div style="text-align: center; margin: 20px 0; color: #666; font-size: 14px;">
+        <p>Discover premium PVA accounts designed for digital marketers and businesses. Our verified accounts ensure maximum engagement and campaign success with authentic profiles from top social platforms.</p>
+        <p>Experience lightning-fast delivery and unparalleled security with our encrypted transaction system. We offer competitive pricing on bulk PVA accounts with dedicated customer support. Join thousands of satisfied marketers who trust our marketplace for high-quality, aged accounts that boost SEO rankings social media reach and other. Start your journey to marketing excellence today.</p>
+        <p>We accept popular cryptocurrencies: USDT TRC20, USDT BEP20, USDT ERC20, Bitcoin, Ethereum, Litecoin, Bitcoin Cash and others.</p>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="category-tabs" id="categoryTabs"></div>
+
       <div class="grid">
         <!-- LEFT: Products -->
         <div class="list-wrap">
           <div class="toolbar">
-            <div class="search"><input id="q" type="search" placeholder="Search title or notes…" aria-label="Search"></div>
+            <div class="search">
+              <input id="q" type="search" placeholder="Search title or notes…" aria-label="Search">
+            </div>
           </div>
 
           <div class="list" role="table" aria-label="Products">
@@ -204,70 +74,49 @@
           <!-- Request Notification Box -->
           <div class="side request-box">
             <h3>Request Notification</h3>
-            <p class="muted">If you can't find your desired account in the list or if it's out of stock, you can place a custom order with us.</p>
+            <p class="muted">If you can't find your desired account in the list or if it's out of stock, you can place a
+              custom order with us.</p>
             <form id="notificationForm" onsubmit="sendNotificationRequest(event)" style="margin-top: 16px;">
               <div style="margin-bottom: 12px;">
-                <label for="accountType" style="display: block; margin-bottom: 6px; font-weight: 500;">Account Type:</label>
+                <label for="accountType" style="display: block; margin-bottom: 6px; font-weight: 500;">Account
+                  Type:</label>
                 <input type="text" id="accountType" placeholder="Type account name" required
-                       style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
+                  style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
               </div>
               <div style="margin-bottom: 12px;">
                 <label for="quantity" style="display: block; margin-bottom: 6px; font-weight: 500;">Amount:</label>
-                <input type="number" id="quantity" placeholder="e.g. 1000" required 
-                       style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
+                <input type="number" id="quantity" placeholder="e.g. 1000" required
+                  style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
               </div>
               <div style="margin-bottom: 12px;">
                 <label for="email" style="display: block; margin-bottom: 6px; font-weight: 500;">E-mail:</label>
                 <input type="email" id="email" placeholder="your-email@example.com" required
-                       style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
+                  style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
               </div>
-              <button type="submit" class="btn" style="width: auto; padding: 8px 16px; background: var(--primary); color: white; font-weight: 600; margin-top: 8px; font-size: 14px;">
+              <button type="submit" class="btn"
+                style="width: auto; padding: 8px 16px; background: var(--primary); color: white; font-weight: 600; margin-top: 8px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer;">
                 Account Request Submit
               </button>
             </form>
           </div>
 
-          <div class="side news">
+          <!-- News & Updates -->
+          <div class="side news" style="font-size: 14px;">
             <h3>News &amp; Updates</h3>
             <div id="newsContainer"></div>
           </div>
 
-          <script>
-            // Load and display news
-            function loadNewsUpdates() {
-              const newsContainer = document.getElementById('newsContainer');
-              const news = JSON.parse(localStorage.getItem('newsUpdates') || '[]');
-              
-              if (news.length === 0) {
-                // Default news if none exist
-                newsContainer.innerHTML = `
-                  <div class="item"><div class="date">Nov 2025</div><div>Crypto payments optimized for speed.</div></div>
-                  <div class="item"><div class="date">Oct 2025</div><div>Bulk pricing available on select items.</div></div>
-                  <div class="item"><div class="date">May 2025</div><div>Improved search &amp; filtering.</div></div>
-                `;
-              } else {
-                newsContainer.innerHTML = news.map(item => `
-                  <div class="item">
-                    <div class="date">${item.date}</div>
-                    <div class="news-content">${item.content}</div>
-                  </div>
-                `).join('');
-              }
-            }
-
-            // Load news when page loads
-            window.addEventListener('load', loadNewsUpdates);
-          </script>
+          <!-- Help Section -->
           <div class="side">
             <h3>Need help?</h3>
-            <div class="muted">Live chat 24/7 • Custom delivery format • Volume quotes.</div>
+            <div class="muted">CONTACTS: <a href="support.html" style="color: #007bff;">support.html</a></div>
           </div>
         </aside>
       </div>
     </div>
   </section>
 
-  <!-- Mini-cart overlay -->
+  <!-- Mini-cart Modal -->
   <div id="mc-overlay" role="dialog" aria-modal="true" aria-labelledby="mc-title">
     <div id="mc">
       <div class="head">
@@ -275,321 +124,23 @@
         <button class="x" type="button" id="mc-close">✕</button>
       </div>
       <div id="mc-item" class="muted" style="margin-bottom:6px"></div>
-      <div class="row"><label for="mc-qty">Qty</label><input id="mc-qty" type="number" min="1" value="1"></div>
-      <div class="row"><label>Unit price</label><div id="mc-price">$0.00</div></div>
-      <div class="row" style="font-weight:700"><label>Total</label><div id="mc-total" class="total">$0.00</div></div>
+      <div class="row">
+        <label for="mc-qty">Qty</label>
+        <input id="mc-qty" type="number" min="1" value="1">
+      </div>
+      <div class="row">
+        <label>Unit price</label>
+        <div id="mc-price">$0.00</div>
+      </div>
+      <div class="row" style="font-weight:700">
+        <label>Total</label>
+        <div id="mc-total" class="total">$0.00</div>
+      </div>
       <button id="mc-go" class="go" type="button">Add to Cart</button>
     </div>
   </div>
 
-  <script>
-    // Notification Request Handler
-    function sendNotificationRequest(event) {
-        event.preventDefault();
-        
-        const accountType = document.getElementById('accountType').value;
-        const quantity = document.getElementById('quantity').value;
-        const email = document.getElementById('email').value;
-        
-        // Save to localStorage for admin panel
-        const requests = JSON.parse(localStorage.getItem('account_requests') || '[]');
-        requests.unshift({
-            accountType,
-            quantity,
-            email,
-            timestamp: new Date().toISOString(),
-            new: true
-        });
-        localStorage.setItem('account_requests', JSON.stringify(requests));
-        
-        // Create mailto link with the form data
-        const subject = encodeURIComponent('Notification Request: ' + accountType);
-        const body = encodeURIComponent(
-            'New Notification Request:\n\n' +
-            'Account Type: ' + accountType + '\n' +
-            'Quantity: ' + quantity + '\n' +
-            'Customer Email: ' + email
-        );
-        
-        // Open default email client with pre-filled data
-        window.location.href = `mailto:info.buypva@gmail.com?subject=${subject}&body=${body}`;
-        
-        // Clear the form
-        document.getElementById('notificationForm').reset();
-        
-        // Show success message
-        alert('Request sent successfully! We will notify you when the items are available.');
-    }
-
-  (function(){
-    const CART_KEY='mp_cart_v1';
-    const CART_URL=(document.getElementById('mp-cart-url')?.dataset?.url)||'/cart/';
-    const MAX_STOCK=500;
-
-    // Demo items (replace with your catalog)
-    // DEFAULT_PRODUCTS: used to supplement the catalog for logged-in users
-    const DEFAULT_PRODUCTS = [
-      {title:'Gmail Account', price:0.25, note:'Good quality gmail<br>easy Access<br>Fast Login', image: 'path/to/gmail.jpg', quantity: 100},
-      {title:'Landing Page Kit', price:9, note:'HTML/CSS responsive sections.', quantity: 100},
-      {title:'Yahoo Account', price:0.20, note:'Fresh Yahoo accounts for registration.', quantity: 80},
-      {title:'Outlook Account', price:0.30, note:'Secure Outlook accounts with recovery set.', quantity: 60},
-      {title:'Facebook Account', price:0.75, note:'Verified-ish Facebook pages/accounts.', quantity: 120},
-      {title:'Instagram Account', price:0.85, note:'Active Instagram accounts with followers.', quantity: 40}
-    ];
-
-    const PRODUCTS = (() => {
-      try {
-        const storedRaw = localStorage.getItem('admin_products_v1');
-        const stored = storedRaw ? JSON.parse(storedRaw) : null;
-
-        // Merge DEFAULT_PRODUCTS with stored admin products so guests and
-        // logged-in users see the same catalog. Stored items override defaults.
-        const map = new Map();
-        DEFAULT_PRODUCTS.forEach(p => map.set((p.title||'').toLowerCase(), Object.assign({}, p)));
-        if (Array.isArray(stored)) {
-          stored.forEach(p => map.set((p.title||'').toLowerCase(), Object.assign({}, p)));
-        }
-        const merged = Array.from(map.values());
-        if (merged.length) return merged;
-      } catch (e) {
-        console.error('Error loading products:', e);
-      }
-      // Fallback to defaults (show all default products)
-      return DEFAULT_PRODUCTS.slice();
-    })();
-
-
-    // --- Stock update logic ---
-    function getRandom(arr) {
-      return arr[Math.floor(Math.random() * arr.length)];
-    }
-
-    function updateStockRandomSubset() {
-      // Pick a random number of items to update (at least 1, up to half the products)
-      const numToUpdate = Math.max(1, Math.floor(Math.random() * Math.ceil(PRODUCTS.length / 2)));
-      // Shuffle product indices
-      const indices = PRODUCTS.map((_, i) => i).sort(() => Math.random() - 0.5);
-      let changed = false;
-      for (let j = 0; j < numToUpdate; j++) {
-        const i = indices[j];
-        const p = PRODUCTS[i];
-        if (typeof p.quantity !== 'number') p.quantity = 100;
-        // Reduce stock by random 3,4,10,20
-        let reduceBy = getRandom([3,4,10,20]);
-        p.quantity = Math.max(0, p.quantity - reduceBy);
-        // If stock drops to 10 or below, refill to random 50,60,70,80,90
-        if (p.quantity <= 10) {
-          p.quantity = getRandom([50,60,70,80,90]);
-        }
-        // Never allow stock to go to 0
-        if (p.quantity === 0) {
-          p.quantity = getRandom([50,60,70,80,90]);
-        }
-        changed = true;
-      }
-      if (changed) {
-        localStorage.setItem('admin_products_v1', JSON.stringify(PRODUCTS));
-      }
-    }
-
-    // Only update stock every 15 minutes, not on page load
-    setInterval(() => {
-      updateStockRandomSubset();
-      render();
-    }, 15 * 60 * 1000);
-
-    function qtyFor(p){
-      if(p.forceZero) return 0;
-      return p.quantity || 0;
-    }
-
-    // Function to render product row and details
-    function renderProduct(p) {
-      // ...existing code...
-    }
-
-    const rowsHost=document.getElementById('rows');
-    const search=document.getElementById('q');
-    const money=n=>'$'+(Number(n)||0).toFixed(2);
-    const idOf=t=>t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
-
-    function render(){
-      rowsHost.innerHTML='';
-      const q=(search?.value||'').toLowerCase().trim();
-
-      PRODUCTS.forEach(p=>{
-        if(q && !p.title.toLowerCase().includes(q) && !(p.note||'').toLowerCase().includes(q)) return;
-
-        const row=document.createElement('div'); row.className='row cols'; row.dataset.id=idOf(p.title);
-        row.innerHTML=`
-          <div>
-            <div class="title" tabindex="0" aria-expanded="false">${p.title}</div>
-            <div class="short-desc">${p.note ? p.note.split('<br>')[0] : ''}</div>
-          </div>
-          <div class="qty">${qtyFor(p)}</div>
-          <div class="price" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-            ${p.offerPrice ? 
-              `<span style="color: var(--ok);">${money(p.offerPrice)}</span>
-               <span style="text-decoration: line-through; color: var(--muted); font-size: 12px;">${money(p.price)}</span>` 
-              : money(p.price)}
-          </div>
-          <div class="buy"><button type="button">Buy Now</button></div>
-        `;
-        rowsHost.appendChild(row);
-
-        // details row
-        const det=document.createElement('div'); det.className='details';
-        det.innerHTML=`
-          <div class="inner">
-            ${p.image ? 
-              `<img src="${p.image}" alt="${p.title}" class="d-logo" style="object-fit: cover;">` :
-              `<div class="d-logo">📦</div>`
-            }
-            <div>
-              <p class="d-title">${p.title}</p>
-              <div class="product-full-description muted" style="margin:0 0 6px 18px">
-                ${p.note || `• Delivery: Email + Password + Login instructions`}
-              </div>
-            </div>
-          </div>
-        `;
-        rowsHost.appendChild(det);
-
-        row.setAttribute('role', 'button');
-        row.setAttribute('tabindex', '0');
-        row.setAttribute('aria-expanded', 'false');
-        const toggle = () => {
-          const isExpanded = row.getAttribute('aria-expanded') === 'true';
-          row.setAttribute('aria-expanded', String(!isExpanded));
-          
-          // Toggle the details visibility
-          if (isExpanded) {
-            det.style.display = 'none';
-            // Show truncated description in row
-            row.querySelector('.note').style.whiteSpace = 'nowrap';
-          } else {
-            det.style.display = 'block';
-            // Show full description in details
-            row.querySelector('.note').style.whiteSpace = 'normal';
-          }
-        };
-
-        // Close other open details when opening a new one
-        const closeOthers = () => {
-          document.querySelectorAll('.row[aria-expanded="true"]').forEach(openRow => {
-            if (openRow !== row) {
-              openRow.setAttribute('aria-expanded', 'false');
-              openRow.querySelector('.note').style.whiteSpace = 'nowrap';
-              openRow.nextElementSibling.style.display = 'none';
-            }
-          });
-        };
-
-        row.addEventListener('click', (e) => {
-          // Don't toggle if clicking the Buy Now button
-          if (!e.target.closest('.buy')) {
-            closeOthers();
-            toggle();
-          }
-        });
-
-        row.addEventListener('keydown', e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            if (!e.target.closest('.buy')) {
-              closeOthers();
-              toggle();
-            }
-          }
-        });
-
-        // mini-cart popup
-        row.querySelector('button').addEventListener('click', e=>{
-          e.preventDefault(); openMiniCart({ id:idOf(p.title), name:p.title, unitPrice:(p.offerPrice || p.price) });
-        });
-      });
-    }
-
-    /* ===== Mini-cart logic ===== */
-    const overlay = document.getElementById('mc-overlay');
-    const mcClose  = document.getElementById('mc-close');
-    const mcItem   = document.getElementById('mc-item');
-    const mcQty    = document.getElementById('mc-qty');
-    const mcPrice  = document.getElementById('mc-price');
-    const mcTotal  = document.getElementById('mc-total');
-    const mcGo     = document.getElementById('mc-go');
-    let currentItem = null;
-
-    const money2 = n => '$'+(Number(n)||0).toFixed(2);
-
-    function openMiniCart(item){
-      currentItem = item;
-      mcItem.textContent = item.name;
-      mcQty.value = '1';
-      mcPrice.textContent = money2(item.unitPrice);
-      mcTotal.textContent = money2(item.unitPrice * 1);
-      overlay.style.display = 'flex'; document.body.style.overflow = 'hidden';
-    }
-    mcQty.addEventListener('input', ()=>{
-      const q = Math.max(1, parseInt(mcQty.value||'1',10)||1);
-      mcQty.value = String(q);
-      if(currentItem) mcTotal.textContent = money2(currentItem.unitPrice * q);
-    });
-    mcClose.addEventListener('click', ()=>{ overlay.style.display='none'; document.body.style.overflow=''; });
-    overlay.addEventListener('click', e=>{ if(e.target===overlay){ overlay.style.display='none'; document.body.style.overflow=''; } });
-    mcGo.addEventListener('click', ()=>{
-      if(!currentItem) return;
-      const qty = Math.max(1, parseInt(mcQty.value||'1',10)||1);
-      const item = { id: currentItem.id, name: currentItem.name, unitPrice: currentItem.unitPrice, quantity: qty, currency:'USD' };
-      addToCart(item);
-      // Reduce product quantity after purchase
-      const product = PRODUCTS.find(p => idOf(p.title) === item.id);
-      if (product && typeof product.quantity === 'number') {
-        product.quantity = Math.max(0, product.quantity - qty);
-        // If stock drops to 10 or below, refill to random 50,60,70,80,90
-        if (product.quantity <= 10) {
-          product.quantity = getRandom([50,60,70,80,90]);
-        }
-        // Never allow stock to go to 0
-        if (product.quantity === 0) {
-          product.quantity = getRandom([50,60,70,80,90]);
-        }
-        localStorage.setItem('admin_products_v1', JSON.stringify(PRODUCTS));
-        render();
-      }
-      overlay.style.display='none'; document.body.style.overflow='';
-      location.href = CART_URL;
-    });
-
-    /* ===== Cart helpers ===== */
-    function readCart(){ try{ const a=JSON.parse(localStorage.getItem(CART_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch{return [];} }
-    function writeCart(a){ try{ localStorage.setItem(CART_KEY, JSON.stringify(a)); }catch{} }
-    function upsert(cart,item){
-      const k=item.id+'|'+item.unitPrice;
-      const i=cart.findIndex(x=>(x.id+'|'+x.unitPrice)===k);
-      if(i>-1){ cart[i].quantity+=item.quantity; cart[i].total=+(cart[i].unitPrice*cart[i].quantity).toFixed(2); }
-      else{ item.total=+(item.unitPrice*item.quantity).toFixed(2); item.ts=Date.now(); cart.push(item); }
-      return cart;
-    }
-    function addToCart(item){
-      let cart=readCart(); cart=upsert(cart,item); writeCart(cart);
-      try{ window.dataLayer=window.dataLayer||[]; window.dataLayer.push({event:'add_to_cart',ecommerce:{currency:'USD',value:+(item.unitPrice*item.quantity).toFixed(2),items:[{item_id:item.id,item_name:item.name,price:item.unitPrice,quantity:item.quantity}]}});}catch{}
-    }
-
-    // init render + search + 30-minute refresh for qty
-    render();
-    document.getElementById('q')?.addEventListener('input', render);
-    const msToNext30Min=()=>{ 
-      const n=new Date(); 
-      const minutes = n.getMinutes();
-      const targetMinutes = minutes < 30 ? 30 : 60;
-      return (targetMinutes - minutes)*60*1000 - n.getSeconds()*1000 - n.getMilliseconds(); 
-    };
-    setTimeout(()=>{ 
-      render(); 
-      setInterval(render, 30*60*1000); // Refresh every 30 minutes
-    }, msToNext30Min());
-  })();
-  </script>
+  <script src="marketplace-script.js"></script>
 </body>
+
 </html>

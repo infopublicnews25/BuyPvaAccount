@@ -909,6 +909,9 @@
             }
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="safe-html.js"></script>
+    <script src="secure-storage.js"></script>
 </head>
 <body>
     <div class="container">
@@ -1047,8 +1050,11 @@
 
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', () => {
-            currentUser = JSON.parse(localStorage.getItem('client_auth') || 'null');
-            
+            // Use secure storage for authentication data
+            currentUser = secureStorage.getSensitive('client_auth') ||
+                         secureStorage.get('client_auth') ||
+                         JSON.parse(localStorage.getItem('client_auth') || 'null');
+
             if (!currentUser) {
                 alert('Please login first');
                 window.location.href = 'login.html';
@@ -1061,8 +1067,8 @@
             if (registeredUser) {
                 // Merge registration data with current user session
                 currentUser = { ...registeredUser, ...currentUser };
-                // Update client_auth with complete data
-                localStorage.setItem('client_auth', JSON.stringify(currentUser));
+                // Update secure storage with complete data
+                secureStorage.setSensitive('client_auth', currentUser);
             }
 
             // Load all sections
@@ -1176,11 +1182,11 @@
             const container = document.getElementById("downloadsContainer");
 
             if (userOrders.length === 0) {
-                container.innerHTML = `<div class="empty-state">
+                safeSetInnerHTML(container, `<div class="empty-state">
                     <div style="font-size: 64px; opacity: 0.3;">📥</div>
                     <h3>No Downloads Available</h3>
                     <p>Once your order is completed and the admin sends delivery files, they will appear here for download.</p>
-                </div>`;
+                </div>`, true);
                 return;
             }
 
@@ -1241,9 +1247,11 @@
                 ` : ''}`;
             }).join('');
 
-            container.innerHTML = downloadsHTML;
+            // Use safe HTML rendering to prevent XSS
+            safeSetInnerHTML(container, downloadsHTML, true);
 
-            container.innerHTML = downloadsHTML;
+            // Remove duplicate line that was causing issues
+            // container.innerHTML = downloadsHTML;
         }
 
         function downloadAttachedFile(orderId, fileName) {
@@ -1401,11 +1409,11 @@
             const container = document.getElementById("notificationsContainer");
 
             if (visibleNotifications.length === 0) {
-                container.innerHTML = `<div class="empty-state">
+                safeSetInnerHTML(container, `<div class="empty-state">
                     <div style="font-size: 64px; opacity: 0.3;">🔔</div>
                     <h3>No Notifications</h3>
                     <p>You have no notifications at the moment.</p>
-                </div>`;
+                </div>`, true);
                 const badge = document.getElementById('notificationBadge');
                 if (badge) badge.style.display = 'none';
                 return;
@@ -1461,7 +1469,7 @@
                 </div>`;
             }).join('');
 
-            container.innerHTML = notificationsHTML;
+            safeSetInnerHTML(container, notificationsHTML, true);
         }
 
         function getTimeAgo(timestamp) {
@@ -1553,11 +1561,11 @@
             const container = document.getElementById("ordersContainer");
 
             if (userOrders.length === 0) {
-                container.innerHTML = `<div class="empty-state">
+                safeSetInnerHTML(container, `<div class="empty-state">
                     <div style="font-size: 64px; opacity: 0.3;">📦</div>
                     <h3>No ${status === 'all' ? '' : status.charAt(0).toUpperCase() + status.slice(1)} Orders</h3>
                     <p>You don't have any ${status === 'all' ? '' : status} orders yet.</p>
-                </div>`;
+                </div>`, true);
                 return;
             }
 
@@ -1587,7 +1595,7 @@
                 </div>`;
             }).join('');
 
-            container.innerHTML = ordersHTML;
+            safeSetInnerHTML(container, ordersHTML, true);
         }
 
 
@@ -1598,11 +1606,11 @@
             const container = document.getElementById("ordersContainer");
 
             if (userOrders.length === 0) {
-                container.innerHTML = `<div class="empty-state">
+                safeSetInnerHTML(container, `<div class="empty-state">
                     <div style="font-size: 64px; opacity: 0.3;">📦</div>
                     <h3>No Orders Yet</h3>
                     <p>Your orders will appear here.</p>
-                </div>`;
+                </div>`, true);
                 return;
             }
 
@@ -1630,7 +1638,7 @@
                 </div>`;
             }).join('');
 
-            container.innerHTML = ordersHTML;
+            safeSetInnerHTML(container, ordersHTML, true);
         }
 
         function loadTracking() {
@@ -1640,11 +1648,11 @@
             const container = document.getElementById("trackingContainer");
 
             if (userOrders.length === 0) {
-                container.innerHTML = `<div class="empty-state">
+                safeSetInnerHTML(container, `<div class="empty-state">
                     <div style="font-size: 64px; opacity: 0.3;">🚚</div>
                     <h3>No Orders to Track</h3>
                     <p>Your order tracking information will appear here once you place an order.</p>
-                </div>`;
+                </div>`, true);
                 return;
             }
 
@@ -1760,7 +1768,7 @@
                 `}`;
             }).join('');
 
-            container.innerHTML = trackingHTML;
+            safeSetInnerHTML(container, trackingHTML, true);
         }
 
         function loadAccountInfo() {
@@ -1774,7 +1782,7 @@
 
             if (!currentUser) {
                 console.error('currentUser is null');
-                container.innerHTML = '<p style="text-align: center; color: #dc3545;">Error: User data not found. Please login again.</p>';
+                safeSetInnerHTML(container, '<p style="text-align: center; color: #dc3545;">Error: User data not found. Please login again.</p>', true);
                 return;
             }
 
@@ -1795,7 +1803,7 @@
                     createdAt
                 });
 
-                container.innerHTML = `
+                safeSetInnerHTML(container, `
                     <div class="edit-form">
                         <div class="form-group">
                             <label>Full Name</label>
@@ -1844,11 +1852,11 @@
                             <button class="btn-secondary" onclick="loadAccountInfo()">? Reset</button>
                         </div>
                     </div>
-                `;
+                `, true);
                 console.log('Account info loaded successfully');
             } catch (error) {
                 console.error('Error loading account info:', error);
-                container.innerHTML = '<p style="text-align: center; color: #dc3545;">Error loading user information. Please try again.</p>';
+                safeSetInnerHTML(container, '<p style="text-align: center; color: #dc3545;">Error loading user information. Please try again.</p>', true);
             }
         }
 
@@ -2004,7 +2012,12 @@
 
         function logout() {
             if (confirm('Are you sure you want to logout?')) {
+                // Clear sensitive authentication data
+                secureStorage.removeSensitive('client_auth');
+                secureStorage.remove('client_auth');
                 localStorage.removeItem('client_auth');
+                localStorage.removeItem('client_auth_migrated');
+
                 window.location.href = 'login.html';
             }
         }

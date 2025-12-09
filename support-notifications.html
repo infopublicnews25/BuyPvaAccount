@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Support Tickets Management - BuyPvaAccount</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card: #fff;
+            --line: #e5e7eb;
+            --text: #111827;
+            --muted: #6b7280;
+            --ok: #16a34a;
+            --danger: #ef4444;
+            --primary: #2563eb;
+            --support: #7c3aed; /* Purple for support */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        /* Login styles */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .error-message {
+            color: var(--danger);
+            text-align: center;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--support);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--support);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .login-btn:hover {
+            background: #6d28d9;
+        }
+
+        .login-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* Dashboard styles */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .top-header h1 {
+            font-size: 24px;
+            margin: 0;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .top-header h1::before {
+            content: "🎫";
+            font-size: 28px;
+        }
+
+        .notification-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        /* Filter styles */
+        .notification-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            background: #f1f5f9;
+        }
+
+        .filter-btn.active {
+            background: var(--support);
+            color: white;
+            border-color: var(--support);
+        }
+
+        .filter-btn .badge {
+            background: var(--muted);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .filter-btn.active .badge {
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--support);
+        }
+
+        /* Notification item styles */
+        .notification-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .notification-item {
+            background: #f8fafc;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+            opacity: 0.8;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .notification-item.new {
+            border-left: 3px solid var(--support);
+            background: white;
+            opacity: 1;
+        }
+
+        .notification-item:hover {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .notification-item .notification-preview {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .notification-item .notification-content {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            flex: 1;
+        }
+
+        .notification-item .account-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .notification-item .account-info-text {
+            display: inline;
+            word-spacing: 0.3em;
+            line-height: 1.5;
+        }
+
+        .notification-item .status-badge {
+            flex-shrink: 0;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .notification-item .status-badge.new {
+            background: #ddd6fe;
+            color: #7c3aed;
+        }
+
+        .notification-item .status-badge.read {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .notification-item .status-badge.processing {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .notification-item .status-badge.complete {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .notification-item .notification-time {
+            flex-shrink: 0;
+            white-space: nowrap;
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .notification-item.new::before {
+            content: "NEW";
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--support);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .notification-item .notification-details {
+            display: none;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--line);
+        }
+
+        .notification-item.expanded .notification-details {
+            display: block;
+        }
+
+        .notification-item .notification-details .account-info div {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .notification-item .notification-details .account-info div strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: var(--support);
+            color: white;
+        }
+
+        .btn-info {
+            background: #0ea5e9;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-success {
+            background: #34d399;
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline-primary {
+            background: white;
+            border: 1px solid var(--support);
+            color: var(--support);
+        }
+
+        .btn-outline-info {
+            background: white;
+            border: 1px solid #0ea5e9;
+            color: #0ea5e9;
+        }
+
+        .btn-outline-warning {
+            background: white;
+            border: 1px solid #f59e0b;
+            color: #f59e0b;
+        }
+
+        .btn-outline-success {
+            background: white;
+            border: 1px solid #34d399;
+            color: #34d399;
+        }
+
+        .btn-outline-danger {
+            background: white;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .no-notifications {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+            background: white;
+            border-radius: 8px;
+            border: 2px dashed var(--line);
+        }
+
+        .no-notifications::before {
+            content: "🎫";
+            font-size: 48px;
+            display: block;
+            margin-bottom: 16px;
+        }
+
+        /* Stats cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            text-align: center;
+        }
+
+        .stat-card .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--support);
+            margin-bottom: 4px;
+        }
+
+        .stat-card .stat-label {
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Priority indicators */
+        .priority-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .priority-indicator.high {
+            background: #ef4444;
+        }
+
+        .priority-indicator.medium {
+            background: #f59e0b;
+        }
+
+        .priority-indicator.low {
+            background: #10b981;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .notification-filters {
+                flex-wrap: wrap;
+            }
+
+            .filter-btn {
+                flex: 1;
+                text-align: center;
+                min-width: 80px;
+            }
+
+            .notification-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Support Tickets Dashboard -->
+    <div id="supportDashboard">
+        <div class="container">
+            <div class="top-header">
+                <h1>Support Tickets Management</h1>
+                <div style="display: flex; gap: 12px;">
+                    <a href="notifications.html" class="btn btn-outline-primary">All Notifications</a>
+                    <a href="admin.html" class="btn btn-outline-primary">Back to Admin</a>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalTickets">0</div>
+                    <div class="stat-label">Total Tickets</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="newTickets">0</div>
+                    <div class="stat-label">New Tickets</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="processingTickets">0</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completedTickets">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+            </div>
+
+            <div class="notification-section">
+                <div class="notification-filters">
+                    <button class="filter-btn active" data-filter="all" onclick="filterTickets('all')">
+                        All <span class="badge">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="new" onclick="filterTickets('new')">
+                        New <span class="badge">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="read" onclick="filterTickets('read')">
+                        Read <span class="badge">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="processing" onclick="filterTickets('processing')">
+                        Processing <span class="badge">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="complete" onclick="filterTickets('complete')">
+                        Complete <span class="badge">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="delete" onclick="filterTickets('delete')">
+                        Delete <span class="badge">0</span>
+                    </button>
+                </div>
+
+                <div id="supportTicketsList" class="notification-list">
+                    <!-- Support tickets will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const REQUESTS_KEY = 'account_requests';
+        const SECURE_LINKS_KEY = 'secure_ticket_links';
+
+        let currentFilter = 'all';
+
+        // Generate secure token
+        function generateSecureToken() {
+            return 'tk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Create secure link for ticket
+        function createSecureLink(trackingId) {
+            const token = generateSecureToken();
+            const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
+
+            // Store the mapping
+            secureLinks[token] = trackingId;
+            localStorage.setItem(SECURE_LINKS_KEY, JSON.stringify(secureLinks));
+
+            return `support-ticket.html?token=${token}`;
+        }
+
+        // Format text to wrap every 7 words
+        function formatNotificationText(text) {
+            const words = text.split(' ');
+            let result = '';
+            for (let i = 0; i < words.length; i += 7) {
+                const group = words.slice(i, i + 7).join(' ');
+                result += `<span class="word-group">${group}</span>`;
+            }
+            return result;
+        }
+
+        // Priority indicators
+        function getPriorityIndicator(priority) {
+            const priorityClass = priority.toLowerCase();
+            return `<span class="priority-indicator ${priorityClass}"></span>${priority}`;
+        }        // Support ticket functions
+        function loadSupportTickets() {
+            const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+            const supportTickets = requests.filter(r => r.category && r.subject);
+
+            const container = document.getElementById('supportTicketsList');
+            container.innerHTML = '';
+
+            let filteredTickets = supportTickets;
+            if (currentFilter !== 'all') {
+                filteredTickets = supportTickets.filter(r => r.status === currentFilter);
+            }
+
+            if (filteredTickets.length === 0) {
+                container.innerHTML = '<div class="no-notifications">No support tickets found in this category</div>';
+                return;
+            }
+
+            filteredTickets.forEach((ticket, index) => {
+                const actualIndex = supportTickets.findIndex(r => r === ticket);
+                const div = createSupportTicketItem(ticket, actualIndex);
+                container.appendChild(div);
+            });
+
+            updateTicketCounts();
+        }
+
+        function createSupportTicketItem(ticket, index) {
+            const div = document.createElement('div');
+            div.className = `notification-item ${ticket.status || 'new'}`;
+
+            const date = new Date(ticket.timestamp);
+            const formattedDate = date.toLocaleString();
+
+            div.innerHTML = `
+                <div class="notification-preview">
+                    <div class="notification-content">
+                        <div class="account-info">
+                            <div class="account-info-text">
+                                ${formatNotificationText(`[${ticket.category}] ${ticket.subject} - ${ticket.email}`)}
+                            </div>
+                        </div>
+                        <span class="status-badge ${ticket.status || 'new'}">${ticket.status || 'new'}</span>
+                        <div class="notification-time">${formattedDate}</div>
+                    </div>
+                </div>
+                <div class="notification-details">
+                    <div class="notification-content">
+                        <div class="account-info">
+                            <!-- Basic Information -->
+                            <div><strong>Tracking ID:</strong> ${ticket.trackingId}</div>
+                            <div><strong>Customer Name:</strong> ${ticket.name || 'N/A'}</div>
+                            <div><strong>Email:</strong> ${ticket.email}</div>
+
+                            <!-- Request Details -->
+                            <div><strong>Priority:</strong> ${getPriorityIndicator(ticket.priority)}</div>
+                            <div><strong>Category:</strong> ${ticket.category}</div>
+                            <div><strong>Subject:</strong> ${ticket.subject}</div>
+
+                            <!-- Account/Order Information -->
+                            <div><strong>Account Platform:</strong> ${ticket.accountType || 'N/A'}</div>
+                            <div><strong>Order/Account URL:</strong> ${ticket.accountLink ? `<a href="${ticket.accountLink}" target="_blank">${ticket.accountLink}</a>` : 'N/A'}</div>
+                            <div><strong>Purchase Date:</strong> ${ticket.paymentDate || 'N/A'}</div>
+                            <div><strong>Payment Method:</strong> ${ticket.paymentMethod || 'N/A'}</div>
+                            <div><strong>Transaction Details:</strong> ${ticket.paymentDetails || 'N/A'}</div>
+
+                            <!-- Message -->
+                            <div><strong>Detailed Description:</strong></div>
+                            <div style="margin-top: 5px; padding: 10px; background: #f8f9fa; border-radius: 4px; border-left: 3px solid #007bff;">${ticket.message}</div>
+
+                            <!-- Attachments -->
+                            ${ticket.attachments && ticket.attachments.length > 0 ?
+                                `<div><strong>Attachments:</strong> ${ticket.attachments.length} file(s)</div>` :
+                                ''}
+                        </div>
+                    </div>
+                    <div class="notification-actions">
+                        <a href="${createSecureLink(ticket.trackingId)}" class="btn btn-primary">
+                            👁️ View Details
+                        </a>
+                        <button class="btn ${ticket.status === 'new' ? 'btn-primary' : 'btn-outline-primary'}"
+                            onclick="event.stopPropagation(); updateTicketStatus(${index}, 'new')"
+                            ${ticket.status === 'new' ? 'disabled' : ''}>New</button>
+                        <button class="btn ${ticket.status === 'read' ? 'btn-info' : 'btn-outline-info'}"
+                            onclick="event.stopPropagation(); updateTicketStatus(${index}, 'read')"
+                            ${ticket.status === 'read' ? 'disabled' : ''}>Read</button>
+                        <button class="btn ${ticket.status === 'processing' ? 'btn-warning' : 'btn-outline-warning'}"
+                            onclick="event.stopPropagation(); updateTicketStatus(${index}, 'processing')"
+                            ${ticket.status === 'processing' ? 'disabled' : ''}>Processing</button>
+                        <button class="btn ${ticket.status === 'complete' ? 'btn-success' : 'btn-outline-success'}"
+                            onclick="event.stopPropagation(); updateTicketStatus(${index}, 'complete')"
+                            ${ticket.status === 'complete' ? 'disabled' : ''}>Complete</button>
+                        <button class="btn ${ticket.status === 'delete' ? 'btn-danger' : 'btn-outline-danger'}"
+                            onclick="event.stopPropagation(); updateTicketStatus(${index}, 'delete')"
+                            ${ticket.status === 'delete' ? 'disabled' : ''}>Delete</button>
+                    </div>
+                </div>
+            `;
+
+            div.addEventListener('click', function() {
+                this.classList.toggle('expanded');
+            });
+
+            return div;
+        }
+
+        function filterTickets(filter) {
+            currentFilter = filter;
+
+            // Update active state and color of filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                const isActive = btn.dataset.filter === filter;
+                btn.classList.toggle('active', isActive);
+            });
+
+            loadSupportTickets();
+        }
+
+        function updateTicketStatus(index, newStatus) {
+            const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+            const supportTickets = requests.filter(r => r.category && r.subject);
+
+            if (index >= 0 && index < supportTickets.length) {
+                // Find the actual index in the main requests array
+                const ticket = supportTickets[index];
+                const actualIndex = requests.findIndex(r => r === ticket);
+
+                if (actualIndex !== -1) {
+                    requests[actualIndex].status = newStatus;
+                    // If it's being deleted, remove it
+                    if (newStatus === 'delete' && confirm('Are you sure you want to delete this support ticket?')) {
+                        requests.splice(actualIndex, 1);
+                    }
+                    localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+                    loadSupportTickets();
+                }
+            }
+        }
+
+        function updateTicketCounts() {
+            const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+            const supportTickets = requests.filter(r => r.category && r.subject);
+
+            const counts = {
+                all: supportTickets.length,
+                new: supportTickets.filter(r => r.status === 'new').length,
+                read: supportTickets.filter(r => r.status === 'read').length,
+                processing: supportTickets.filter(r => r.status === 'processing').length,
+                complete: supportTickets.filter(r => r.status === 'complete').length,
+                delete: supportTickets.filter(r => r.status === 'delete').length
+            };
+
+            // Update filter badges
+            Object.entries(counts).forEach(([status, count]) => {
+                const badge = document.querySelector(`[data-filter="${status}"] .badge`);
+                if (badge) {
+                    badge.textContent = count;
+                }
+            });
+
+            // Update stats cards
+            document.getElementById('totalTickets').textContent = counts.all;
+            document.getElementById('newTickets').textContent = counts.new;
+            document.getElementById('processingTickets').textContent = counts.processing;
+            document.getElementById('completedTickets').textContent = counts.complete;
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSupportTickets();
+        });
+    </script>
+</body>
+</html>

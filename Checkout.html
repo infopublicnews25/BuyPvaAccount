@@ -369,7 +369,7 @@
       try{ sessionStorage.setItem('last_order_snapshot', JSON.stringify(order)); }catch{}
       
       // Send order confirmation email
-      sendOrderConfirmationEmail(em, order);
+      // sendOrderConfirmationEmail(em, order); // Commented out to prevent duplicate - sent from backend
       
       // Handle payment method
       if(selectedPayment === 'crypto') {
@@ -452,7 +452,7 @@
     // Send order confirmation email
     async function sendOrderConfirmationEmail(email, orderData) {
       try {
-        const response = await fetch('http://localhost:3001/api/send-order-confirmation', {
+        const response = await fetch('http://localhost:3000/api/send-order-confirmation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, orderData })

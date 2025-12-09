@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - BuyPvaAccount</title>
+    <meta name="description" content="Get in touch with BuyPvaAccount. Contact our support team for questions about PVA accounts, orders, or any other inquiries.">
+    <meta name="keywords" content="contact, support, BuyPvaAccount, help, customer service">
+    <meta name="author" content="BuyPvaAccount">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #2d3748;
+            line-height: 1.7;
+            font-size: 16px;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(76, 81, 191, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(76, 81, 191, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(76, 81, 191, 0.05) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-20px) rotate(120deg); }
+            66% { transform: translateY(10px) rotate(240deg); }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 25%, #4c51bf 50%, #2d3748 75%, #1a202c 100%);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(76, 81, 191, 0.1), transparent);
+            animation: shimmer 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .hero-title {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            line-height: 1.2;
+            position: relative;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4c51bf, #667eea, #4c51bf);
+            animation: expandWidth 2s ease-out 1s forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes expandWidth {
+            from { width: 0; }
+            to { width: 200px; }
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .contact-section {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin: -40px auto 40px;
+            padding: 80px;
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: none;
+            animation: slideInUp 1s ease-out 0.5s both;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            margin-bottom: 60px;
+        }
+
+        .contact-info h2 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 40px;
+            color: #1a202c;
+            text-align: center;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            padding: 24px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(76, 81, 191, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .info-item:hover::before {
+            left: 100%;
+        }
+
+        .info-item:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            border-color: #4c51bf;
+        }
+
+        .info-icon {
+            font-size: 28px;
+            margin-right: 20px;
+            width: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            animation: bounceIn 0.6s ease-out both;
+            animation-delay: calc(var(--item-index, 0) * 0.1s);
+        }
+
+        .info-item:hover .info-icon {
+            transform: scale(1.2) rotate(5deg);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1.2) rotate(5deg); }
+            50% { transform: scale(1.3) rotate(-5deg); }
+            100% { transform: scale(1.2) rotate(5deg); }
+        }
+
+        .info-content h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+
+        .info-content p {
+            color: #718096;
+            line-height: 1.6;
+        }
+
+        .contact-form h2 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 40px;
+            color: #1a202c;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            background: #f8fafc;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4c51bf;
+            box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1);
+            background: white;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 140px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 16px 40px;
+            background: linear-gradient(135deg, #4c51bf 0%, #2d3748 100%);
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 100%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(76, 81, 191, 0.3);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(76, 81, 191, 0.4);
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 8px 25px rgba(76, 81, 191, 0.4);
+            }
+            to {
+                box-shadow: 0 8px 25px rgba(76, 81, 191, 0.4), 0 0 20px rgba(76, 81, 191, 0.6);
+            }
+        }
+
+        .message {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .faq-section {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 60px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .faq-section h2 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 40px;
+            color: #1a202c;
+            text-align: center;
+        }
+
+        .faq-item {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            animation: fadeInLeft 0.6s ease-out both;
+            animation-delay: calc(var(--faq-index, 0) * 0.1s);
+            transition: all 0.3s ease;
+        }
+
+        .faq-item:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .faq-question {
+            font-weight: 600;
+            color: #2d3748;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 30px;
+            background: white;
+            transition: background 0.3s ease;
+        }
+
+        .faq-question:hover {
+            background: #f8fafc;
+        }
+
+        .faq-answer {
+            color: #718096;
+            padding: 0 30px 24px;
+            line-height: 1.7;
+            display: none;
+        }
+
+        .faq-toggle {
+            font-size: 20px;
+            color: #4c51bf;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .faq-item.active .faq-toggle {
+            transform: rotate(45deg);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+
+            .hero-section {
+                padding: 60px 0;
+            }
+
+            .hero-title {
+                font-size: 36px;
+            }
+
+            .hero-subtitle {
+                font-size: 18px;
+            }
+
+            .contact-section {
+                margin: -20px auto 20px;
+                padding: 40px 20px;
+            }
+
+            .contact-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .contact-info h2,
+            .contact-form h2 {
+                font-size: 24px;
+            }
+
+            .faq-section {
+                padding: 40px 20px;
+            }
+
+            .faq-section h2 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Contact Us</h1>
+            <p class="hero-subtitle">Have questions? Need support? We're here to help! Get in touch with our team.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="contact-section">
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <h2>Get In Touch</h2>
+
+                    <div class="info-item" style="--item-index: 0;">
+                        <div class="info-icon">📧</div>
+                        <div class="info-content">
+                            <h3>Email Support</h3>
+                            <p>support@buypvaaccount.com</p>
+                            <p>We respond within 24 hours</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item" style="--item-index: 1;">
+                        <div class="info-icon">💬</div>
+                        <div class="info-content">
+                            <h3>Live Chat</h3>
+                            <p>Available 24/7</p>
+                            <p>Instant support for urgent issues</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item" style="--item-index: 2;">
+                        <div class="info-icon">⏰</div>
+                        <div class="info-content">
+                            <h3>Business Hours</h3>
+                            <p>Monday - Sunday: 24/7</p>
+                            <p>Holiday support available</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item" style="--item-index: 3;">
+                        <div class="info-icon">🌍</div>
+                        <div class="info-content">
+                            <h3>Global Support</h3>
+                            <p>Serving customers worldwide</p>
+                            <p>Multi-language support</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-form">
+                    <h2>Send us a Message</h2>
+                    <div id="message" class="message"></div>
+                    <form id="contactForm">
+                        <div class="form-group">
+                            <label for="name">Full Name *</label>
+                            <input type="text" id="name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="subject">Subject *</label>
+                            <select id="subject" required>
+                                <option value="">Select a subject</option>
+                                <option value="order">Order Inquiry</option>
+                                <option value="technical">Technical Support</option>
+                                <option value="billing">Billing Question</option>
+                                <option value="account">Account Issue</option>
+                                <option value="partnership">Partnership</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="message">Message *</label>
+                            <textarea id="message" required placeholder="Please describe your inquiry in detail..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn">Send Message</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <h2>Frequently Asked Questions</h2>
+
+                <div class="faq-item" style="--faq-index: 0;">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <span>How long does delivery take?</span>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Most orders are processed and delivered within 5-15 minutes after payment confirmation. During peak hours, it may take up to 30 minutes.
+                    </div>
+                </div>
+
+                <div class="faq-item" style="--faq-index: 1;">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <span>What payment methods do you accept?</span>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        We accept cryptocurrency payments (BTC, ETH, USDT) and Cash on Delivery for local customers. All payments are processed securely.
+                    </div>
+                </div>
+
+                <div class="faq-item" style="--faq-index: 2;">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <span>What if I receive a suspended account?</span>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        All our accounts are verified before delivery. If you receive a suspended account, contact our support team immediately for a replacement or refund.
+                    </div>
+                </div>
+
+                <div class="faq-item" style="--faq-index: 3;">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <span>Do you provide refunds?</span>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        We offer refunds within 24 hours of purchase if the account is suspended or doesn't meet our quality standards. Refund requests must be submitted through our support system.
+                    </div>
+                </div>
+
+                <div class="faq-item" style="--faq-index: 4;">
+                    <div class="faq-question" onclick="toggleFAQ(this)">
+                        <span>How do I access my purchased accounts?</span>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        After your order is completed, you'll receive login credentials via email and can also access them through your account dashboard under the "Downloads" section.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleFAQ(element) {
+            const item = element.closest('.faq-item');
+            const answer = element.nextElementSibling;
+            const toggle = element.querySelector('.faq-toggle');
+
+            // Close other FAQs
+            document.querySelectorAll('.faq-item').forEach(otherItem => {
+                if (otherItem !== item) {
+                    otherItem.classList.remove('active');
+                    otherItem.querySelector('.faq-answer').style.display = 'none';
+                    otherItem.querySelector('.faq-toggle').textContent = '+';
+                }
+            });
+
+            // Toggle current FAQ
+            if (answer.style.display === 'block') {
+                item.classList.remove('active');
+                answer.style.display = 'none';
+                toggle.textContent = '+';
+            } else {
+                item.classList.add('active');
+                answer.style.display = 'block';
+                toggle.textContent = '×';
+            }
+        }
+
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                // For now, just store in localStorage as contact_requests
+                // In production, this would be sent to backend
+                const requests = JSON.parse(localStorage.getItem('contact_requests') || '[]');
+                requests.push(formData);
+                localStorage.setItem('contact_requests', JSON.stringify(requests));
+
+                showMessage('Thank you for your message! We\'ll get back to you within 24 hours.', 'success');
+
+                // Clear form
+                e.target.reset();
+
+            } catch (error) {
+                console.error('Error submitting contact form:', error);
+                showMessage('Sorry, there was an error sending your message. Please try again.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+            }
+        });
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+        }
+    </script>
+</body>
+</html>

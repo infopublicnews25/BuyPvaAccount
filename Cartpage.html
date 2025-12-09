@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Cart</title>
+  <title id="cart-page-title">Cart</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{--bg:#f7f7fb;--card:#fff;--line:#e5e7eb;--text:#111827;--muted:#6b7280;--ok:#16a34a;--danger:#ef4444}
@@ -37,34 +37,40 @@
       .summary .box{width:100%;min-width:auto}
       .qty-input{width:100%}
     }
+    /* Arabic RTL support */
+    .rtl { direction: rtl; }
+    .rtl thead th { text-align: right; }
+    .rtl tbody td { text-align: right; }
+    .rtl .summary { justify-content: flex-start; }
+    .rtl .summary .row { flex-direction: row-reverse; }
   </style>
 </head>
 <body>
   <section id="cart" aria-label="Shopping cart">
     <div class="container">
       <div class="header">
-        <h1>Your Cart</h1>
+        <h1 id="cart-title">Your Cart</h1>
         <div class="actions">
-          <a class="btn ghost" href="marketplace.html">← Continue shopping</a>
+          <a class="btn ghost" id="continue-shopping-link" href="marketplace.html">← Continue shopping</a>
         </div>
       </div>
 
       <div class="card">
         <table role="table" aria-label="Cart items">
-          <thead><tr><th>Product</th><th>Unit price</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead>
+          <thead><tr><th id="product-header">Product</th><th id="unit-price-header">Unit price</th><th id="qty-header">Qty</th><th id="subtotal-header">Subtotal</th><th></th></tr></thead>
           <tbody id="cart-body"></tbody>
         </table>
-        <div id="empty" class="empty" hidden>No items in cart yet.</div>
+        <div id="empty" class="empty" hidden id="empty-message">No items in cart yet.</div>
       </div>
 
       <div class="summary">
         <div class="box" aria-live="polite">
-          <div class="row"><span>Subtotal</span><strong id="sum-sub">$0.00</strong></div>
-          <div class="row"><span>Discount</span><span id="sum-dis">$0.00</span></div>
-          <div class="row total"><span>Total</span><strong id="sum-total">$0.00</strong></div>
+          <div class="row"><span id="subtotal-label">Subtotal</span><strong id="sum-sub">$0.00</strong></div>
+          <div class="row"><span id="discount-label">Discount</span><span id="sum-dis">$0.00</span></div>
+          <div class="row total"><span id="total-label">Total</span><strong id="sum-total">$0.00</strong></div>
           <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-            <a class="btn ghost" href="marketplace.html">← Add more</a>
-            <a id="to-checkout" class="btn ok" href="Checkout.html">Proceed to checkout</a>
+            <a class="btn ghost" id="add-more-link" href="marketplace.html">← Add more</a>
+            <a id="to-checkout" class="btn ok" href="Checkout.html" id="checkout-btn">Proceed to checkout</a>
           </div>
         </div>
       </div>
@@ -181,7 +187,7 @@
     render();
 
     document.getElementById('to-checkout')?.addEventListener('click',e=>{
-      if(!cart.length){ e.preventDefault(); alert('Your cart is empty.'); return; }
+      if(!cart.length){ e.preventDefault(); alert(window.cartTranslations?.cartEmptyAlert || 'Your cart is empty.'); return; }
       try{
         const t=totals();
         window.dataLayer=window.dataLayer||[];
@@ -195,5 +201,242 @@
     });
   })();
   </script>
+  <script>
+  // Cart page translations
+  (function() {
+    const lang = detectLanguage();
+    
+    const translations = {
+      en: {
+        cartTitle: 'Your Cart',
+        continueShopping: '← Continue shopping',
+        product: 'Product',
+        unitPrice: 'Unit price',
+        qty: 'Qty',
+        subtotal: 'Subtotal',
+        remove: 'Remove',
+        emptyMessage: 'No items in cart yet.',
+        subtotalLabel: 'Subtotal',
+        discountLabel: 'Discount',
+        totalLabel: 'Total',
+        addMore: '← Add more',
+        proceedToCheckout: 'Proceed to checkout'
+      },
+      ru: {
+        cartTitle: 'Ваша корзина',
+        continueShopping: '← Продолжить покупки',
+        product: 'Продукт',
+        unitPrice: 'Цена за единицу',
+        qty: 'Кол-во',
+        subtotal: 'Промежуточный итог',
+        remove: 'Удалить',
+        emptyMessage: 'В корзине пока нет товаров.',
+        subtotalLabel: 'Промежуточный итог',
+        discountLabel: 'Скидка',
+        totalLabel: 'Итого',
+        addMore: '← Добавить еще',
+        proceedToCheckout: 'Перейти к оформлению'
+      },
+      zh: {
+        cartTitle: '您的购物车',
+        continueShopping: '← 继续购物',
+        product: '产品',
+        unitPrice: '单价',
+        qty: '数量',
+        subtotal: '小计',
+        remove: '移除',
+        emptyMessage: '购物车中还没有商品。',
+        subtotalLabel: '小计',
+        discountLabel: '折扣',
+        totalLabel: '总计',
+        addMore: '← 添加更多',
+        proceedToCheckout: '前往结账'
+      },
+      ar: {
+        cartTitle: 'سلة التسوق الخاصة بك',
+        continueShopping: '← متابعة التسوق',
+        product: 'المنتج',
+        unitPrice: 'سعر الوحدة',
+        qty: 'الكمية',
+        subtotal: 'المجموع الفرعي',
+        remove: 'إزالة',
+        emptyMessage: 'لا توجد عناصر في السلة بعد.',
+        subtotalLabel: 'المجموع الفرعي',
+        discountLabel: 'الخصم',
+        totalLabel: 'المجموع',
+        addMore: '← إضافة المزيد',
+        proceedToCheckout: 'المتابعة إلى الدفع'
+      }
+    };
+
+    const t = translations[lang] || translations.en;
+
+    // Apply translations
+    document.getElementById('cart-title').textContent = t.cartTitle;
+    document.getElementById('continue-shopping-link').textContent = t.continueShopping;
+    document.getElementById('product-header').textContent = t.product;
+    document.getElementById('unit-price-header').textContent = t.unitPrice;
+    document.getElementById('qty-header').textContent = t.qty;
+    document.getElementById('subtotal-header').textContent = t.subtotal;
+    document.getElementById('empty-message').textContent = t.emptyMessage;
+    document.getElementById('subtotal-label').textContent = t.subtotalLabel;
+    document.getElementById('discount-label').textContent = t.discountLabel;
+    document.getElementById('total-label').textContent = t.totalLabel;
+    document.getElementById('add-more-link').textContent = t.addMore;
+    document.getElementById('checkout-btn').textContent = t.proceedToCheckout;
+
+    // Update remove buttons text
+    document.querySelectorAll('.danger').forEach(btn => {
+      if (btn.textContent === 'Remove') btn.textContent = t.remove;
+    });
+
+    // Update language switcher active state
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      if (btn.getAttribute('data-lang') === lang) {
+        btn.style.fontWeight = 'bold';
+        btn.style.textDecoration = 'underline';
+      }
+    });
+  })();
+
+  // Dynamic cart page translations
+  (function() {
+    // Language detection from URL parameter
+    function detectLanguage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const lang = urlParams.get('lang');
+      return ['en', 'ru', 'zh', 'ar'].includes(lang) ? lang : 'en';
+    }
+
+    const lang = detectLanguage();
+
+    // Apply RTL class for Arabic
+    if (lang === 'ar') {
+      document.body.classList.add('rtl');
+      document.documentElement.setAttribute('lang', 'ar');
+      document.documentElement.setAttribute('dir', 'rtl');
+    } else {
+      document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh' : lang);
+      document.documentElement.setAttribute('dir', 'ltr');
+    }
+
+    const translations = {
+      en: {
+        pageTitle: 'Cart',
+        cartTitle: 'Your Cart',
+        continueShopping: '← Continue shopping',
+        product: 'Product',
+        unitPrice: 'Unit price',
+        qty: 'Qty',
+        subtotal: 'Subtotal',
+        remove: 'Remove',
+        emptyMessage: 'No items in cart yet.',
+        subtotalLabel: 'Subtotal',
+        discountLabel: 'Discount',
+        totalLabel: 'Total',
+        addMore: '← Add more',
+        proceedToCheckout: 'Proceed to checkout',
+        cartEmptyAlert: 'Your cart is empty.'
+      },
+      ru: {
+        pageTitle: 'Корзина',
+        cartTitle: 'Ваша корзина',
+        continueShopping: '← Продолжить покупки',
+        product: 'Продукт',
+        unitPrice: 'Цена за единицу',
+        qty: 'Кол-во',
+        subtotal: 'Промежуточный итог',
+        remove: 'Удалить',
+        emptyMessage: 'В корзине пока нет товаров.',
+        subtotalLabel: 'Промежуточный итог',
+        discountLabel: 'Скидка',
+        totalLabel: 'Итого',
+        addMore: '← Добавить еще',
+        proceedToCheckout: 'Перейти к оформлению',
+        cartEmptyAlert: 'Ваша корзина пуста.'
+      },
+      zh: {
+        pageTitle: '购物车',
+        cartTitle: '您的购物车',
+        continueShopping: '← 继续购物',
+        product: '产品',
+        unitPrice: '单价',
+        qty: '数量',
+        subtotal: '小计',
+        remove: '移除',
+        emptyMessage: '购物车中还没有商品。',
+        subtotalLabel: '小计',
+        discountLabel: '折扣',
+        totalLabel: '总计',
+        addMore: '← 添加更多',
+        proceedToCheckout: '前往结账',
+        cartEmptyAlert: '您的购物车是空的。'
+      },
+      ar: {
+        pageTitle: 'سلة التسوق',
+        cartTitle: 'سلة التسوق الخاصة بك',
+        continueShopping: 'متابعة التسوق ←',
+        product: 'المنتج',
+        unitPrice: 'سعر الوحدة',
+        qty: 'الكمية',
+        subtotal: 'المجموع الفرعي',
+        remove: 'إزالة',
+        emptyMessage: 'لا توجد عناصر في السلة بعد.',
+        subtotalLabel: 'المجموع الفرعي',
+        discountLabel: 'الخصم',
+        totalLabel: 'المجموع',
+        addMore: 'إضافة المزيد ←',
+        proceedToCheckout: 'المتابعة إلى الدفع',
+        cartEmptyAlert: 'سلة التسوق فارغة.'
+      }
+    };
+
+    const t = translations[lang] || translations.en;
+
+    // Apply translations
+    document.getElementById('cart-page-title').textContent = t.pageTitle;
+    document.getElementById('cart-title').textContent = t.cartTitle;
+    document.getElementById('continue-shopping-link').textContent = t.continueShopping;
+    document.getElementById('product-header').textContent = t.product;
+    document.getElementById('unit-price-header').textContent = t.unitPrice;
+    document.getElementById('qty-header').textContent = t.qty;
+    document.getElementById('subtotal-header').textContent = t.subtotal;
+    document.getElementById('empty-message').textContent = t.emptyMessage;
+    document.getElementById('subtotal-label').textContent = t.subtotalLabel;
+    document.getElementById('discount-label').textContent = t.discountLabel;
+    document.getElementById('total-label').textContent = t.totalLabel;
+    document.getElementById('add-more-link').textContent = t.addMore;
+    document.getElementById('checkout-btn').textContent = t.proceedToCheckout;
+
+    // Update remove buttons text
+    document.querySelectorAll('.danger').forEach(btn => {
+      if (btn.textContent === 'Remove') btn.textContent = t.remove;
+    });
+
+    // Update language switcher active state
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      if (btn.getAttribute('data-lang') === lang) {
+        btn.style.fontWeight = 'bold';
+        btn.style.textDecoration = 'underline';
+      }
+    });
+
+    // Update continue shopping link based on language
+    const continueLink = document.getElementById('continue-shopping-link');
+    const addMoreLink = document.getElementById('add-more-link');
+    const marketplaceUrls = {
+      en: 'marketplace.html',
+      ru: 'marketplace-ru.html',
+      zh: 'marketplace-zh.html',
+      ar: 'marketplace-ar.html'
+    };
+    continueLink.href = marketplaceUrls[lang] || 'marketplace.html';
+    addMoreLink.href = marketplaceUrls[lang] || 'marketplace.html';
+
+    // Store the translation for cart empty alert
+    window.cartTranslations = { cartEmptyAlert: t.cartEmptyAlert };
+  })();
+  </script>
+  <script src="language-utils.js"></script>
 </body>
 </html>

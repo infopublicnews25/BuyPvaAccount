@@ -4,6 +4,14 @@
   "private": true,
   "scripts": {
     "start": "node backend/server.js",
-    "backend": "node backend/server.js"
+    "backend": "node backend/server.js",
+    "sync-marketplace": "node sync-marketplace.js",
+    "sync-marketplace:watch": "node sync-marketplace.js watch"
+  },
+  "dependencies": {
+    "dompurify": "^3.3.0"
+  },
+  "devDependencies": {
+    "chokidar": "^5.0.0"
   }
 }

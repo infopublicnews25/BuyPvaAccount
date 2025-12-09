@@ -1,5 +1,5 @@
 {
   "provider": "gmail",
   "email": "info.buypva@gmail.com",
-  "password": "gmxeltypsbsqrfrr"
+  "note": "Password moved to .env file for security. Do not store passwords in JSON files."
 }

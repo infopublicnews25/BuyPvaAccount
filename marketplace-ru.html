@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>BuyPvaAccount - Премиум рынок PVA аккаунтов</title>
+  <meta name="description" content="Купить высококачественные PVA аккаунты для маркетинга в социальных сетях. Безопасные, проверенные аккаунты с быстрой доставкой. Доверенный рынок для бизнеса и маркетологов.">
+  <meta name="keywords" content="PVA аккаунты, аккаунты социальных сетей, проверенные аккаунты, купить аккаунты, рынок, инструменты маркетинга">
+  <meta name="author" content="BuyPvaAccount">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+  <meta id="mp-cart-url" data-url="Cartpage.html?lang=ru">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="marketplace-styles.css">
+  <script src="secure-storage.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+  <script src="safe-html.js"></script>
+</head>
+
+<body>
+  <section aria-label="Marketplace">
+    <div class="container">
+      <!-- Logo Section -->
+      <div class="logo-section" style="text-align: left; margin-bottom: 20px; padding: 10px 0;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
+          <span style="color: #2563eb;">Buy</span><span style="color: #7c3aed;">PVA</span><span style="color: #ea580c;">Account</span>.com
+        </h1>
+        <div style="font-size: 18px; font-weight: normal; color: #2563eb; margin-top: 5px;">Лучшее место для покупки оптовых PVA аккаунтов</div>
+      </div>
+
+      <!-- Language Switcher -->
+      <div class="language-switcher notranslate" style="font-size: 14px; text-align: center; margin: 10px auto; padding: 5px; opacity: 1; font-family: system-ui, sans-serif; line-height: 1; width: fit-content; background: #f5f5f5; border-radius: 5px;">
+        <a href="marketplace-ru.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">Russian</a>
+        <span style="color: #666;">|</span>
+        <a href="marketplace.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">English</a>
+        <span style="color: #666;">|</span>
+        <a href="marketplace-zh.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">Chinese</a>
+        <span style="color: #666;">|</span>
+        <a href="marketplace-ar.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">Arabic</a>
+      </div>
+
+      <!-- Content Section -->
+      <div style="text-align: center; margin: 20px 0; color: #666; font-size: 14px;">
+        <p>Откройте для себя премиум PVA аккаунты, разработанные для цифровых маркетологов и бизнеса. Наши проверенные аккаунты обеспечивают максимальную вовлеченность и успех кампаний с аутентичными профилями от ведущих социальных платформ.</p>
+        <p>Испытайте молниеносную доставку и непревзойденную безопасность с нашей зашифрованной системой транзакций. Мы предлагаем конкурентные цены на оптовые PVA аккаунты с выделенной поддержкой клиентов. Присоединяйтесь к тысячам довольных маркетологов, которые доверяют нашей торговой площадке высококачественные, aged аккаунты, которые повышают SEO рейтинги, охват в социальных сетях и другое. Начните свое путешествие к маркетинговому совершенству сегодня.</p>
+        <p>Мы принимаем популярные криптовалюты: USDT TRC20, USDT BEP20, USDT ERC20, Bitcoin, Ethereum, Litecoin, Bitcoin Cash и другие.</p>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="category-tabs" id="categoryTabs"></div>
+
+      <div class="grid">
+        <!-- LEFT: Products -->
+        <div class="list-wrap">
+          <div class="toolbar">
+            <div class="search">
+              <input id="q" type="search" placeholder="Поиск по названию или заметкам…" aria-label="Search">
+            </div>
+          </div>
+
+          <div class="list" role="table" aria-label="Products">
+            <div class="thead cols" role="row">
+              <div>Название</div>
+              <div class="center">Количество</div>
+              <div class="center">Цена</div>
+              <div></div>
+            </div>
+            <div id="rows"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Sidebar -->
+        <aside class="sidebar">
+          <!-- Запрос уведомления Box -->
+          <div class="side request-box">
+            <h3>Запрос уведомления</h3>
+            <p class="muted">If you can't find your desired account in the list or if it's out of stock, you can place a
+              custom order with us.</p>
+            <form id="notificationForm" onsubmit="sendNotificationRequest(event)" style="margin-top: 16px;">
+              <div style="margin-bottom: 12px;">
+                <label for="accountType" style="display: block; margin-bottom: 6px; font-weight: 500;">Account
+                  Type:</label>
+                <input type="text" id="accountType" placeholder="Type account name" required
+                  style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
+              </div>
+              <div style="margin-bottom: 12px;">
+                <label for="quantity" style="display: block; margin-bottom: 6px; font-weight: 500;">Количество:</label>
+                <input type="number" id="quantity" placeholder="e.g. 1000" required
+                  style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
+              </div>
+              <div style="margin-bottom: 12px;">
+                <label for="email" style="display: block; margin-bottom: 6px; font-weight: 500;">Электронная почта:</label>
+                <input type="email" id="email" placeholder="your-email@example.com" required
+                  style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
+              </div>
+              <button type="submit" class="btn"
+                style="width: auto; padding: 8px 16px; background: var(--primary); color: white; font-weight: 600; margin-top: 8px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer;">
+                Отправить запрос аккаунта
+              </button>
+            </form>
+          </div>
+
+          <!-- Новости и обновления -->
+          <div class="side news" style="font-size: 14px;">
+            <h3>News &amp; Updates</h3>
+            <div id="newsContainer"></div>
+          </div>
+
+          <!-- Help Section -->
+          <div class="side">
+            <h3>Нужна помощь?</h3>
+            <div class="muted">CONTACTS: <a href="support.html" style="color: #007bff;">support.html</a></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mini-cart Modal -->
+  <div id="mc-overlay" role="dialog" aria-modal="true" aria-labelledby="mc-title">
+    <div id="mc">
+      <div class="head">
+        <div id="mc-title" class="ttl">Быстрое добавление</div>
+        <button class="x" type="button" id="mc-close">✕</button>
+      </div>
+      <div id="mc-item" class="muted" style="margin-bottom:6px"></div>
+      <div class="row">
+        <label for="mc-qty">Кол-во</label>
+        <input id="mc-qty" type="number" min="1" value="1">
+      </div>
+      <div class="row">
+        <label>Цена за единицу</label>
+        <div id="mc-price">$0.00</div>
+      </div>
+      <div class="row" style="font-weight:700">
+        <label>Мجموع</label>
+        <div id="mc-total" class="total">$0.00</div>
+      </div>
+      <button id="mc-go" class="go" type="button">Добавить в корзину</button>
+    </div>
+  </div>
+
+  <script src="marketplace-script.js"></script>
+</body>
+
+</html>

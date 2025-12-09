@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="utf-8" />
+  <title>BuyPvaAccount - سوق PVA الحسابات المتميز</title>
+  <meta name="description" content="شراء حسابات PVA عالية الجودة للتسويق على وسائل التواصل الاجتماعي. حسابات آمنة ومُتحققة مع تسليم سريع. سوق موثوق للشركات والمسوقين.">
+  <meta name="keywords" content="حسابات PVA, حسابات وسائل التواصل الاجتماعي, حسابات مُتحققة, شراء حسابات, سوق, أدوات التسويق">
+  <meta name="author" content="BuyPvaAccount">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+  <meta id="mp-cart-url" data-url="Cartpage.html?lang=ar">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="marketplace-styles.css">
+  <script src="secure-storage.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+  <script src="safe-html.js"></script>
+</head>
+
+<body>
+  <section aria-label="Marketplace">
+    <div class="container">
+      <!-- Logo Section -->
+      <div class="logo-section" style="text-align: left; margin-bottom: 20px; padding: 10px 0;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
+          <span style="color: #2563eb;">Buy</span><span style="color: #7c3aed;">PVA</span><span style="color: #ea580c;">Account</span>.com
+        </h1>
+        <div style="font-size: 18px; font-weight: normal; color: #2563eb; margin-top: 5px;">أفضل مكان لشراء حسابات PVA بالجملة</div>
+      </div>
+
+      <!-- Language Switcher -->
+      <div class="language-switcher notranslate" style="font-size: 14px; text-align: center; margin: 10px auto; padding: 5px; opacity: 1; font-family: system-ui, sans-serif; line-height: 1; width: fit-content; background: #f5f5f5; border-radius: 5px;">
+        <a href="marketplace-ru.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">Russian</a>
+        <span style="color: #666;">|</span>
+        <a href="marketplace.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">English</a>
+        <span style="color: #666;">|</span>
+        <a href="marketplace-zh.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">Chinese</a>
+        <span style="color: #666;">|</span>
+        <a href="marketplace-ar.html" style="text-decoration: none; color: #666; padding: 5px 10px; border-radius: 3px; transition: background-color 0.2s ease, color 0.2s ease; font-size: 14px; display: inline-block; margin: 0 5px;">Arabic</a>
+      </div>
+
+      <!-- Content Section -->
+      <div style="text-align: center; margin: 20px 0; color: #666; font-size: 14px;">
+        <p>اكتشف حسابات PVA المتميزة المصممة للمسوقين الرقميين والشركات. تضمن حساباتنا المُتحققة أقصى درجة من التفاعل ونجاح الحملات مع ملفات شخصية أصيلة من أفضل المنصات الاجتماعية.</p>
+        <p>استمتع بتسليم سريع كالبرق وأمان لا مثيل له مع نظام معاملاتنا المشفر. نحن نقدم أسعارًا تنافسية على حسابات PVA بالجملة مع دعم عملاء مخصص. انضم إلى آلاف المسوقين الراضين الذين يثقون في سوقنا لحسابات عالية الجودة ومسنة تعزز تصنيفات SEO ووصول وسائل التواصل الاجتماعي وغيرها. ابدأ رحلتك نحو التميز في التسويق اليوم.</p>
+        <p>نحن نقبل العملات المشفرة الشائعة: USDT TRC20، USDT BEP20، USDT ERC20، بيتكوين، إيثريوم، لايتكوين، بيتكوين كاش وغيرها.</p>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="category-tabs" id="categoryTabs"></div>
+
+      <div class="grid">
+        <!-- LEFT: Products -->
+        <div class="list-wrap">
+          <div class="toolbar">
+            <div class="search">
+              <input id="q" type="search" placeholder="البحث في العنوان أو الملاحظات…" aria-label="Search">
+            </div>
+          </div>
+
+          <div class="list" role="table" aria-label="Products">
+            <div class="thead cols" role="row">
+              <div>العنوان</div>
+              <div class="center">الكمية</div>
+              <div class="center">السعر</div>
+              <div></div>
+            </div>
+            <div id="rows"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Sidebar -->
+        <aside class="sidebar">
+          <!-- طلب إشعار Box -->
+          <div class="side request-box">
+            <h3>طلب إشعار</h3>
+            <p class="muted">If you can't find your desired account in the list or if it's out of stock, you can place a
+              custom order with us.</p>
+            <form id="notificationForm" onsubmit="sendNotificationRequest(event)" style="margin-top: 16px;">
+              <div style="margin-bottom: 12px;">
+                <label for="accountType" style="display: block; margin-bottom: 6px; font-weight: 500;">Account
+                  Type:</label>
+                <input type="text" id="accountType" placeholder="Type account name" required
+                  style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
+              </div>
+              <div style="margin-bottom: 12px;">
+                <label for="quantity" style="display: block; margin-bottom: 6px; font-weight: 500;">الكمية:</label>
+                <input type="number" id="quantity" placeholder="e.g. 1000" required
+                  style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
+              </div>
+              <div style="margin-bottom: 12px;">
+                <label for="email" style="display: block; margin-bottom: 6px; font-weight: 500;">البريد الإلكتروني:</label>
+                <input type="email" id="email" placeholder="your-email@example.com" required
+                  style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;">
+              </div>
+              <button type="submit" class="btn"
+                style="width: auto; padding: 8px 16px; background: var(--primary); color: white; font-weight: 600; margin-top: 8px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer;">
+                إرسال طلب الحساب
+              </button>
+            </form>
+          </div>
+
+          <!-- الأخبار والتحديثات -->
+          <div class="side news" style="font-size: 14px;">
+            <h3>News &amp; Updates</h3>
+            <div id="newsContainer"></div>
+          </div>
+
+          <!-- Help Section -->
+          <div class="side">
+            <h3>تحتاج مساعدة؟</h3>
+            <div class="muted">CONTACTS: <a href="support.html" style="color: #007bff;">support.html</a></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mini-cart Modal -->
+  <div id="mc-overlay" role="dialog" aria-modal="true" aria-labelledby="mc-title">
+    <div id="mc">
+      <div class="head">
+        <div id="mc-title" class="ttl">إضافة سريعة</div>
+        <button class="x" type="button" id="mc-close">✕</button>
+      </div>
+      <div id="mc-item" class="muted" style="margin-bottom:6px"></div>
+      <div class="row">
+        <label for="mc-qty">الكمية</label>
+        <input id="mc-qty" type="number" min="1" value="1">
+      </div>
+      <div class="row">
+        <label>سعر الوحدة</label>
+        <div id="mc-price">$0.00</div>
+      </div>
+      <div class="row" style="font-weight:700">
+        <label>المجموع</label>
+        <div id="mc-total" class="total">$0.00</div>
+      </div>
+      <button id="mc-go" class="go" type="button">إضافة إلى السلة</button>
+    </div>
+  </div>
+
+  <script src="marketplace-script.js"></script>
+</body>
+
+</html>

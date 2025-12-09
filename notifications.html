@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Notifications Management</title>
+    <title>Notifications Management - BuyPvaAccount</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow">
     <style>
@@ -23,30 +23,6 @@
             font-family: system-ui, -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
-        }
-
-        /* Login styles */
-        .login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        
-        .login-card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .error-message {
-            color: var(--danger);
-            text-align: center;
-            margin-bottom: 16px;
-            display: none;
         }
 
         /* Dashboard styles */
@@ -74,6 +50,7 @@
             border-radius: 8px;
             padding: 15px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
         }
 
         /* JavaScript will be used to show/hide notifications based on status */
@@ -499,60 +476,44 @@
     </style>
 </head>
 <body>
-    <!-- Login Section -->
-    <div id="loginSection" class="login-container">
-        <div class="login-card">
-            <h2 style="text-align: center; margin-bottom: 24px;">Admin Login</h2>
-            <div id="loginError" class="error-message"></div>
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
-            </form>
-        </div>
-    </div>
-
     <!-- Notifications Dashboard -->
-    <div id="notificationsDashboard" style="display: none;">
+    <div id="notificationsDashboard">
         <div class="container">
             <div class="top-header">
-                <h1>Account Request Notifications</h1>
+                <h1>Account Requests Management</h1>
                 <div style="display: flex; gap: 12px;">
+                    <a href="support-notifications.html" class="btn btn-outline-primary" style="background: #ff6b35; color: white; border-color: #ff6b35; font-weight: bold; box-shadow: 0 4px 8px rgba(255, 107, 53, 0.3);">🎫 Support Tickets</a>
                     <button class="btn btn-secondary" onclick="location.href='admin.html'">Back to Admin</button>
                     <button class="btn btn-danger" onclick="handleLogout()">Logout</button>
                 </div>
             </div>
 
-            <div class="notification-section">
-            <div class="notification-filters">
-                    <button class="filter-btn" data-filter="all" onclick="filterNotifications('all')">
+            <!-- Account Requests Section -->
+            <div class="notification-section active">
+                <h2 style="margin-bottom: 15px; color: var(--text);">Account Purchase Requests</h2>
+                <div class="notification-filters">
+                    <button class="filter-btn account-filter active" data-filter="all" onclick="filterNotifications('all', 'account')">
                         All <span class="badge">0</span>
                     </button>
-                    <button class="filter-btn" data-filter="new" onclick="filterNotifications('new')">
+                    <button class="filter-btn account-filter" data-filter="new" onclick="filterNotifications('new', 'account')">
                         New <span class="badge">0</span>
                     </button>
-                    <button class="filter-btn" data-filter="read" onclick="filterNotifications('read')">
+                    <button class="filter-btn account-filter" data-filter="read" onclick="filterNotifications('read', 'account')">
                         Read <span class="badge">0</span>
                     </button>
-                    <button class="filter-btn" data-filter="processing" onclick="filterNotifications('processing')">
+                    <button class="filter-btn account-filter" data-filter="processing" onclick="filterNotifications('processing', 'account')">
                         Processing <span class="badge">0</span>
                     </button>
-                    <button class="filter-btn" data-filter="complete" onclick="filterNotifications('complete')">
+                    <button class="filter-btn account-filter" data-filter="complete" onclick="filterNotifications('complete', 'account')">
                         Complete <span class="badge">0</span>
                     </button>
-                    <button class="filter-btn" data-filter="delete" onclick="filterNotifications('delete')">
+                    <button class="filter-btn account-filter" data-filter="delete" onclick="filterNotifications('delete', 'account')">
                         Delete <span class="badge">0</span>
                     </button>
                 </div>
 
-                <div id="notificationList" class="notification-list">
-                    <!-- Notifications will be loaded here -->
+                <div id="accountRequestsList" class="notification-list">
+                    <!-- Account requests will be loaded here -->
                 </div>
             </div>
         </div>
@@ -560,7 +521,7 @@
 
     <script>
         // Configuration
-        const AUTH_KEY = 'admin_auth';
+        const AUTH_KEY = 'admin_auth_token';
         const REQUESTS_KEY = 'account_requests';
         const ADMIN_USERNAME = 'admin';
         const ADMIN_PASSWORD = 'admin123';
@@ -585,7 +546,21 @@
             delete: '#ef4444'     // Red
         };
 
-        let currentFilter = 'all';
+        let currentAccountFilter = 'all';
+
+        // Updated filter function for account requests only
+        function filterNotifications(filter, type) {
+            if (type === 'account') {
+                currentAccountFilter = filter;
+                loadNotifications();
+            }
+
+            // Update active state and color of filter buttons
+            document.querySelectorAll('.account-filter').forEach(btn => {
+                const isActive = btn.dataset.filter === filter;
+                btn.classList.toggle('active', isActive);
+            });
+        }
 
         // Authentication functions
         async function hashPassword(password) {
@@ -597,113 +572,118 @@
                 .join('');
         }
 
-        async function handleLogin(event) {
-            event.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorMsg = document.getElementById('loginError');
-            
-            try {
-                const hashedPassword = await hashPassword(password);
-                const correctHash = await hashPassword(ADMIN_PASSWORD);
-
-                if (username === ADMIN_USERNAME && hashedPassword === correctHash) {
-                    const token = await hashPassword(Date.now().toString());
-                    localStorage.setItem(AUTH_KEY, token);
-                    checkAuth();
-                } else {
-                    errorMsg.style.display = 'block';
-                    errorMsg.textContent = 'Invalid username or password';
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                errorMsg.style.display = 'block';
-                errorMsg.textContent = 'An error occurred during login';
-            }
-        }
-
         function handleLogout() {
             localStorage.removeItem(AUTH_KEY);
-            checkAuth();
+            window.location.href = 'admin.html';
         }
 
         function checkAuth() {
             const token = localStorage.getItem(AUTH_KEY);
-            document.getElementById('loginSection').style.display = token ? 'none' : 'flex';
-            document.getElementById('notificationsDashboard').style.display = token ? 'block' : 'none';
-            if (token) {
-                loadNotifications();
+            if (!token) {
+                // Redirect to admin.html if not authenticated
+                window.location.href = 'admin.html';
+                return false;
             }
-            return !!token;
+            document.getElementById('notificationsDashboard').style.display = 'block';
+            loadNotifications();
+            return true;
         }
 
         // Notification functions
         function loadNotifications() {
             const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
-            const container = document.getElementById('notificationList');
+
+            // Load only account requests
+            loadAccountRequests(requests.filter(r => !r.category || !r.subject));
+
+            // Update notification counts
+            updateNotificationCounts();
+        }
+
+        function loadAccountRequests(requests) {
+            const container = document.getElementById('accountRequestsList');
             container.innerHTML = '';
 
             let filteredRequests = requests;
-            if (currentFilter !== 'all') {
-                filteredRequests = requests.filter(r => r.status === currentFilter);
+            if (currentAccountFilter !== 'all') {
+                filteredRequests = requests.filter(r => r.status === currentAccountFilter);
             }
 
             if (filteredRequests.length === 0) {
-                container.innerHTML = '<div class="no-notifications">No notifications found</div>';
+                container.innerHTML = '<div class="no-notifications">No account requests found</div>';
                 return;
             }
 
             filteredRequests.forEach((request, index) => {
-                const div = document.createElement('div');
-                div.className = `notification-item ${request.status || 'new'}`;
-                
-                const date = new Date(request.timestamp);
-                const formattedDate = date.toLocaleString();
-                
-                div.innerHTML = `
-                    <div class="notification-preview">
-                        <div class="notification-content">
-                            <div class="account-info">
-                                <div class="account-info-text">
-                                    ${formatNotificationText(`Account Request: ${request.accountType} (Qty: ${request.quantity}) Email: ${request.email}`)}
-                                </div>
-                            </div>
-                            <span class="status-badge ${request.status || 'new'}">${request.status || 'new'}</span>
-                            <div class="notification-time">${formattedDate}</div>
-                        </div>
-                    </div>
-                    <div class="notification-details">
-                        <div class="notification-content">
-                            <div class="account-info">
-                                <div><strong>Account Type:</strong> ${request.accountType}</div>
-                                <div><strong>Amount:</strong> ${request.quantity}</div>
-                                <div><strong>Email:</strong> ${request.email}</div>
-                            </div>
-                        </div>
-                        <div class="notification-actions">
-                            <button class="btn ${request.status === 'new' ? 'btn-primary' : 'btn-outline-primary'}" 
-                                onclick="event.stopPropagation(); updateRequestStatus(${index}, 'new')" 
-                                ${request.status === 'new' ? 'disabled' : ''}>New</button>
-                            <button class="btn ${request.status === 'read' ? 'btn-info' : 'btn-outline-info'}" 
-                                onclick="event.stopPropagation(); updateRequestStatus(${index}, 'read')" 
-                                ${request.status === 'read' ? 'disabled' : ''}>Read</button>
-                            <button class="btn ${request.status === 'processing' ? 'btn-warning' : 'btn-outline-warning'}" 
-                                onclick="event.stopPropagation(); updateRequestStatus(${index}, 'processing')" 
-                                ${request.status === 'processing' ? 'disabled' : ''}>Processing</button>
-                            <button class="btn ${request.status === 'complete' ? 'btn-success' : 'btn-outline-success'}" 
-                                onclick="event.stopPropagation(); updateRequestStatus(${index}, 'complete')" 
-                                ${request.status === 'complete' ? 'disabled' : ''}>Complete</button>
-                            <button class="btn ${request.status === 'delete' ? 'btn-danger' : 'btn-outline-danger'}" 
-                                onclick="event.stopPropagation(); updateRequestStatus(${index}, 'delete')" 
-                                ${request.status === 'delete' ? 'disabled' : ''}>Delete</button>
-                        </div>
-                    </div>
-                `;
-                div.addEventListener('click', function() {
-                    this.classList.toggle('expanded');
-                });
+                const div = createNotificationItem(request, index, false);
                 container.appendChild(div);
             });
+        }
+
+        function createNotificationItem(request, index, isSupportRequest) {
+            const div = document.createElement('div');
+            div.className = `notification-item ${request.status || 'new'}`;
+
+            const date = new Date(request.timestamp);
+            const formattedDate = date.toLocaleString();
+
+            const titleText = isSupportRequest
+                ? `Support Request: ${request.category} - ${request.subject}`
+                : `Account Request: ${request.accountType} (Qty: ${request.quantity})`;
+
+            div.innerHTML = `
+                <div class="notification-preview">
+                    <div class="notification-content">
+                        <div class="account-info">
+                            <div class="account-info-text">
+                                ${formatNotificationText(`${titleText} Email: ${request.email}`)}
+                            </div>
+                        </div>
+                        <span class="status-badge ${request.status || 'new'}">${request.status || 'new'}</span>
+                        <div class="notification-time">${formattedDate}</div>
+                    </div>
+                </div>
+                <div class="notification-details">
+                    <div class="notification-content">
+                        <div class="account-info">
+                            ${isSupportRequest ? `
+                                <div><strong>Category:</strong> ${request.category}</div>
+                                <div><strong>Priority:</strong> ${request.priority}</div>
+                                <div><strong>Subject:</strong> ${request.subject}</div>
+                                <div><strong>Tracking ID:</strong> ${request.trackingId}</div>
+                                <div><strong>Message:</strong> ${request.message}</div>
+                            ` : `
+                                <div><strong>Account Type:</strong> ${request.accountType}</div>
+                                <div><strong>Amount:</strong> ${request.quantity}</div>
+                            `}
+                            <div><strong>Email:</strong> ${request.email}</div>
+                        </div>
+                    </div>
+                    <div class="notification-actions">
+                        <button class="btn ${request.status === 'new' ? 'btn-primary' : 'btn-outline-primary'}"
+                            onclick="event.stopPropagation(); updateRequestStatus(${index}, 'new')"
+                            ${request.status === 'new' ? 'disabled' : ''}>New</button>
+                        <button class="btn ${request.status === 'read' ? 'btn-info' : 'btn-outline-info'}"
+                            onclick="event.stopPropagation(); updateRequestStatus(${index}, 'read')"
+                            ${request.status === 'read' ? 'disabled' : ''}>Read</button>
+                        <button class="btn ${request.status === 'processing' ? 'btn-warning' : 'btn-outline-warning'}"
+                            onclick="event.stopPropagation(); updateRequestStatus(${index}, 'processing')"
+                            ${request.status === 'processing' ? 'disabled' : ''}>Processing</button>
+                        <button class="btn ${request.status === 'complete' ? 'btn-success' : 'btn-outline-success'}"
+                            onclick="event.stopPropagation(); updateRequestStatus(${index}, 'complete')"
+                            ${request.status === 'complete' ? 'disabled' : ''}>Complete</button>
+                        <button class="btn ${request.status === 'delete' ? 'btn-danger' : 'btn-outline-danger'}"
+                            onclick="event.stopPropagation(); updateRequestStatus(${index}, 'delete')"
+                            ${request.status === 'delete' ? 'disabled' : ''}>Delete</button>
+                    </div>
+                </div>
+            `;
+
+            div.addEventListener('click', function() {
+                this.classList.toggle('expanded');
+            });
+
+            return div;
         }
 
         function filterNotifications(filter) {
@@ -731,35 +711,29 @@
                 }
                 localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
                 loadNotifications();
-                updateNotificationCounts();
+                // updateNotificationCounts() is called in loadNotifications()
             }
         }
 
         function updateNotificationCounts() {
             const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
-            const counts = {
-                all: requests.length,
-                new: requests.filter(r => r.status === 'new').length,
-                read: requests.filter(r => r.status === 'read').length,
-                processing: requests.filter(r => r.status === 'processing').length,
-                complete: requests.filter(r => r.status === 'complete').length,
-                delete: requests.filter(r => r.status === 'delete').length
+            const accountRequests = requests.filter(r => !r.category || !r.subject);
+
+            // Update account request filter counts
+            const accountCounts = {
+                all: accountRequests.length,
+                new: accountRequests.filter(r => r.status === 'new').length,
+                read: accountRequests.filter(r => r.status === 'read').length,
+                processing: accountRequests.filter(r => r.status === 'processing').length,
+                complete: accountRequests.filter(r => r.status === 'complete').length,
+                delete: accountRequests.filter(r => r.status === 'delete').length
             };
-            
-            Object.entries(counts).forEach(([status, count]) => {
-                const badge = document.querySelector(`[data-filter="${status}"] .badge`);
+
+            // Update account filter badges
+            Object.entries(accountCounts).forEach(([status, count]) => {
+                const badge = document.querySelector(`.account-filter[data-filter="${status}"] .badge`);
                 if (badge) {
                     badge.textContent = count;
-                }
-            });
-
-            // Update filter button colors based on status
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                const filter = btn.dataset.filter;
-                if (counts[filter] > 0) {
-                    btn.classList.add('has-items');
-                } else {
-                    btn.classList.remove('has-items');
                 }
             });
         }
@@ -772,7 +746,12 @@
 
 
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', checkAuth);
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            updateNotificationCounts();
+            // Set default active filter button
+            document.querySelector('.account-filter[data-filter="all"]').classList.add('active');
+        });
     </script>
 </body>
 </html>

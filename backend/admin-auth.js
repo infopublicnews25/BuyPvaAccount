@@ -5,34 +5,30 @@ const path = require('path');
 const CREDENTIALS_FILE = path.join(__dirname, 'admin-credentials.json');
 const USERS_FILE = path.join(__dirname, '../admin_users.json');
 
+const { statements } = require('./db');
+
 async function verifyAdmin(username, password) {
     try {
         // First check admin credentials
-        if (fs.existsSync(CREDENTIALS_FILE)) {
-            const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf8'));
-            if (username === credentials.username) {
-                const isValid = await bcrypt.compare(password, credentials.passwordHash);
-                if (isValid) {
-                    // Update last login for admin
-                    credentials.lastLogin = new Date().toISOString();
-                    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(credentials, null, 2));
-                    return { success: true, user: { username, role: 'admin', lastLogin: credentials.lastLogin } };
-                }
+        const credentials = statements.getAdminCredentials.get();
+        if (credentials && username === credentials.username) {
+            const isValid = await bcrypt.compare(password, credentials.passwordHash);
+            if (isValid) {
+                // Update last login for admin
+                statements.updateAdminLastLogin.run(new Date().toISOString());
+                return { success: true, user: { username, role: 'admin', lastLogin: credentials.lastLogin } };
             }
         }
 
-        // Then check regular users
-        if (fs.existsSync(USERS_FILE)) {
-            const users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-            const user = users.find(u => u.username === username);
-            if (user) {
-                const isValid = await bcrypt.compare(password, user.passwordHash);
-                if (isValid) {
-                    // Update last login
-                    user.lastLogin = new Date().toISOString();
-                    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-                    return { success: true, user: { username: user.username, role: user.role, email: user.email } };
-                }
+        // Then check regular admin users
+        const user = statements.getAdminUserByUsername.get(username);
+        if (user) {
+            const isValid = await bcrypt.compare(password, user.passwordHash);
+            if (isValid) {
+                // Update last login
+                user.lastLogin = new Date().toISOString();
+                statements.updateAdminUser.run(user.username, user.email, user.role, user.passwordHash, user.lastLogin, user.id);
+                return { success: true, user: { username: user.username, role: user.role, email: user.email } };
             }
         }
 
@@ -108,7 +104,7 @@ async function storeUserToken(username, token) {
 async function createUser(userData) {
     try {
         const users = fs.existsSync(USERS_FILE) ? JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')) : [];
-        
+
         // Check if user already exists
         if (users.some(u => u.username === userData.username || u.email === userData.email)) {
             return { success: false, message: 'User already exists' };
@@ -127,7 +123,7 @@ async function createUser(userData) {
 
         users.push(newUser);
         fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-        
+
         return { success: true, user: newUser };
     } catch (error) {
         console.error('Error creating user:', error);
@@ -138,12 +134,12 @@ async function createUser(userData) {
 function getAllUsers() {
     try {
         let users = [];
-        
+
         // Get regular users
         if (fs.existsSync(USERS_FILE)) {
             users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
         }
-        
+
         // Add admin user
         if (fs.existsSync(CREDENTIALS_FILE)) {
             const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf8'));
@@ -155,7 +151,7 @@ function getAllUsers() {
                 lastLogin: credentials.lastLogin || null
             });
         }
-        
+
         return users;
     } catch (error) {
         console.error('Error reading users:', error);
@@ -167,14 +163,14 @@ async function updateUser(username, userData) {
     try {
         const users = getAllUsers();
         const userIndex = users.findIndex(u => u.username === username);
-        
+
         if (userIndex === -1) {
             return { success: false, message: 'User not found' };
         }
 
         // Update user data
         users[userIndex] = { ...users[userIndex], ...userData };
-        
+
         // Hash password if provided
         if (userData.password) {
             users[userIndex].passwordHash = await bcrypt.hash(userData.password, 10);
@@ -192,7 +188,7 @@ function deleteUser(username) {
     try {
         const users = getAllUsers();
         const filteredUsers = users.filter(u => u.username !== username);
-        
+
         if (filteredUsers.length === users.length) {
             return { success: false, message: 'User not found' };
         }
@@ -220,11 +216,11 @@ async function updateAdminCredentials(newUsername, newPassword) {
     }
 }
 
-module.exports = { 
-    verifyAdmin, 
-    createUser, 
-    getAllUsers, 
-    updateUser, 
+module.exports = {
+    verifyAdmin,
+    createUser,
+    getAllUsers,
+    updateUser,
     deleteUser,
     verifyToken,
     storeUserToken,

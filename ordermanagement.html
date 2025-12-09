@@ -578,6 +578,7 @@
             }
         }
     </style>
+    <script src="secure-storage.js"></script>
 </head>
 <body>
     <!-- Login Section -->
@@ -858,7 +859,11 @@
                 try { $('loginError').style.display = 'none'; } catch(e){}
 
                 if (username === 'admin' && password === 'admin123') {
-                    localStorage.setItem('admin_logged_in', 'true');
+                    // Use secure storage for admin authentication
+                    secureStorage.setSensitive('admin_auth_token', 'logged_in');
+                    // Keep in localStorage for backward compatibility
+                    localStorage.setItem('admin_auth_token', 'logged_in');
+
                     console.log('[ordermanagement] login success — showing dashboard');
                     if (typeof showDashboard === 'function') {
                         showDashboard();
@@ -920,8 +925,13 @@
 
 
         function handleLogout() {
-            localStorage.removeItem('admin_logged_in');
+            // Clear sensitive admin authentication data
+            secureStorage.removeSensitive('admin_auth_token');
+            secureStorage.removeSensitive('admin_auth');
+            localStorage.removeItem('admin_auth_token');
             localStorage.removeItem('admin_auth');
+            localStorage.removeItem('admin_auth_token_migrated');
+
             $('loginSection').style.display = 'flex';
             $('dashboardSection').style.display = 'none';
             $('username').value = '';
@@ -1911,35 +1921,12 @@
         // Initialize - Check if already logged in or if admin token from admin.html exists
         (function initAuth() {
             try {
-                const localFlag = localStorage.getItem('admin_logged_in') === 'true';
-                const token = localStorage.getItem('admin_auth'); // token set by admin.html on successful login
-                if (localFlag) {
-                    showDashboard();
-                    return;
-                }
-
+                // Check secure storage first, then fallback to localStorage
+                const token = secureStorage.getSensitive('admin_auth_token') ||
+                             localStorage.getItem('admin_auth_token');
                 if (token) {
-                    // Try to verify token with backend if available, otherwise assume valid
-                    fetch('http://localhost:3000/api/verify-token', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({})
-                    }).then(r => r.json()).then(data => {
-                        if (data && data.success) {
-                            // Respect token from admin page
-                            localStorage.setItem('admin_logged_in', 'true');
-                            showDashboard();
-                        } else {
-                            // token invalid — clear and stay on login
-                            localStorage.removeItem('admin_auth');
-                            console.warn('ordermanagement: admin token invalid');
-                        }
-                    }).catch(err => {
-                        // If verification fails (no backend reachable), assume token presence is sufficient
-                        console.warn('ordermanagement: token verify failed, falling back to token presence', err);
-                        localStorage.setItem('admin_logged_in', 'true');
-                        showDashboard();
-                    });
+                    // Assume valid if present
+                    showDashboard();
                     return;
                 }
 
