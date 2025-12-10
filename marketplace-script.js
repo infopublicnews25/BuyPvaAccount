@@ -149,7 +149,7 @@ function loadNewsUpdates() {
   const PRODUCTS = await (async () => {
     // First try to load fresh data from API (admin.html's source of truth)
     try {
-      const response = await fetch('http://localhost:3000/api/products');
+      const response = await fetch('/api/products');
       const data = await response.json();
       if (data.success && Array.isArray(data.products) && data.products.length > 0) {
         console.log(`✅ Loaded ${data.products.length} products from API (admin.html sync)`);
@@ -204,7 +204,7 @@ function loadNewsUpdates() {
   // Check for inventory updates from admin.html every 30 seconds
   setInterval(async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/products');
+      const response = await fetch('/api/products');
       const data = await response.json();
       if (data.success && Array.isArray(data.products)) {
         const apiProductsStr = JSON.stringify(data.products);
