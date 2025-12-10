@@ -80,7 +80,7 @@
             };
 
             try {
-                const response = await fetch('http://localhost:3000/api/configure-email', {
+                const response = await fetch('/api/configure-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(config)
@@ -112,7 +112,7 @@
             showMessage('Testing email configuration... ⏳', 'success');
 
             try {
-                const response = await fetch('http://localhost:3000/api/test-email', {
+                const response = await fetch('/api/test-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password, provider })
@@ -150,7 +150,7 @@
         // Load current configuration on page load
         window.addEventListener('load', async function() {
             try {
-                const response = await fetch('http://localhost:3000/api/email-status');
+                const response = await fetch('/api/email-status');
                 const result = await response.json();
                 
                 if (result.configured) {
