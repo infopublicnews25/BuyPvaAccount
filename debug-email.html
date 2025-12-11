@@ -54,7 +54,7 @@
             resultDiv.innerHTML = '<div class="result warning">Checking email configuration...</div>';
 
             try {
-                const response = await fetch('/api/test-email', {
+                const response = await fetch('http://localhost:3000/api/test-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ test: true })
@@ -93,7 +93,7 @@
             localStorage.setItem('secure_ticket_links', JSON.stringify(secureLinks));
 
             try {
-                const response = await fetch('/api/send-ticket-confirmation', {
+                const response = await fetch('http://localhost:3000/api/send-ticket-confirmation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

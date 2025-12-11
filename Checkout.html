@@ -269,7 +269,7 @@
         try { localStorage.setItem(key, JSON.stringify(users)); } catch(e) { console.warn('Could not save registered_users locally', e); }
 
         // Try to persist on backend (non-protected endpoint /api/save-user)
-        fetch('/api/save-user', {
+        fetch('http://localhost:3000/api/save-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newUser)
@@ -349,7 +349,7 @@
         };
         localStorage.setItem('client_auth', JSON.stringify(authData));
         // Send order to backend for persistent storage
-        fetch('/api/save-order', {
+        fetch('http://localhost:3000/api/save-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(order)
@@ -452,7 +452,7 @@
     // Send order confirmation email
     async function sendOrderConfirmationEmail(email, orderData) {
       try {
-        const response = await fetch('/api/send-order-confirmation', {
+        const response = await fetch('http://localhost:3000/api/send-order-confirmation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, orderData })

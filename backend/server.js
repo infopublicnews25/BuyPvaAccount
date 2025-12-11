@@ -189,7 +189,7 @@ app.use((req, res, next) => {
 
 // Authentication middleware
 const authenticateAdmin = async (req, res, next) => {
-    const token = req.headers.authorization ? req.headers.authorization.replace('Bearer ', '') : '';
+    const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
         return res.status(401).json({ success: false, message: 'No token provided' });
     }
@@ -388,7 +388,7 @@ app.delete('/api/admin/orders/:orderId', authenticateAdmin, (req, res) => {
         if (!ok) return res.status(500).json({ success: false, message: 'Failed to persist deletion' });
 
         // Log admin action
-        logAdminAction('delete_order', { orderId, customerEmail: removed.customer ? removed.customer.email : undefined }, req.adminUser || 'admin');
+        logAdminAction('delete_order', { orderId, customerEmail: removed.customer?.email }, req.adminUser || 'admin');
 
         console.log(`🗑️ Order deleted: ${orderId}`);
         return res.json({ success: true, message: 'Order deleted', order: removed });
@@ -2739,12 +2739,12 @@ function getFileType(filename) {
 }
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Password reset server running on http://0.0.0.0:${PORT}`);
+app.listen(PORT, () => {
+    console.log(`🚀 Password reset server running on http://localhost:${PORT}`);
     if (emailConfig) {
         console.log(`📧 Ready to send emails from: ${emailConfig.email}`);
     } else {
-        console.log(`⚠️  Email not configured. Open http://0.0.0.0:${PORT}/config to set up`);
+        console.log(`⚠️  Email not configured. Open http://localhost:${PORT}/config to set up`);
     }
 });
 

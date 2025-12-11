@@ -2824,7 +2824,7 @@ async function syncAllProductsWithBackend() {
 
         console.log('Syncing products with backend:', validProducts.length, 'valid products');
 
-        const response = await fetch('/api/products', {
+        const response = await fetch('http://localhost:3000/api/products', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'

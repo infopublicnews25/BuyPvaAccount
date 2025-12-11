@@ -328,7 +328,7 @@
             window.location.href = 'admin.html';
         }
 
-        const API_URL = '/api/posts';
+        const API_URL = 'http://localhost:3000/api/posts';
         let allPosts = [];
         let latestUpdates = JSON.parse(localStorage.getItem('blogLatestUpdates')) || [];
         let quickLinks = JSON.parse(localStorage.getItem('blogQuickLinks')) || [];

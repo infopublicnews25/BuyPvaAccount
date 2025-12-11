@@ -544,7 +544,7 @@
 
         async function loadPosts() {
             try {
-                const response = await fetch('/api/posts');
+                const response = await fetch('http://localhost:3000/api/posts');
                 const data = await response.json();
                 if (data.success) {
                     allPosts = data.posts.filter(post => post.status === 'published');
