@@ -51,6 +51,16 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // ... rest of existing code ...
 
 // Production error handling
