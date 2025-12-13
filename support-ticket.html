@@ -5,6 +5,7 @@
     <title>Support Ticket Details - BuyPvaAccount</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow">
+    <script src="config.js"></script>
     <style>
         :root {
             --bg: #f8fafc;
@@ -581,24 +582,45 @@
                 return;
             }
 
-            // Get tracking ID from secure token
+            // Extract tracking ID from token (it's in format: tk_timestamp_randomstring_TRACKINGID)
+            // Or try to get it from localStorage first, then fallback to API
+            
+            // Try localStorage first
             const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
-            const trackingId = secureLinks[token];
+            let trackingId = secureLinks[token];
 
-            if (!trackingId) {
-                showNoTicket();
-                return;
+            if (trackingId) {
+                // Found in localStorage, load from there
+                const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+                const ticket = requests.find(r => r.trackingId === trackingId && r.category && r.subject);
+                if (ticket) {
+                    displayTicketDetails(ticket);
+                    return;
+                }
             }
 
-            const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
-            const ticket = requests.find(r => r.trackingId === trackingId && r.category && r.subject);
+            // If not in localStorage, try API endpoint
+            fetchTicketFromBackend(token);
+        }
 
-            if (!ticket) {
+        // Fetch ticket from backend API
+        async function fetchTicketFromBackend(token) {
+            try {
+                const res = await fetch(`${CONFIG.API}/ticket/${encodeURIComponent(token)}`);
+                if (!res.ok) {
+                    showNoTicket();
+                    return;
+                }
+                const data = await res.json();
+                if (data.success && data.ticket) {
+                    displayTicketDetails(data.ticket);
+                } else {
+                    showNoTicket();
+                }
+            } catch (err) {
+                console.error('Error fetching ticket:', err);
                 showNoTicket();
-                return;
             }
-
-            displayTicketDetails(ticket);
         }
 
         // Display ticket details

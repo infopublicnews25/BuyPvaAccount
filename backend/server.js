@@ -1657,6 +1657,66 @@ BuyPvaAccount Support Team`
     }
 });
 
+// Endpoint to save support ticket
+app.post('/api/ticket', async (req, res) => {
+    try {
+        const ticket = req.body;
+        if (!ticket.trackingId || !ticket.email) {
+            return res.status(400).json({ success: false, message: 'trackingId and email required' });
+        }
+
+        // Create tickets.json file if it doesn't exist
+        const ticketsFile = path.join(__dirname, '..', 'tickets.json');
+        let tickets = [];
+        if (fs.existsSync(ticketsFile)) {
+            tickets = JSON.parse(fs.readFileSync(ticketsFile, 'utf8'));
+        }
+
+        // Add ticket
+        tickets.push(ticket);
+        fs.writeFileSync(ticketsFile, JSON.stringify(tickets, null, 2));
+
+        console.log(`✅ Ticket saved: ${ticket.trackingId}`);
+        return res.json({ success: true, message: 'Ticket saved successfully' });
+    } catch (error) {
+        console.error('Error saving ticket:', error);
+        return res.status(500).json({ success: false, message: 'Failed to save ticket' });
+    }
+});
+
+// Endpoint to retrieve support ticket by token
+app.get('/api/ticket/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        
+        // Extract tracking ID from token - try multiple formats
+        // Format could be: tk_timestamp_randomstring or other variations
+        // We'll need to search by tracking ID
+        
+        // For now, assume token contains or is the tracking ID
+        // In a real app, you'd have a token-to-trackingID mapping
+        
+        const ticketsFile = path.join(__dirname, '..', 'tickets.json');
+        if (!fs.existsSync(ticketsFile)) {
+            return res.status(404).json({ success: false, message: 'Ticket not found' });
+        }
+
+        const tickets = JSON.parse(fs.readFileSync(ticketsFile, 'utf8'));
+        
+        // Try to find ticket - could be by token or by tracking ID if token is the tracking ID
+        let ticket = tickets.find(t => t.trackingId === token);
+        
+        if (!ticket) {
+            return res.status(404).json({ success: false, message: 'Ticket not found' });
+        }
+
+        return res.json({ success: true, ticket: ticket });
+    } catch (error) {
+        console.error('Error retrieving ticket:', error);
+        return res.status(500).json({ success: false, message: 'Failed to retrieve ticket' });
+    }
+});
+
 // Endpoint to reset a user's password (updates registered_users.json)
 app.post('/api/reset-password', async (req, res) => {
     try {

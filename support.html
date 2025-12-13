@@ -1091,6 +1091,34 @@ This helps us resolve your issue faster!"></textarea>
             tickets.push(formData);
             localStorage.setItem('support_tickets', JSON.stringify(tickets));
 
+            // Also save ticket to backend API
+            try {
+                await fetch(`${CONFIG.API}/ticket`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        trackingId: trackingId,
+                        name: formData.name,
+                        email: formData.email,
+                        priority: formData.priority,
+                        category: formData.category,
+                        subject: formData.subject,
+                        message: formData.message,
+                        accountType: formData.accountType,
+                        accountLink: formData.accountLink,
+                        paymentDate: formData.paymentDate,
+                        paymentMethod: formData.paymentMethod,
+                        paymentDetails: formData.paymentDetails,
+                        status: 'Open',
+                        timestamp: new Date().toISOString(),
+                        attachments: formData.attachments
+                    })
+                });
+            } catch (err) {
+                console.error('Failed to save ticket to backend:', err);
+                // Continue anyway - ticket is saved locally
+            }
+
             // Also save to notifications for admin dashboard
             const accountRequests = JSON.parse(localStorage.getItem('account_requests') || '[]');
             const notificationData = {
