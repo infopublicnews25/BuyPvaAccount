@@ -178,14 +178,14 @@ app.use((req, res, next) => {
     next();
 });
 
-// HTTPS Enforcement
-app.use((req, res, next) => {
-    if (req.header('x-forwarded-proto') !== 'https' && process.env.NODE_ENV === 'production') {
-        res.redirect(`https://${req.header('host')}${req.url}`);
-    } else {
-        next();
-    }
-});
+// HTTPS Enforcement - Disabled for Nginx reverse proxy (Nginx handles HTTP)
+// app.use((req, res, next) => {
+//     if (req.header('x-forwarded-proto') !== 'https' && process.env.NODE_ENV === 'production') {
+//         res.redirect(`https://${req.header('host')}${req.url}`);
+//     } else {
+//         next();
+//     }
+// });
 
 // Authentication middleware
 const authenticateAdmin = async (req, res, next) => {
