@@ -639,13 +639,24 @@ app.post('/api/save-order', (req, res) => {
     const orders = readAllOrders();
     orders.push(order);
     if (writeAllOrders(orders)) {
+        console.log(`📦 Order saved successfully: ${order.orderId}`);
         // After saving the order, attempt to send ADMIN-only notification (customer delivery email
         // will be sent later when admin marks order as 'Completed')
-        (async () => {
+        setImmediate(async () => {
+            // Wait a bit for transporter to be ready if it's initializing
+            let attempts = 0;
+            while ((!transporter || !emailConfig) && attempts < 5) {
+                console.log(`⏳ Waiting for email transporter to be ready (attempt ${attempts + 1})...`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+            }
+
             if (!transporter || !emailConfig) {
-                console.warn('⚠️  Email not configured. Skipping admin notification for new order.');
+                console.warn(`⚠️  Email transporter still not available after ${attempts} attempts. Skipping email notifications.`);
                 return;
             }
+
+            console.log(`📧 Sending emails for order ${order.orderId}...`);
 
             try {
                 // Build items HTML for admin message
