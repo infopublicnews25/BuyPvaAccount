@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: 'buypvaaccount',
-    script: 'backend/server-production.js',
+    script: 'backend/server.js',
     instances: 1,
     autorestart: true,
     watch: false,
@@ -9,9 +9,9 @@ module.exports = {
     env: {
       NODE_ENV: 'production'
     },
-    error_file: './logs/err.log',
-    out_file: './logs/out.log',
-    log_file: './logs/combined.log',
+    error_file: './logs/err-0.log',
+    out_file: './logs/out-0.log',
+    log_file: './logs/combined-0.log',
     time: true
   }]
 };
