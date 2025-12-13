@@ -228,8 +228,13 @@ app.get('/categories.html', authenticateAdmin, (req, res) => {
 });
 
 // Serve static files from the parent directory (where admin.html is located)
-// Moved to end so API routes take precedence
-// app.use(express.static(path.join(__dirname, '..')));
+// IMPORTANT: This must be configured to serve from root
+app.use(express.static(path.join(__dirname, '..')));
+
+// Redirect root to marketplace
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'marketplace.html'));
+});
 
 // Admin login endpoint
 app.post('/api/admin-login', async (req, res) => {
