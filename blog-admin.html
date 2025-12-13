@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blog Management - Admin</title>
+    <script src="config.js"></script>
     <style>
         * {
             margin: 0;
@@ -328,7 +329,9 @@
             window.location.href = 'admin.html';
         }
 
-        const API_URL = 'http://localhost:3000/api/posts';
+        // Try API first, fallback to direct file fetch
+        const API_URL = `${CONFIG.API}/posts`;
+        const DIRECT_POSTS_URL = './posts.json'; // Direct file fetch as fallback
         let allPosts = [];
         let latestUpdates = JSON.parse(localStorage.getItem('blogLatestUpdates')) || [];
         let quickLinks = JSON.parse(localStorage.getItem('blogQuickLinks')) || [];
@@ -406,13 +409,25 @@
 
         async function loadPosts() {
             try {
-                const response = await fetch(API_URL);
+                // Try fetching from API first
+                let response = await fetch(API_URL);
+                if (!response.ok) {
+                    // If API fails, try direct file fetch
+                    console.log('API failed, trying direct file fetch...');
+                    response = await fetch(DIRECT_POSTS_URL);
+                }
                 const data = await response.json();
-                allPosts = data.success ? data.posts : [];
+                // Handle both API response format and direct file format
+                if (Array.isArray(data)) {
+                    allPosts = data;
+                } else {
+                    allPosts = data.success ? data.posts : [];
+                }
                 renderPostsTable();
                 updateStats();
             } catch (error) {
-                document.getElementById('postsTableBody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error loading posts!</td></tr>';
+                console.error('Error loading posts:', error);
+                document.getElementById('postsTableBody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error loading posts! Make sure the server is running.</td></tr>';
             }
         }
 
