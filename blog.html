@@ -545,18 +545,39 @@
 
         async function loadPosts() {
             try {
-                const response = await fetch('http://localhost:3000/api/posts');
-                const data = await response.json();
-                if (data.success) {
+                let data = null;
+                
+                // Try API first
+                try {
+                    const apiUrl = `${CONFIG.API}/posts`; // Use CONFIG for dynamic endpoint
+                    const response = await fetch(apiUrl);
+                    if (response.ok) {
+                        data = await response.json();
+                    }
+                } catch (apiError) {
+                    console.log('API failed, trying direct file fetch...');
+                }
+                
+                // If API failed, try direct file fetch
+                if (!data || !data.posts) {
+                    const response = await fetch('./posts.json');
+                    const postsArray = await response.json();
+                    data = { success: true, posts: postsArray };
+                }
+                
+                // Process posts
+                if (data && data.posts) {
                     allPosts = data.posts.filter(post => post.status === 'published');
                     allPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                     createFilterButtons();
                     updateCategoryCounts();
                     renderPosts();
+                } else {
+                    throw new Error('No posts found');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                safeSetInnerHTML(document.getElementById('blogGrid'), '<p style="text-align: center; color: #999;">Unable to load posts.</p>', true);
+                console.error('Error loading posts:', error);
+                safeSetInnerHTML(document.getElementById('blogGrid'), '<p style="text-align: center; color: #999;">Unable to load posts. Please try again later.</p>', true);
             }
         }
 
