@@ -526,7 +526,7 @@
             const links = JSON.parse(localStorage.getItem('blogQuickLinks')) || [];
             const quickLinksList = document.getElementById('quickLinksList');
             if (links.length === 0) {
-                safeSetInnerHTML(quickLinksList, '<li class="category-item" onclick="window.location.href=\'index.html\'"><span>Home</span></li><li class="category-item" onclick="window.location.href=\'marketplace.html\'"><span>Marketplace</span></li><li class="category-item" onclick="window.location.href=\'blog-admin.html\'"><span>Admin Panel</span></li>', true);
+                safeSetInnerHTML(quickLinksList, '<li class="category-item" onclick="window.location.href=\'http://buypvaaccount.com/\'"><span>Home</span></li><li class="category-item" onclick="window.location.href=\'http://buypvaaccount.com/marketplace.html\'"><span>Marketplace</span></li>', true);
             } else {
                 safeSetInnerHTML(quickLinksList, links.map(l => `<li class="category-item" onclick="window.location.href='${l.url}'"><span>${l.title}</span></li>`).join(''), true);
             }
