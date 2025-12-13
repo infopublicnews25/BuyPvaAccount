@@ -361,7 +361,7 @@ app.put('/api/admin/orders/:orderId/status', authenticateAdmin, async (req, res)
         if (!writeOk) return res.status(500).json({ success: false, message: 'Failed to persist order status' });
 
         // Log admin action
-        logAdminAction('update_order_status', { orderId, oldStatus, newStatus }, req.adminUser || 'admin');
+        logAdminAction('update_order_status', { orderId, oldStatus, status }, req.adminUser || 'admin');
 
         // If status moved to completed, attempt to send delivery email (non-blocking)
         if (status === 'completed') {
