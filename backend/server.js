@@ -1717,6 +1717,125 @@ app.get('/api/ticket/:token', async (req, res) => {
     }
 });
 
+// Endpoint to send ticket completion email
+app.post('/api/send-ticket-completion', async (req, res) => {
+    try {
+        const { email, ticketData } = req.body;
+
+        if (!email || !ticketData) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and ticket data are required'
+            });
+        }
+
+        if (!transporter || !emailConfig) {
+            return res.status(503).json({
+                success: false,
+                message: 'Email service not configured.'
+            });
+        }
+
+        const mailOptions = {
+            from: { name: 'BuyPvaAccount Support', address: emailConfig.email },
+            to: email,
+            subject: `✅ Your Support Ticket #${ticketData.trackingId} Has Been Resolved!`,
+            html: `<!doctype html><html><body>
+                <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+                    <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
+                        <h2 style="margin: 0;">✅ Ticket Resolved!</h2>
+                    </div>
+                    
+                    <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+                        <p>Hello ${ticketData.name || email},</p>
+                        
+                        <p>Great news! Your support ticket has been <strong>successfully resolved</strong>.</p>
+
+                        <div style="background: white; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                            <h3 style="color: #059669; margin-top: 0;">Ticket Details</h3>
+                            <table style="width:100%; border-collapse:collapse;">
+                                <tr>
+                                    <td style="padding: 10px; background: #f3f4f6; font-weight: bold;">Tracking ID:</td>
+                                    <td style="padding: 10px;">${ticketData.trackingId}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; background: #f3f4f6; font-weight: bold;">Category:</td>
+                                    <td style="padding: 10px;">${ticketData.category}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; background: #f3f4f6; font-weight: bold;">Priority:</td>
+                                    <td style="padding: 10px;">${ticketData.priority}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; background: #f3f4f6; font-weight: bold;">Subject:</td>
+                                    <td style="padding: 10px;">${ticketData.subject}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; background: #f3f4f6; font-weight: bold;">Status:</td>
+                                    <td style="padding: 10px; color: #10b981; font-weight: bold;">✅ RESOLVED</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <p><strong>What's Next?</strong></p>
+                        <ul>
+                            <li>Your issue has been resolved by our support team</li>
+                            <li>If you need further assistance, you can reply to your ticket or submit a new request</li>
+                            <li>We appreciate your patience and business!</li>
+                        </ul>
+
+                        <p style="text-align: center; margin-top: 30px;">
+                            <a href="https://buypvaaccount.com/support" style="background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                                Visit Support Center
+                            </a>
+                        </p>
+
+                        <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
+                            Thank you for choosing BuyPvaAccount!<br/>
+                            Best regards,<br/>
+                            <strong>BuyPvaAccount Support Team</strong>
+                        </p>
+                    </div>
+                </div>
+            </body></html>`,
+            text: `Your Support Ticket #${ticketData.trackingId} Has Been Resolved!
+
+Hello ${ticketData.name || email},
+
+Great news! Your support ticket has been successfully resolved.
+
+Ticket Details:
+- Tracking ID: ${ticketData.trackingId}
+- Category: ${ticketData.category}
+- Priority: ${ticketData.priority}
+- Subject: ${ticketData.subject}
+- Status: ✅ RESOLVED
+
+If you need further assistance, you can reply to your ticket or submit a new request at https://buypvaaccount.com/support
+
+Thank you for choosing BuyPvaAccount!
+Best regards,
+BuyPvaAccount Support Team`
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        console.log(`✅ Ticket completion email sent to ${email} for ticket ${ticketData.trackingId}`);
+        return res.json({
+            success: true,
+            message: 'Ticket completion email sent successfully'
+        });
+
+    } catch (error) {
+        console.error('Error sending ticket completion email:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to send ticket completion email',
+            error: error.message
+        });
+    }
+});
+
 // Endpoint to reset a user's password (updates registered_users.json)
 app.post('/api/reset-password', async (req, res) => {
     try {

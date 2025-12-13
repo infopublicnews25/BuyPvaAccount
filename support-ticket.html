@@ -741,8 +741,13 @@
             const ticketIndex = requests.findIndex(r => r.trackingId === trackingId);
 
             if (ticketIndex !== -1) {
-                requests[ticketIndex].status = 'complete';
+                const ticket = requests[ticketIndex];
+                ticket.status = 'complete';
+                ticket.completedDate = new Date().toISOString();
                 localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+
+                // Send completion email to buyer
+                sendTicketCompletionEmail(ticket);
 
                 // Update the UI
                 document.getElementById('ticketStatus').textContent = 'complete';
@@ -753,7 +758,35 @@
                 updateSolveButtons('complete');
 
                 // Show success message
-                showStatusMessage('Ticket marked as solved!', 'success');
+                showStatusMessage('Ticket marked as solved! Email sent to buyer.', 'success');
+            }
+        }
+
+        // Send ticket completion email to buyer
+        async function sendTicketCompletionEmail(ticket) {
+            try {
+                const response = await fetch(`${CONFIG.API}/send-ticket-completion`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: ticket.email,
+                        ticketData: {
+                            trackingId: ticket.trackingId,
+                            name: ticket.name,
+                            subject: ticket.subject,
+                            category: ticket.category,
+                            priority: ticket.priority
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Ticket completion email sent to:', ticket.email);
+                } else {
+                    console.error('Failed to send completion email');
+                }
+            } catch (error) {
+                console.error('Error sending completion email:', error);
             }
         }
 
