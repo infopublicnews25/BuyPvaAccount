@@ -5,6 +5,7 @@
     <title>Order Management</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow">
+    <script src="config.js"></script>
     <style>
         :root {
             --bg: #f8fafc;
@@ -1316,9 +1317,13 @@
             // Persist the status change to the backend so orders.json stays in sync
             (async () => {
                 try {
-                    const resp = await fetch(`http://localhost:3000/api/orders/${orderId}/status`, {
+                    const token = localStorage.getItem('admin_auth_token');
+                    const resp = await fetch(`${CONFIG.API}/admin/orders/${orderId}/status`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
                         body: JSON.stringify({ status: newStatus })
                     });
 
@@ -1458,7 +1463,11 @@
 
             (async () => {
                 try {
-                    const resp = await fetch(`http://localhost:3000/api/orders/${orderId}`, { method: 'DELETE' });
+                    const token = localStorage.getItem('admin_auth_token');
+                    const resp = await fetch(`${CONFIG.API}/admin/orders/${orderId}`, { 
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
                     const data = await resp.json();
                     if (!resp.ok) {
                         alert('Failed to delete order: ' + (data && data.message ? data.message : resp.statusText));
@@ -1900,7 +1909,7 @@
         // Send order delivery confirmation email
         async function sendOrderConfirmationEmail(orderData) {
             try {
-                const response = await fetch('http://localhost:3000/api/send-order-delivery-confirmation', {
+                const response = await fetch(`${CONFIG.API}/send-order-delivery-confirmation`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: orderData.customer.email, orderData })
@@ -1940,7 +1949,7 @@
         (function checkBackendHealth() {
             const statusEl = document.getElementById('backendStatus');
             if (!statusEl) return;
-            fetch('http://localhost:3000/api/health', { method: 'GET' })
+            fetch(`${CONFIG.API}/health`, { method: 'GET' })
                 .then(r => r.json())
                 .then(data => {
                     if (data && data.status === 'OK') {
