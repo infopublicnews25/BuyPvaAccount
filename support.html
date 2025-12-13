@@ -915,7 +915,7 @@ This helps us resolve your issue faster!"></textarea>
             secureLinks[token] = trackingId;
             localStorage.setItem(SECURE_LINKS_KEY, JSON.stringify(secureLinks));
 
-            return `support-ticket.html?token=${token}`;
+            return `/support-ticket.html?token=${token}`;
         }
 
         function handleFileSelect(event) {
