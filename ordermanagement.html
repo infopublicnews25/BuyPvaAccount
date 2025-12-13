@@ -859,20 +859,51 @@
                 // clear previous error
                 try { $('loginError').style.display = 'none'; } catch(e){}
 
-                if (username === 'admin' && password === 'admin123') {
-                    // Use secure storage for admin authentication
-                    secureStorage.setSensitive('admin_auth_token', 'logged_in');
-                    // Keep in localStorage for backward compatibility
-                    localStorage.setItem('admin_auth_token', 'logged_in');
+                if (!username || !password) {
+                    alert('Please enter username and password');
+                    return;
+                }
 
-                    console.log('[ordermanagement] login success — showing dashboard');
-                    if (typeof showDashboard === 'function') {
-                        showDashboard();
-                    } else {
-                        // fallback: manually show dashboard elements
-                        try { $('loginSection').style.display = 'none'; $('dashboardSection').style.display = 'block'; } catch(e){}
+                // Call backend API for authentication
+                (async () => {
+                    try {
+                        const res = await fetch(`${CONFIG.API}/admin-login`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username, password })
+                        });
+                        const data = await res.json();
+                        
+                        if (data.success && data.token) {
+                            // Store the JWT token from the server
+                            localStorage.setItem('admin_auth_token', data.token);
+                            localStorage.setItem('adminLoggedIn', 'true');
+                            localStorage.setItem('adminToken', data.token);
+                            
+                            console.log('[ordermanagement] login success — showing dashboard');
+                            if (typeof showDashboard === 'function') {
+                                showDashboard();
+                            } else {
+                                // fallback: manually show dashboard elements
+                                try { $('loginSection').style.display = 'none'; $('dashboardSection').style.display = 'block'; } catch(e){}
+                            }
+                        } else {
+                            alert(data.message || 'Invalid credentials');
+                            try { $('loginError').style.display = 'block'; } catch(e){}
+                        }
+                    } catch (err) {
+                        console.error('Login error:', err);
+                        alert('Unable to connect to server. Please check if backend is running.');
+                        try { $('loginError').style.display = 'block'; } catch(e){}
                     }
-                } else {
+                })();
+            } catch (err) {
+                console.error('[ordermanagement] handleLogin error:', err);
+                try { $('loginError').style.display = 'block'; } catch(e){}
+            }
+        }
+
+        function handleLogout(event) {
                     console.warn('[ordermanagement] invalid credentials', {username});
                     if ($('loginError')) $('loginError').style.display = 'block';
                 }
