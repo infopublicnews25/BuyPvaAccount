@@ -169,16 +169,26 @@ async function updateUser(username, userData) {
         }
 
         // Only update provided fields (don't overwrite with undefined)
-        if (userData.email) users[userIndex].email = userData.email;
-        if (userData.role) users[userIndex].role = userData.role;
-        if (userData.status !== undefined) users[userIndex].status = userData.status;
+        // and preserve important fields like passwordHash, createdAt, etc
+        if (userData.email && userData.email !== users[userIndex].email) {
+            users[userIndex].email = userData.email;
+        }
+        if (userData.role && userData.role !== users[userIndex].role) {
+            users[userIndex].role = userData.role;
+        }
+        if (userData.status !== undefined && userData.status !== users[userIndex].status) {
+            users[userIndex].status = userData.status;
+        }
 
         // Hash password if provided
         if (userData.password) {
             users[userIndex].passwordHash = await bcrypt.hash(userData.password, 10);
         }
 
+        // Save back to file - ensure we're not creating duplicates
         fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+        
+        console.log(`Updated user ${username} - index: ${userIndex}`);
         return { success: true, user: users[userIndex] };
     } catch (error) {
         console.error('Error updating user:', error);
