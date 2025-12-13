@@ -582,6 +582,14 @@
     <script src="secure-storage.js"></script>
 </head>
 <body>
+    <!-- Loading State (shown while checking authentication) -->
+    <div id="loadingState" style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5;">
+        <div style="text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+            <p style="font-size: 16px; color: #666;">Checking authentication...</p>
+        </div>
+    </div>
+
     <!-- Dashboard Section (shown by default if authenticated) -->
     <div id="dashboardSection" class="dashboard" style="display: none;">
         <div class="dashboard-wrapper">
@@ -832,13 +840,19 @@
         // Check if user is authenticated on page load
         (function checkAuthentication() {
             const token = localStorage.getItem('admin_auth_token');
+            const loadingState = document.getElementById('loadingState');
+            
             if (!token) {
                 // Not authenticated - redirect to admin.html for login
                 console.log('[ordermanagement] No authentication token found. Redirecting to admin.html');
+                // Hide loading state before redirect
+                if (loadingState) loadingState.style.display = 'none';
                 window.location.href = 'admin.html';
                 return;
             }
-            // Authenticated - show dashboard
+            
+            // Authenticated - show dashboard and hide loading
+            if (loadingState) loadingState.style.display = 'none';
             document.getElementById('dashboardSection').style.display = 'block';
             loadOrders();
         })();
@@ -886,9 +900,6 @@
             
             // Redirect to admin.html for new login
             window.location.href = 'admin.html';
-        }
-            $('password').value = '';
-            $('loginError').style.display = 'none';
         }
 
         // Refresh Dashboard
