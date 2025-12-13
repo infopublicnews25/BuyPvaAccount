@@ -1063,6 +1063,7 @@
             document.getElementById('userEmail').value = '';
             document.getElementById('userPassword').value = '';
             document.getElementById('userRole').value = 'user';
+            document.getElementById('userStatus').value = 'active';
             document.getElementById('userModal').style.display = 'block';
         }
 
@@ -1085,11 +1086,22 @@
         async function saveUser(e) {
             e.preventDefault();
             const isEdit = document.getElementById('isEditUser').value === 'true';
-            const username = document.getElementById('userUsername').value;
-            const email = document.getElementById('userEmail').value;
-            const password = document.getElementById('userPassword').value;
+            const username = document.getElementById('userUsername').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const password = document.getElementById('userPassword').value.trim();
             const role = document.getElementById('userRole').value;
             const status = document.getElementById('userStatus').value;
+
+            // Validation
+            if (!username || !email) {
+                alert('Username and email are required');
+                return;
+            }
+
+            if (!isEdit && !password) {
+                alert('Password is required for new users');
+                return;
+            }
 
             const userData = { username, email, role, status };
             if (password) userData.password = password;
@@ -1116,6 +1128,7 @@
                 }
             } catch (err) {
                 alert('Error saving user');
+                console.error('Error:', err);
             }
         }
 
