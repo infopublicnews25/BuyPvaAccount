@@ -582,27 +582,8 @@
     <script src="secure-storage.js"></script>
 </head>
 <body>
-    <!-- Login Section -->
-    <div id="loginSection" class="login-container">
-        <div class="login-card">
-            <h2>🔐 Admin Login</h2>
-            <div id="loginError" class="error-message">Invalid credentials</div>
-            <form onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" id="username" required autocomplete="username">
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="password" required autocomplete="current-password">
-                </div>
-                <button type="submit" class="login-btn">Login</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Dashboard Section -->
-    <div id="dashboardSection" class="dashboard">
+    <!-- Dashboard Section (shown by default if authenticated) -->
+    <div id="dashboardSection" class="dashboard" style="display: none;">
         <div class="dashboard-wrapper">
             <!-- Main Dashboard Container -->
             <div class="dashboard-container">
@@ -848,78 +829,19 @@
         const formatMoney = amount => '$' + Number(amount).toFixed(2);
         const formatDate = date => new Date(date).toLocaleString();
 
-        // Authentication
-        function handleLogin(event) {
-            try {
-                event.preventDefault();
-                console.log('[ordermanagement] handleLogin invoked');
-                const username = $('username') ? $('username').value : '';
-                const password = $('password') ? $('password').value : '';
-
-                // clear previous error
-                try { $('loginError').style.display = 'none'; } catch(e){}
-
-                if (!username || !password) {
-                    alert('Please enter username and password');
-                    return;
-                }
-
-                // Call backend API for authentication
-                (async () => {
-                    try {
-                        const res = await fetch(`${CONFIG.API}/admin-login`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ username, password })
-                        });
-                        const data = await res.json();
-                        
-                        if (data.success && data.token) {
-                            // Store the JWT token from the server
-                            localStorage.setItem('admin_auth_token', data.token);
-                            localStorage.setItem('adminLoggedIn', 'true');
-                            localStorage.setItem('adminToken', data.token);
-                            
-                            console.log('[ordermanagement] login success — showing dashboard');
-                            if (typeof showDashboard === 'function') {
-                                showDashboard();
-                            } else {
-                                // fallback: manually show dashboard elements
-                                try { $('loginSection').style.display = 'none'; $('dashboardSection').style.display = 'block'; } catch(e){}
-                            }
-                        } else {
-                            alert(data.message || 'Invalid credentials');
-                            try { $('loginError').style.display = 'block'; } catch(e){}
-                        }
-                    } catch (err) {
-                        console.error('Login error:', err);
-                        alert('Unable to connect to server. Please check if backend is running.');
-                        try { $('loginError').style.display = 'block'; } catch(e){}
-                    }
-                })();
-            } catch (err) {
-                console.error('[ordermanagement] handleLogin error:', err);
-                try { $('loginError').style.display = 'block'; } catch(e){}
+        // Check if user is authenticated on page load
+        (function checkAuthentication() {
+            const token = localStorage.getItem('admin_auth_token');
+            if (!token) {
+                // Not authenticated - redirect to admin.html for login
+                console.log('[ordermanagement] No authentication token found. Redirecting to admin.html');
+                window.location.href = 'admin.html';
+                return;
             }
-        }
-
-        function handleLogout(event) {
-                    console.warn('[ordermanagement] invalid credentials', {username});
-                    if ($('loginError')) $('loginError').style.display = 'block';
-                }
-                return false;
-            } catch (err) {
-                console.error('[ordermanagement] handleLogin error', err);
-                if ($('loginError')) $('loginError').style.display = 'block';
-            }
-        }
-
-        function showDashboard() {
-            $('loginSection').style.display = 'none';
-            $('dashboardSection').style.display = 'block';
-            switchTab('orders'); // Default to orders tab
+            // Authenticated - show dashboard
+            document.getElementById('dashboardSection').style.display = 'block';
             loadOrders();
-        }
+        })();
 
         // Tab Switching Function
         function switchTab(tabName) {
@@ -955,18 +877,16 @@
             }
         }
 
-
+        // Logout function
         function handleLogout() {
-            // Clear sensitive admin authentication data
-            secureStorage.removeSensitive('admin_auth_token');
-            secureStorage.removeSensitive('admin_auth');
+            // Clear admin authentication
             localStorage.removeItem('admin_auth_token');
-            localStorage.removeItem('admin_auth');
-            localStorage.removeItem('admin_auth_token_migrated');
-
-            $('loginSection').style.display = 'flex';
-            $('dashboardSection').style.display = 'none';
-            $('username').value = '';
+            localStorage.removeItem('adminLoggedIn');
+            localStorage.removeItem('adminToken');
+            
+            // Redirect to admin.html for new login
+            window.location.href = 'admin.html';
+        }
             $('password').value = '';
             $('loginError').style.display = 'none';
         }
