@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: 'buypvaaccount',
-    script: 'backend/server.js',
+    script: 'backend/server-production.js',
     instances: 1,
     autorestart: true,
     watch: false,

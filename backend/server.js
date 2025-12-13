@@ -1,5 +1,5 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const fs = require('fs');
@@ -189,7 +189,7 @@ app.use((req, res, next) => {
 
 // Authentication middleware
 const authenticateAdmin = async (req, res, next) => {
-    const token = req.headers.authorization && req.headers.authorization.replace('Bearer ', '');
+    const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
         return res.status(401).json({ success: false, message: 'No token provided' });
     }
