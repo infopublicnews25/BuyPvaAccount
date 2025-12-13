@@ -140,6 +140,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Trust proxy - needed for rate limiting with Nginx reverse proxy
+app.set('trust proxy', 1);
+
 // Rate limiting
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -632,6 +635,7 @@ app.post('/api/save-order', (req, res) => {
     if (!order || !order.orderId) {
         return res.status(400).json({ success: false, message: 'Order data missing or invalid' });
     }
+    console.log(`📦 New order received: ${order.orderId} from ${order.customer?.email || order.email || 'unknown'}`);
     const orders = readAllOrders();
     orders.push(order);
     if (writeAllOrders(orders)) {
@@ -639,7 +643,7 @@ app.post('/api/save-order', (req, res) => {
         // will be sent later when admin marks order as 'Completed')
         (async () => {
             if (!transporter || !emailConfig) {
-                console.warn('Email not configured. Skipping admin notification for new order.');
+                console.warn('⚠️  Email not configured. Skipping admin notification for new order.');
                 return;
             }
 
