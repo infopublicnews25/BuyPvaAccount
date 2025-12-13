@@ -341,7 +341,7 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000/api/posts';
+        const API_URL = `${CONFIG.API}/posts`; // Use dynamic CONFIG
         const urlParams = new URLSearchParams(window.location.search);
         const postSlug = urlParams.get('id');
 
@@ -352,11 +352,27 @@
             }
 
             try {
-                const response = await fetch(API_URL);
-                const data = await response.json();
+                let allPosts = null;
+                
+                // Try API first
+                try {
+                    const response = await fetch(API_URL);
+                    if (response.ok) {
+                        const data = await response.json();
+                        allPosts = data.posts;
+                    }
+                } catch (apiError) {
+                    console.log('API failed, trying direct file fetch...');
+                }
+                
+                // If API failed, try direct file fetch
+                if (!allPosts) {
+                    const response = await fetch('./posts.json');
+                    allPosts = await response.json();
+                }
 
-                if (data.success) {
-                    const post = data.posts.find(p => p.slug === postSlug);
+                if (allPosts && allPosts.length > 0) {
+                    const post = allPosts.find(p => p.slug === postSlug || p.id === postSlug);
 
                     if (post) {
                         document.getElementById('pageTitle').textContent = post.title + ' | BuyPvaAccount Blog';
@@ -372,18 +388,25 @@
                         document.getElementById('postViews').textContent = '👁️ ' + (post.views || 0) + ' views';
                         safeSetInnerHTML(document.getElementById('postContent'), post.content, true);
 
-                        await fetch(`${API_URL}/${post.id}/view`, { method: 'POST' }).catch(() => { });
+                        // Try to record view (optional, won't break if API fails)
+                        try {
+                            await fetch(`${API_URL}/${post.id}/view`, { method: 'POST' });
+                        } catch (e) {
+                            console.log('View tracking failed (optional)');
+                        }
 
-                        loadRelatedPosts(data.posts, post);
+                        loadRelatedPosts(allPosts, post);
 
                         document.getElementById('loading').style.display = 'none';
                         document.getElementById('articleContent').style.display = 'block';
                     } else {
                         window.location.href = 'blog.html';
                     }
+                } else {
+                    throw new Error('No posts found');
                 }
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error loading post:', error);
                 window.location.href = 'blog.html';
             }
         }
