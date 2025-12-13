@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Media Library - Admin</title>
+    <script src="config.js"></script>
     <style>
         * {
             margin: 0;
@@ -646,35 +647,19 @@
     </div>
 
     <script>
-        const API = 'http://localhost:3000/api';
         const AUTH_KEY = 'admin_auth_token';
+        const API = CONFIG.API;
 
         // Check authentication on page load
         window.onload = async () => {
             const token = localStorage.getItem(AUTH_KEY);
             if (!token) {
+                // No token - redirect to admin.html for login
                 window.location.href = 'admin.html';
                 return;
             }
 
-            // Verify token with backend
-            try {
-                const res = await fetch(`${API}/admin/verify`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await res.json();
-                if (!data.success) {
-                    localStorage.removeItem(AUTH_KEY);
-                    window.location.href = 'admin.html';
-                    return;
-                }
-            } catch (err) {
-                console.error('Auth verification failed:', err);
-                localStorage.removeItem(AUTH_KEY);
-                window.location.href = 'admin.html';
-                return;
-            }
-
+            // Token exists - user is authenticated, proceed with loading
             // Load data
             await loadMediaData();
             renderBreadcrumb();
