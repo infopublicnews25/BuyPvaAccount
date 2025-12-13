@@ -16,7 +16,7 @@ async function verifyAdmin(username, password) {
             if (isValid) {
                 // Update last login for admin
                 statements.updateAdminLastLogin.run(new Date().toISOString());
-                return { success: true, user: { username, role: 'admin', lastLogin: credentials.lastLogin } };
+                return { success: true, user: { username, role: 'admin', status: 'active', lastLogin: credentials.lastLogin } };
             }
         }
 
@@ -28,7 +28,7 @@ async function verifyAdmin(username, password) {
                 // Update last login
                 user.lastLogin = new Date().toISOString();
                 statements.updateAdminUser.run(user.username, user.email, user.role, user.passwordHash, user.lastLogin, user.id);
-                return { success: true, user: { username: user.username, role: user.role, email: user.email } };
+                return { success: true, user: { username: user.username, role: user.role, email: user.email, status: user.status || 'active' } };
             }
         }
 

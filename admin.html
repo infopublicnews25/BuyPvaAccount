@@ -647,6 +647,14 @@
                         <option value="admin">Admin</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>Access Status</label>
+                    <select id="userStatus">
+                        <option value="active">Active</option>
+                        <option value="suspended">Suspended</option>
+                        <option value="disabled">Disabled</option>
+                    </select>
+                </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Save User</button>
             </form>
         </div>
@@ -720,6 +728,14 @@
                 const data = await res.json();
 
                 if (data.success) {
+                    // Check access status before allowing login
+                    const accessStatus = data.user?.status || 'active';
+                    if (accessStatus !== 'active') {
+                        errorDiv.style.display = 'block';
+                        errorDiv.textContent = `Your account access has been ${accessStatus === 'suspended' ? 'suspended' : 'disabled'}. Contact the administrator.`;
+                        return;
+                    }
+                    
                     // Check if 2FA is enabled
                     const twofaEnabled = localStorage.getItem('admin_2fa_enabled') === 'true';
                     if (twofaEnabled) {
@@ -756,6 +772,7 @@
                     localStorage.setItem(AUTH_KEY, data.token);
                     localStorage.setItem('adminLoggedIn', 'true');
                     localStorage.setItem('adminToken', data.token);
+                    localStorage.setItem('admin_user', data.user.username);
                     errorDiv.style.display = 'none';
                     showDashboard();
                 } else {
@@ -966,22 +983,75 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    document.getElementById('usersTable').innerHTML = data.users.map(u => `
+                    const currentAdmin = localStorage.getItem('admin_user') || 'admin';
+                    document.getElementById('usersTable').innerHTML = data.users.map(u => {
+                        const isCurrentAdmin = currentAdmin === u.username && u.role === 'admin';
+                        const statusColor = u.status === 'active' ? '#48bb78' : u.status === 'suspended' ? '#ed8936' : '#f56565';
+                        return `
                 <tr>
                     <td>${u.username}</td>
                     <td>${u.email}</td>
                     <td><span class="status-badge" style="background: #ebf4ff; color: #2c5282;">${u.role}</span></td>
-                    <td>${u.status || 'active'}</td>
+                    <td><span class="status-badge" style="background: ${statusColor}33; color: ${statusColor};">${u.status || 'active'}</span></td>
                     <td>${u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never'}</td>
                     <td>
                         <button class="btn btn-primary" style="padding: 8px 16px; font-size: 12px;" onclick='editUser(${JSON.stringify(u).replace(/'/g, "&apos;")})'>Edit</button>
+                        ${u.role === 'admin' && !isCurrentAdmin ? `<button class="btn btn-warning" style="padding: 8px 16px; font-size: 12px;" onclick="revokeAdminAccess('${u.username}')">Revoke Admin</button>` : ''}
+                        ${u.status !== 'active' ? `<button class="btn btn-success" style="padding: 8px 16px; font-size: 12px;" onclick="restoreAccess('${u.username}')">Restore</button>` : ''}
                         <button class="btn btn-danger" style="padding: 8px 16px; font-size: 12px;" onclick="deleteUser('${u.username}')">Delete</button>
                     </td>
                 </tr>
-            `).join('');
+            `;
+                    }).join('');
                 }
             } catch (err) {
                 console.error('Error loading users:', err);
+            }
+        }
+
+        async function revokeAdminAccess(username) {
+            if (!confirm(`Are you sure you want to revoke admin access from "${username}"? They will be demoted to 'user' role.`)) return;
+            try {
+                const res = await fetch(`${API}/admin/users/${username}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ role: 'user', status: 'active' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadUsers();
+                    alert('Admin access revoked successfully!');
+                } else {
+                    alert(data.message || 'Failed to revoke admin access');
+                }
+            } catch (err) {
+                alert('Error revoking admin access');
+            }
+        }
+
+        async function restoreAccess(username) {
+            if (!confirm(`Are you sure you want to restore access for "${username}"?`)) return;
+            try {
+                const res = await fetch(`${API}/admin/users/${username}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: 'active' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadUsers();
+                    alert('Access restored successfully!');
+                } else {
+                    alert(data.message || 'Failed to restore access');
+                }
+            } catch (err) {
+                alert('Error restoring access');
             }
         }
 
@@ -1008,6 +1078,7 @@
             document.getElementById('userEmail').value = user.email;
             document.getElementById('userPassword').value = '';
             document.getElementById('userRole').value = user.role;
+            document.getElementById('userStatus').value = user.status || 'active';
             document.getElementById('userModal').style.display = 'block';
         }
 
@@ -1018,8 +1089,9 @@
             const email = document.getElementById('userEmail').value;
             const password = document.getElementById('userPassword').value;
             const role = document.getElementById('userRole').value;
+            const status = document.getElementById('userStatus').value;
 
-            const userData = { username, email, role };
+            const userData = { username, email, role, status };
             if (password) userData.password = password;
 
             const url = isEdit ? `${API}/admin/users/${username}` : `${API}/admin/users`;
