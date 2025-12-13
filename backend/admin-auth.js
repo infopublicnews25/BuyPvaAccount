@@ -168,8 +168,10 @@ async function updateUser(username, userData) {
             return { success: false, message: 'User not found' };
         }
 
-        // Update user data
-        users[userIndex] = { ...users[userIndex], ...userData };
+        // Only update provided fields (don't overwrite with undefined)
+        if (userData.email) users[userIndex].email = userData.email;
+        if (userData.role) users[userIndex].role = userData.role;
+        if (userData.status !== undefined) users[userIndex].status = userData.status;
 
         // Hash password if provided
         if (userData.password) {

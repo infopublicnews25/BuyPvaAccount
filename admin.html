@@ -1085,12 +1085,21 @@
 
         async function saveUser(e) {
             e.preventDefault();
+            
             const isEdit = document.getElementById('isEditUser').value === 'true';
             const username = document.getElementById('userUsername').value.trim();
             const email = document.getElementById('userEmail').value.trim();
             const password = document.getElementById('userPassword').value.trim();
             const role = document.getElementById('userRole').value;
             const status = document.getElementById('userStatus').value;
+
+            console.log('=== SAVE USER DEBUG ===');
+            console.log('isEdit:', isEdit);
+            console.log('isEditUser value:', document.getElementById('isEditUser').value);
+            console.log('username:', username);
+            console.log('email:', email);
+            console.log('role:', role);
+            console.log('status:', status);
 
             // Validation
             if (!username || !email) {
@@ -1109,6 +1118,10 @@
             const url = isEdit ? `${API}/admin/users/${username}` : `${API}/admin/users`;
             const method = isEdit ? 'PUT' : 'POST';
 
+            console.log('Method:', method);
+            console.log('URL:', url);
+            console.log('Data:', userData);
+
             try {
                 const res = await fetch(url, {
                     method,
@@ -1119,6 +1132,8 @@
                     body: JSON.stringify(userData)
                 });
                 const data = await res.json();
+                console.log('Response:', data);
+                
                 if (data.success) {
                     closeUserModal();
                     loadUsers();
