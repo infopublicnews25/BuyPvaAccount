@@ -9,6 +9,7 @@
     <meta name="author" content="BuyPvaAccount">
     <meta name="robots" content="index, follow">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+    <script src="config.js"></script>
     <style>
         * {
             margin: 0;
@@ -1049,7 +1050,7 @@ This helps us resolve your issue faster!"></textarea>
             console.log('Sending email to:', formData.email);
             console.log('Ticket link:', window.location.origin + secureLink);
 
-            const emailResponse = await fetch('http://localhost:3000/api/send-ticket-confirmation', {
+            const emailResponse = await fetch(`${CONFIG.API}/send-ticket-confirmation`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
