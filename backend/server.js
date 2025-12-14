@@ -613,20 +613,40 @@ app.post('/api/save-user', async (req, res) => {
         return res.status(400).json({ success: false, message: 'User data missing or invalid' });
     }
     const users = readAllUsers();
-    if (users.some(u => u.email === user.email)) {
+    
+    // Check if user already exists (case-insensitive email)
+    const lowerEmail = String(user.email).toLowerCase();
+    if (users.some(u => (u.email || '').toLowerCase() === lowerEmail)) {
         return res.status(409).json({ success: false, message: 'User already exists' });
     }
+    
     try {
-        const hashedPassword = await bcrypt.hash(user.password, 10);
+        // Check if password is already base64 encoded (from auto-registration)
+        // Auto-created users from checkout have base64 encoded passwords
+        let finalPassword;
+        if (user.autoCreated && user.password) {
+            // For auto-created users, store as-is (base64 for backward compatibility)
+            // but also store the original base64 string for login comparison
+            finalPassword = user.password;
+        } else {
+            // For normal sign-ups, hash the password
+            finalPassword = await bcrypt.hash(user.password, 10);
+        }
+        
         const newUser = {
-            fullName: user.fullName,
+            fullName: user.fullName || '',
             email: user.email,
-            phone: user.phone,
-            country: user.country,
-            passwordHash: hashedPassword,
+            phone: user.phone || '',
+            country: user.country || '',
+            // Store password differently based on how user was created
+            ...(user.autoCreated 
+                ? { password: finalPassword, autoCreated: true } // base64 for auto-created
+                : { passwordHash: finalPassword } // bcrypt hash for normal sign-up
+            ),
             authType: user.authType || 'email',
             createdAt: user.createdAt || new Date().toISOString()
         };
+        
         users.push(newUser);
         if (writeAllUsers(users)) {
             res.json({ success: true, message: 'User saved successfully' });
@@ -634,7 +654,8 @@ app.post('/api/save-user', async (req, res) => {
             res.status(500).json({ success: false, message: 'Failed to save user' });
         }
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Error hashing password' });
+        console.error('Error saving user:', error);
+        res.status(500).json({ success: false, message: 'Error saving user' });
     }
 });
 
