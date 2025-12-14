@@ -55,7 +55,7 @@
         <div class="links">Don''t have an account? <a href="signup.html">Sign up here</a></div>
     </div>
     <script>
-        const BACKEND_URL = CONFIG.API_BASE_URL;
+        const BACKEND_URL = CONFIG.API;
 
         document.getElementById("loginForm").addEventListener("submit", async function(e) {
             e.preventDefault();
@@ -71,7 +71,7 @@
             submitBtn.textContent = 'Signing in...';
 
             try {
-                const resp = await fetch(`${BACKEND_URL}/api/login`, {
+                const resp = await fetch(`${BACKEND_URL}/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
