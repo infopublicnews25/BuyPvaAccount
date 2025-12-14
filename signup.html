@@ -428,13 +428,13 @@
                 // Remove any existing client-side auth so the login page is shown
                 // instead of immediately redirecting to the profile.
                 try { localStorage.removeItem('client_auth'); localStorage.removeItem('clientAuth'); } catch (e) {}
-                showMessage("Account created successfully! Redirecting to marketplace...", "success");
-                console.log('Signup successful — redirecting to marketplace.html');
-                // Do an immediate, robust redirect to the marketplace page.
+                showMessage("Account created successfully! Redirecting to profile...", "success");
+                console.log('Signup successful — redirecting to profile.html');
+                // Do an immediate, robust redirect to the profile page.
                 try {
-                    window.location.replace('marketplace.html');
+                    window.location.replace('profile.html');
                 } catch (e) {
-                    window.location.href = 'marketplace.html';
+                    window.location.href = 'profile.html';
                 }
             } catch (error) {
                 console.error("Signup error:", error);
