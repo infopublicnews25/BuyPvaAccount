@@ -678,7 +678,7 @@ app.post('/api/save-order', (req, res) => {
         console.log(`📦 Order saved successfully: ${order.orderId}`);
         // After saving the order, attempt to send ADMIN-only notification (customer delivery email
         // will be sent later when admin marks order as 'Completed')
-        setImmediate(async () => {
+        Promise.resolve().then(async () => {
             // Wait a bit for transporter to be ready if it's initializing
             let attempts = 0;
             while ((!transporter || !emailConfig) && attempts < 5) {
@@ -754,7 +754,9 @@ app.post('/api/save-order', (req, res) => {
             } catch (emailErr) {
                 console.error('Error preparing admin notification email:', emailErr);
             }
-        })();
+        }).catch(err => {
+            console.error('Error in order notification handler:', err);
+        });
 
         res.json({ success: true, message: 'Order saved successfully' });
     } else {

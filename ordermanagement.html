@@ -961,7 +961,7 @@
             if (token) {
                 try {
                     console.log('Admin authenticated - fetching orders from backend...');
-                    const response = await fetch(`${CONFIG.API}/api/admin/orders`, {
+                    const response = await fetch(`${CONFIG.API}/admin/orders`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (response.ok) {
