@@ -1951,8 +1951,10 @@ app.post('/api/reset-password', async (req, res) => {
 // Public login endpoint for clients
 app.post('/api/login', async (req, res) => {
     try {
+        console.log('📨 /api/login request body:', JSON.stringify(req.body, null, 2));
         const { email, password } = req.body || {};
         if (!email || !password) {
+            console.log('❌ Missing email or password:', { email: !!email, password: !!password });
             return res.status(400).json({ success: false, message: 'Email and password are required' });
         }
 
