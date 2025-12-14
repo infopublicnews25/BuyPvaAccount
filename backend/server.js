@@ -174,6 +174,21 @@ app.use((req, res, next) => {
     next();
 });
 
+// Debug middleware to log raw body before parsing
+app.use((req, res, next) => {
+    let rawBody = '';
+    req.on('data', chunk => {
+        rawBody += chunk.toString();
+    });
+    req.on('end', () => {
+        if (rawBody) {
+            console.log(`📦 Raw body for ${req.method} ${req.path}:`, rawBody);
+        }
+        req.rawBody = rawBody;
+        next();
+    });
+});
+
 app.use(express.json());
 
 // Trust proxy - needed for rate limiting with Nginx reverse proxy
