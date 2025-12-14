@@ -425,9 +425,16 @@
                 } catch (csrfErr) {
                     console.warn('Error getting CSRF token for save-user:', csrfErr);
                 }
-                // Remove any existing client-side auth so the login page is shown
-                // instead of immediately redirecting to the profile.
-                try { localStorage.removeItem('client_auth'); localStorage.removeItem('clientAuth'); } catch (e) {}
+                // Set client_auth so profile.html recognizes the user as logged in
+                const authData = {
+                    email: formData.email,
+                    fullName: formData.fullName,
+                    phone: formData.phone,
+                    country: formData.country,
+                    authType: "email",
+                    signupTime: new Date().toISOString()
+                };
+                localStorage.setItem('client_auth', JSON.stringify(authData));
                 showMessage("Account created successfully! Redirecting to profile...", "success");
                 console.log('Signup successful — redirecting to profile.html');
                 // Do an immediate, robust redirect to the profile page.
