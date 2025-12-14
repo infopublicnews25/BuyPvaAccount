@@ -174,17 +174,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// Debug middleware to log raw body before parsing
-app.use(express.raw({ type: 'application/json', limit: '10mb' }), (req, res, next) => {
-    if (req.body && req.method === 'POST') {
-        const bodyStr = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body);
-        console.log(`📦 Raw bytes for ${req.method} ${req.path}:`, Buffer.from(bodyStr).toString('hex').substring(0, 200));
-        console.log(`📝 Raw string: ${bodyStr}`);
+app.use(express.json({
+    verify: (req, res, buf, encoding) => {
+        console.log(`📦 Express.json raw buf for ${req.path}:`, buf.toString('utf8'));
     }
-    next();
-});
-
-app.use(express.json());
+}));
 
 // Trust proxy - needed for rate limiting with Nginx reverse proxy
 app.set('trust proxy', 1);
