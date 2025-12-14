@@ -31,12 +31,16 @@
         .links a:hover { text-decoration: underline; }
         .forgot-password { text-align: right; margin-top: -10px; margin-bottom: 20px; }
         .forgot-password a { color: #667eea; text-decoration: none; font-size: 13px; }
+        .info-box { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; display: none; }
+        .info-box strong { color: #0c5460; }
+        .email-highlight { font-family: monospace; background: #fff; padding: 2px 6px; border-radius: 3px; color: #667eea; font-weight: 600; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Welcome Back</h1>
         <p class="subtitle">Login to access your account</p>
+        <div id="infoBox" class="info-box">✅ Account created! Login with <span class="email-highlight" id="emailDisplay"></span></div>
         <div id="message" class="message"></div>
         <form id="loginForm">
             <div class="form-group">
@@ -56,6 +60,20 @@
     </div>
     <script>
         const BACKEND_URL = CONFIG.API;
+
+        // Check if email is passed from signup.html as query parameter
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const email = params.get('email');
+            if (email) {
+                document.getElementById("email").value = email;
+                document.getElementById("emailDisplay").textContent = email;
+                // Show success info box
+                document.getElementById("infoBox").style.display = "block";
+                // Focus on password field for better UX
+                setTimeout(() => { document.getElementById("password").focus(); }, 100);
+            }
+        })();
 
         document.getElementById("loginForm").addEventListener("submit", async function(e) {
             e.preventDefault();

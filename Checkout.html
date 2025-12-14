@@ -241,51 +241,44 @@
     // ---------- auto-register user from billing details ----------
     function autoRegisterUser(email, fullName, phone, country) {
       try {
-        // Use the repository-compatible key 'registered_users' so UI and server
-        // code can discover new users. Also attempt to notify backend to persist.
-        const key = 'registered_users';
-        const users = JSON.parse(localStorage.getItem(key) || '[]');
-
-        // Check if user already exists with this email
-        const existingUser = users.find(u => (u.email || '').toLowerCase() === (email || '').toLowerCase());
-        if (existingUser) {
-          console.log('User already exists with email:', email);
-          return false; // User already exists, no need to create
-        }
-
-        // Create new user profile with auto-generated password (base64 placeholder)
-        const autoPassword = 'Auto' + Math.random().toString(36).substr(2, 8);
-        const newUser = {
-          fullName: fullName,
-          email: email,
-          phone: phone || '',
-          country: country || '',
-          password: btoa(autoPassword), // Base64 encoded placeholder password
-          authType: 'email',
-          autoCreated: true, // Flag to indicate auto-created account
-          createdAt: new Date().toISOString()
-        };
-
-        users.push(newUser);
-        try { localStorage.setItem(key, JSON.stringify(users)); } catch(e) { console.warn('Could not save registered_users locally', e); }
-
-        // Try to persist on backend (non-protected endpoint /api/save-user)
-        fetch(`${CONFIG.API}/save-user`, {
+        // Register user on backend via auto-register endpoint
+        fetch(`${CONFIG.API}/auto-register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newUser)
-        }).then(r=>r.json()).then(res=>{
+          body: JSON.stringify({
+            fullName: fullName,
+            email: email,
+            phone: phone || '',
+            country: country || ''
+          })
+        }).then(r => r.json()).then(res => {
           if (res && res.success) {
-            console.log('Auto-registered user persisted to server:', email);
+            console.log('Auto-registered user on backend:', email);
+            if (res.isNew) {
+              console.log('✅ New user created. They can reset password via forgot-password page.');
+            } else {
+              console.log('ℹ️ User already exists in system.');
+            }
           } else {
-            console.warn('Server rejected saving auto-registered user:', res && res.message);
+            console.warn('Server rejected auto-register:', res && res.message);
           }
-        }).catch(err=>{
-          console.warn('Could not reach backend to save auto-registered user:', err);
+        }).catch(err => {
+          console.warn('Could not reach backend to auto-register user:', err);
         });
 
+        // Also set local auth data for immediate profile access
+        const authData = {
+          email: email,
+          fullName: fullName,
+          phone: phone || '',
+          country: country || '',
+          authType: 'Email',
+          loginTime: new Date().toISOString()
+        };
+        localStorage.setItem('client_auth', JSON.stringify(authData));
+        
         console.log('Auto-created user profile for:', email);
-        return true; // New user created
+        return true;
       } catch (error) {
         console.error('Error auto-registering user:', error);
         return false;
@@ -450,10 +443,9 @@
       }
     }
 
-    // Send order confirmation email to both user and admin
+    // Send order confirmation email
     async function sendOrderConfirmationEmail(email, orderData) {
       try {
-        // The backend will handle sending emails to both user and admin
         const response = await fetch(`${CONFIG.API}/send-order-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -462,14 +454,13 @@
         
         const result = await response.json();
         if (result.success) {
-          console.log('✅ Order confirmation email sent to user and admin:', email);
+          console.log('✅ Order confirmation email sent to:', email);
         } else {
-          console.log('⚠️ Email sending failed:', result.message || 'Unknown error');
+          console.log('⚠️ Email not sent:', result.message);
         }
       } catch (error) {
-        // Email errors should not block order completion
-        console.warn('⚠️ Email service not available:', error.message);
-        console.log('ℹ️ Order was still placed successfully. Email will be sent when service is available.');
+        console.log('⚠️ Email service unavailable:', error.message);
+        // Don't block the order flow if email fails
       }
     }
 

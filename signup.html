@@ -327,125 +327,50 @@
                 return;
             }
             try {
-                // Check if user already exists on backend
-                let backendCheckFailed = false;
-                try {
-                    // Get CSRF token first
-                    const csrfResponse = await fetch(CONFIG.API_BASE_URL + '/api/csrf-token');
-                    const csrfData = await csrfResponse.json();
-
-                    if (csrfData.success) {
-                        const checkResponse = await fetch(CONFIG.API + '/check-user', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                email: formData.email,
-                                sessionId: csrfData.sessionId,
-                                _csrf: csrfData.csrfToken
-                            })
-                        });
-                        if (checkResponse.ok) {
-                            const checkResult = await checkResponse.json();
-                            if (checkResult.exists) {
-                                showMessage("An account with this email already exists. Please login.", "error");
-                                submitButton.disabled = false;
-                                submitButton.textContent = 'Create Account';
-                                return;
-                            }
-                        } else {
-                            backendCheckFailed = true;
-                        }
-                    } else {
-                        backendCheckFailed = true;
-                    }
-                } catch (e) {
-                    backendCheckFailed = true;
-                }
-                if (backendCheckFailed) {
-                    showMessage("Warning: Could not verify with server. Proceeding with signup.", "error");
-                    // Wait a bit
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }
-
-                // Use the shared `registered_users` key so the admin UI and other pages
-                // see the same user list. If backend is available, POST to it for
-                // repository persistence. Fallback: keep user in localStorage.
-                const users = JSON.parse(localStorage.getItem("registered_users") || "[]");
-                // Remove any existing entry for this email to avoid duplicates
-                const filteredUsers = users.filter(u => u.email !== formData.email);
-                const newUser = {
+                // Send signup request to backend
+                console.log('📝 Signup request to:', `${CONFIG.API}/signup`);
+                console.log('📝 Request data:', {
                     fullName: formData.fullName,
                     email: formData.email,
                     phone: formData.phone,
                     country: formData.country,
-                    password: formData.password,
-                    authType: "email",
-                    createdAt: formData.createdAt
-                };
-                filteredUsers.push(newUser);
-                localStorage.setItem("registered_users", JSON.stringify(filteredUsers));
-                // Also update legacy `users` key for pages that still read it
-                try {
-                    const legacy = JSON.parse(localStorage.getItem("users") || "[]");
-                    legacy.push(newUser);
-                    localStorage.setItem("users", JSON.stringify(legacy));
-                } catch (e) {
-                    localStorage.setItem("users", JSON.stringify([newUser]));
-                }
-                // Try to persist to backend at port 3000 (the project's server)
-                try {
-                    // Get CSRF token first
-                    const csrfResponse = await fetch(CONFIG.API_BASE_URL + '/api/csrf-token');
-                    const csrfData = await csrfResponse.json();
+                    authType: formData.authType
+                });
+                
+                const response = await fetch(`${CONFIG.API}/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fullName: formData.fullName,
+                        email: formData.email,
+                        phone: formData.phone,
+                        country: formData.country,
+                        password: formData.password,
+                        authType: formData.authType
+                    })
+                });
 
-                    if (csrfData.success) {
-                        fetch(CONFIG.API + '/save-user', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                ...newUser,
-                                sessionId: csrfData.sessionId,
-                                _csrf: csrfData.csrfToken
-                            })
-                        }).then(async r => {
-                            try {
-                                const result = await r.json();
-                                if (!result || !result.success) {
-                                    console.warn('Backend save-user returned failure or unexpected response', result);
-                                } else {
-                                    console.log('User saved to backend.');
-                                }
-                            } catch (err) {
-                                console.warn('Could not parse backend response for save-user', err);
-                            }
-                        }).catch(err => {
-                            console.warn('Error saving user to backend (server may be down):', err);
-                        });
-                    }
-                } catch (csrfErr) {
-                    console.warn('Error getting CSRF token for save-user:', csrfErr);
+                console.log('✅ Response status:', response.status, response.statusText);
+                const result = await response.json();
+                console.log('✅ Response data:', result);
+                
+                if (response.ok && result.success) {
+                    // Redirect to login.html with email parameter pre-filled
+                    const userEmail = formData.email;
+                    showMessage("Account created successfully! Redirecting to login...", "success");
+                    console.log('🔄 Redirecting to login.html with email:', userEmail);
+                    setTimeout(() => { 
+                        console.log('🔄 Performing redirect now...');
+                        window.location.href = 'login.html?email=' + encodeURIComponent(userEmail); 
+                    }, 1500);
+                } else {
+                    // Show server message or fallback
+                    showMessage(result.message || 'An error occurred during signup. Please try again.', "error");
                 }
-                // Set client_auth so profile.html recognizes the user as logged in
-                const authData = {
-                    email: formData.email,
-                    fullName: formData.fullName,
-                    phone: formData.phone,
-                    country: formData.country,
-                    authType: "email",
-                    signupTime: new Date().toISOString()
-                };
-                localStorage.setItem('client_auth', JSON.stringify(authData));
-                showMessage("Account created successfully! Redirecting to profile...", "success");
-                console.log('Signup successful — redirecting to profile.html');
-                // Do an immediate, robust redirect to the profile page.
-                try {
-                    window.location.replace('profile.html');
-                } catch (e) {
-                    window.location.href = 'profile.html';
-                }
-            } catch (error) {
-                console.error("Signup error:", error);
-                showMessage("An error occurred during signup. Please try again.", "error");
+            } catch (err) {
+                console.error('Signup request failed:', err);
+                showMessage('Unable to contact server. Please try again later.', "error");
+            } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Create Account';
             }

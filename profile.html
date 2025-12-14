@@ -1085,6 +1085,22 @@
             if (firstMenuItem) {
                 firstMenuItem.classList.add('active');
             }
+
+            // Auto-sync tracking with ordermanagement changes
+            // Refresh tracking every 3 seconds to catch any order status updates
+            setInterval(() => {
+                if (document.querySelector('#tracking.active')) {
+                    loadTracking();
+                }
+            }, 3000);
+
+            // Also listen for storage changes from other tabs/windows
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'all_orders') {
+                    console.log('Order status changed detected, updating tracking...');
+                    loadTracking();
+                }
+            });
         });
 
         function showTab(tabName) {

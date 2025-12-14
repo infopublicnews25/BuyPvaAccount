@@ -1334,13 +1334,21 @@
 
                     // Update local copy in localStorage if backend returned orders
                     if (data.orders && Array.isArray(data.orders)) {
-                        try { localStorage.setItem('all_orders', JSON.stringify(data.orders)); } catch (e) { /* ignore */ }
+                        try { 
+                            localStorage.setItem('all_orders', JSON.stringify(data.orders));
+                            // Trigger storage event for other tabs/windows
+                            window.dispatchEvent(new Event('storage'));
+                        } catch (e) { /* ignore */ }
                     } else if (data.order) {
                         // Update single order in localStorage array
                         const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
                         const idx = orders.findIndex(o => o.orderId === data.order.orderId);
                         if (idx !== -1) orders[idx] = data.order;
-                        try { localStorage.setItem('all_orders', JSON.stringify(orders)); } catch (e) {}
+                        try { 
+                            localStorage.setItem('all_orders', JSON.stringify(orders));
+                            // Trigger storage event for other tabs/windows
+                            window.dispatchEvent(new Event('storage'));
+                        } catch (e) {}
                     }
 
                     // Create automatic notification locally as before

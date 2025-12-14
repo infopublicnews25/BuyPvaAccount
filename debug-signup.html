@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Signup - Debug</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .container {
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1 { color: #4ec9b0; margin-top: 0; }
+        h2 { color: #569cd6; font-size: 16px; margin-top: 20px; }
+        button {
+            background: #0e639c;
+            color: white;
+            border: 1px solid #007acc;
+            padding: 8px 16px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: monospace;
+            margin-right: 10px;
+        }
+        button:hover { background: #1177bb; }
+        input { 
+            background: #3c3c3c;
+            color: #d4d4d4;
+            border: 1px solid #555;
+            padding: 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            width: 300px;
+        }
+        .output {
+            background: #1e1e1e;
+            border: 1px solid #555;
+            border-radius: 3px;
+            padding: 12px;
+            margin-top: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        .info { color: #9cdcfe; }
+        .warn { color: #ce9178; }
+        .status {
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+            border-left: 3px solid;
+        }
+        .status.ok { background: #1a3a1a; border-color: #4ec9b0; }
+        .status.error { background: #3a1a1a; border-color: #f48771; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Backend Signup Test - Debug Console</h1>
+        
+        <div>
+            <h2>Test Signup Request</h2>
+            <label>Email: <input type="email" id="email" value="debugtest@example.com"></label><br><br>
+            <label>Full Name: <input type="text" id="fullName" value="Debug Test User"></label><br><br>
+            <label>Phone: <input type="text" id="phone" value="+8801234567890"></label><br><br>
+            <label>Country: <input type="text" id="country" value="Bangladesh"></label><br><br>
+            <label>Password: <input type="password" id="password" value="TestPass123"></label><br><br>
+            
+            <button onclick="testSignup()">🚀 Send Signup Request</button>
+            <button onclick="clearOutput()">🧹 Clear Output</button>
+            <button onclick="checkServer()">✅ Check Server Status</button>
+        </div>
+
+        <h2>Response Output:</h2>
+        <div class="output" id="output">Ready to test. Click "Send Signup Request" button above.</div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'error': '❌',
+                'warn': '⚠️'
+            }[type] || '📌';
+            
+            const line = `[${timestamp}] ${prefix} ${message}`;
+            output.textContent += line + '\n';
+            output.scrollTop = output.scrollHeight;
+            console.log(line);
+        }
+
+        function clearOutput() {
+            document.getElementById('output').textContent = 'Output cleared.\n';
+        }
+
+        async function checkServer() {
+            log('Checking server status...', 'info');
+            try {
+                const response = await fetch('http://localhost:3000/api/health');
+                const data = await response.json();
+                log(`Server Status: ${JSON.stringify(data)}`, 'success');
+            } catch (err) {
+                log(`Server Error: ${err.message}`, 'error');
+            }
+        }
+
+        async function testSignup() {
+            clearOutput();
+            const email = document.getElementById('email').value;
+            const fullName = document.getElementById('fullName').value;
+            const phone = document.getElementById('phone').value;
+            const country = document.getElementById('country').value;
+            const password = document.getElementById('password').value;
+
+            log('Starting signup test...', 'info');
+            log(`API Endpoint: ${CONFIG.API}/signup`, 'info');
+            log(`Request Data:`, 'info');
+            log(`  - Email: ${email}`, 'info');
+            log(`  - Full Name: ${fullName}`, 'info');
+            log(`  - Phone: ${phone}`, 'info');
+            log(`  - Country: ${country}`, 'info');
+            log(`  - Password: ${password}`, 'info');
+
+            try {
+                log('Sending POST request...', 'info');
+                
+                const response = await fetch(`${CONFIG.API}/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fullName: fullName,
+                        email: email,
+                        phone: phone,
+                        country: country,
+                        password: password,
+                        authType: 'email'
+                    })
+                });
+
+                log(`Response Status: ${response.status} ${response.statusText}`, 'info');
+                log(`Response Headers:`, 'info');
+                log(`  - Content-Type: ${response.headers.get('content-type')}`, 'info');
+
+                const responseText = await response.text();
+                log(`Response Body (raw): ${responseText}`, 'info');
+
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    log(`Failed to parse JSON: ${e.message}`, 'error');
+                    return;
+                }
+
+                log(`Response Data (parsed):`, 'info');
+                log(JSON.stringify(data, null, 2), 'info');
+
+                if (response.ok && data.success) {
+                    log('✨ SIGNUP SUCCESSFUL!', 'success');
+                    log(`User: ${data.user?.email}`, 'success');
+                    log(`Would redirect to: login.html?email=${encodeURIComponent(email)}`, 'success');
+                } else {
+                    log(`Signup Failed: ${data.message}`, 'error');
+                }
+            } catch (err) {
+                log(`Request Error: ${err.message}`, 'error');
+                log(`Stack: ${err.stack}`, 'error');
+            }
+        }
+
+        log('Test page loaded. API: ' + CONFIG.API, 'success');
+    </script>
+</body>
+</html>

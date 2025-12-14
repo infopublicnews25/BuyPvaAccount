@@ -69,7 +69,10 @@
 
   <div id="mainContent" style="display: none;">
   <div class="wrap">
-    <h1>🔐 User Management - Admin Only</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h1 style="margin: 0;">🔐 User Management - Admin Only</h1>
+      <button class="btn primary" onclick="window.location.href='admin.html'" style="background: #667eea; color: white; border: none;">← Back to Dashboard</button>
+    </div>
     <div class="controls">
       <input id="search" placeholder="Search by name or email" style="padding:8px;border-radius:8px;border:1px solid #e6e9ee;flex:1" />
       <button id="refreshBtn" class="btn">Refresh</button>
@@ -141,17 +144,12 @@
   </div>
   </div>
 
+  <script src="config.js"></script>
   <script>
     let users = [];
     let selectedIndex = -1;
 
-    document.getElementById('refreshBtn').addEventListener('click', loadUsers);
-    document.getElementById('downloadBtn').addEventListener('click', downloadJSON);
-    document.getElementById('addBtn').addEventListener('click', newUser);
-    document.getElementById('search').addEventListener('input', renderList);
-
-    document.getElementById('saveBtn').addEventListener('click', saveChanges);
-    document.getElementById('deleteBtn').addEventListener('click', deleteUser);
+    // Authentication will be checked below before showing any content
 
     async function loadUsers() {
       // Try to fetch the file (only works when served over HTTP)
@@ -250,7 +248,7 @@
         try { localStorage.setItem('registered_users', JSON.stringify(users)); } catch(e){}
 
         // Try to POST to backend save-user endpoint (unprotected)
-        fetch('http://localhost:3000/api/save-user', {
+        fetch(CONFIG.API + '/save-user', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newUser)
         }).then(r=>r.json()).then(res=>{
           if (res && res.success) {
@@ -281,7 +279,7 @@
       const token = localStorage.getItem('admin_auth');
       const csrfToken = localStorage.getItem('admin_csrf_token');
       if (token) {
-        fetch('http://localhost:3000/api/admin/users/' + encodeURIComponent(u.email), {
+        fetch(CONFIG.API + '/admin/users/' + encodeURIComponent(u.email), {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json', 
@@ -319,7 +317,7 @@
       const token = localStorage.getItem('admin_auth');
       if (token) {
         const csrfToken = localStorage.getItem('admin_csrf_token');
-        fetch('http://localhost:3000/api/admin/users/' + encodeURIComponent(u.email), { 
+        fetch(CONFIG.API + '/admin/users/' + encodeURIComponent(u.email), { 
           method: 'DELETE', 
           headers: { 
             'Authorization':'Bearer '+token,
@@ -351,7 +349,7 @@
         }
 
         // Verify token with server
-        const response = await fetch('http://localhost:3000/api/admin/verify', {
+        const response = await fetch(CONFIG.API + '/admin/verify', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -398,33 +396,27 @@
       `;
     }
 
-    // Security: Prevent right-click and developer tools access
-    document.addEventListener('contextmenu', function(e) {
-      e.preventDefault();
-    });
+    // Initialize page with proper event listeners after auth check
+    function initializePageUI() {
+      document.getElementById('refreshBtn').addEventListener('click', loadUsers);
+      document.getElementById('downloadBtn').addEventListener('click', downloadJSON);
+      document.getElementById('addBtn').addEventListener('click', newUser);
+      document.getElementById('search').addEventListener('input', renderList);
 
-    // Security: Detect developer tools
-    let devtoolsOpen = false;
-    const threshold = 160;
+      document.getElementById('saveBtn').addEventListener('click', saveChanges);
+      document.getElementById('deleteBtn').addEventListener('click', deleteUser);
 
-    const detectDevTools = () => {
-      if (window.outerHeight - window.innerHeight > threshold || window.outerWidth - window.innerWidth > threshold) {
-        if (!devtoolsOpen) {
-          devtoolsOpen = true;
-          alert('Developer tools detected. This page is for admin use only.');
-          window.location.href = 'admin.html';
-        }
-      } else {
-        devtoolsOpen = false;
-      }
-    };
+      // Show main content
+      document.getElementById('mainContent').style.display = 'block';
+      
+      // Load users on page load
+      loadUsers();
+    }
 
-    setInterval(detectDevTools, 500);
-
-    // Init with authentication check
+    // Init with authentication check - this is the main entry point
     checkAdminAccess().then(isAdmin => {
       if (isAdmin) {
-        loadUsers();
+        initializePageUI();
       }
     });
   </script>

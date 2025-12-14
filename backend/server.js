@@ -837,6 +837,98 @@ function createTransporter() {
 // Load config on startup
 loadEmailConfig();
 
+// Helper function to send signup confirmation email
+async function sendSignupConfirmationEmail(email, fullName) {
+    try {
+        // Initialize transporter if not already done
+        if (!transporter) {
+            console.log('📧 Initializing email transporter...');
+            const emailUser = process.env.EMAIL_USER || process.env.GMAIL_USER;
+            const emailPass = process.env.EMAIL_PASSWORD || process.env.GMAIL_PASSWORD;
+            
+            if (!emailUser || !emailPass) {
+                console.warn('⚠️ Email credentials not configured in .env file');
+                console.log(`📧 Would send email to: ${email}`);
+                return;
+            }
+            
+            transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: emailUser,
+                    pass: emailPass
+                }
+            });
+        }
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER || process.env.GMAIL_USER,
+            to: email,
+            subject: '✅ Welcome to BuyPvaAccount - Account Created Successfully',
+            html: `
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
+                    <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <!-- Header -->
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <h1 style="color: #667eea; margin: 0; font-size: 28px;">🎉 Account Created!</h1>
+                            <p style="color: #666; margin: 10px 0 0 0; font-size: 14px;">Welcome to BuyPvaAccount</p>
+                        </div>
+
+                        <!-- Main Content -->
+                        <div style="color: #333; line-height: 1.6;">
+                            <p style="margin-top: 0;">Hi <strong>${fullName}</strong>,</p>
+                            
+                            <p>Welcome to BuyPvaAccount! Your account has been successfully created.</p>
+
+                            <div style="background: #f0f4ff; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                                <p style="margin: 0; color: #667eea;"><strong>📧 Account Details</strong></p>
+                                <p style="margin: 10px 0 0 0; color: #666;">Email: <strong>${email}</strong></p>
+                            </div>
+
+                            <h3 style="color: #333; margin: 25px 0 10px 0;">What's Next?</h3>
+                            <ol style="color: #666; padding-left: 20px;">
+                                <li>Log in to your account</li>
+                                <li>Complete your profile</li>
+                                <li>Start shopping for premium PVA accounts</li>
+                            </ol>
+
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="http://localhost:3000/login.html?email=${encodeURIComponent(email)}" 
+                                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">
+                                    Login to Your Account
+                                </a>
+                            </div>
+
+                            <h3 style="color: #333; margin: 25px 0 10px 0;">🔒 Security Tips</h3>
+                            <ul style="color: #666; padding-left: 20px;">
+                                <li>Never share your password with anyone</li>
+                                <li>We will never ask for your password via email</li>
+                                <li>Keep your account information secure</li>
+                            </ul>
+
+                            <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #999; font-size: 12px; text-align: center;">
+                                If you have any questions, please contact our support team.
+                            </p>
+                        </div>
+
+                        <!-- Footer -->
+                        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #f0f0f0; color: #999; font-size: 12px;">
+                            <p style="margin: 0;">© 2025 BuyPvaAccount. All rights reserved.</p>
+                            <p style="margin: 10px 0 0 0;">This email was sent because an account was created with this email address.</p>
+                        </div>
+                    </div>
+                </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`📧 ✅ Signup confirmation email sent to: ${email}`);
+    } catch (err) {
+        console.error(`❌ Error sending email to ${email}:`, err.message);
+        // Don't throw - allow signup to continue even if email fails
+    }
+}
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Password reset server is running' });
@@ -1928,6 +2020,143 @@ app.post('/api/reset-password', async (req, res) => {
     } catch (err) {
         console.error('Error in /api/reset-password:', err);
         return res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Public signup endpoint for clients
+app.post('/api/signup', async (req, res) => {
+    try {
+        const { fullName, email, phone, country, password, authType } = req.body || {};
+        
+        // Validate required fields
+        if (!fullName || !email || !phone || !country || !password) {
+            return res.status(400).json({ success: false, message: 'All fields are required' });
+        }
+        
+        if (password.length < 6) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+        }
+        
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ success: false, message: 'Invalid email format' });
+        }
+        
+        const users = readAllUsers();
+        const lowerEmail = String(email).toLowerCase();
+        
+        // Check if user already exists
+        const existingUser = users.find(u => (u.email || '').toLowerCase() === lowerEmail);
+        if (existingUser) {
+            return res.status(409).json({ success: false, message: 'An account with this email already exists' });
+        }
+        
+        // Hash password with bcrypt
+        const saltRounds = 12;
+        const passwordHash = await bcrypt.hash(password, saltRounds);
+        
+        // Create new user
+        const newUser = {
+            fullName: fullName.trim(),
+            email: lowerEmail,
+            phone: phone.trim(),
+            country: country.trim(),
+            authType: authType || 'email',
+            passwordHash: passwordHash,
+            passwordMigrated: true,
+            passwordMigratedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+        };
+        
+        // Add user to database
+        users.push(newUser);
+        
+        if (!writeAllUsers(users)) {
+            return res.status(500).json({ success: false, message: 'Failed to save user' });
+        }
+        
+        // Return success with user data (without password)
+        const safeUser = {
+            email: newUser.email,
+            fullName: newUser.fullName,
+            phone: newUser.phone,
+            country: newUser.country,
+            authType: newUser.authType
+        };
+        
+        // Send signup confirmation email (non-blocking)
+        sendSignupConfirmationEmail(newUser.email, newUser.fullName).catch(err => {
+            console.warn('⚠️ Failed to send signup confirmation email:', err.message);
+        });
+        
+        return res.json({ success: true, message: 'Account created successfully', user: safeUser });
+    } catch (err) {
+        console.error('/api/signup error:', err);
+        return res.status(500).json({ success: false, message: 'Server error: ' + err.message });
+    }
+});
+
+// Auto-register endpoint for users created during checkout
+// This creates a user with a temporary password that can be reset via forgot-password
+app.post('/api/auto-register', async (req, res) => {
+    try {
+        const { fullName, email, phone, country } = req.body || {};
+        
+        // Validate required fields
+        if (!fullName || !email) {
+            return res.status(400).json({ success: false, message: 'Full name and email are required' });
+        }
+        
+        const users = readAllUsers();
+        const lowerEmail = String(email).toLowerCase();
+        
+        // Check if user already exists
+        const existingUser = users.find(u => (u.email || '').toLowerCase() === lowerEmail);
+        if (existingUser) {
+            // User exists, just return success
+            return res.json({ success: true, message: 'User already exists', isNew: false });
+        }
+        
+        // Generate temporary password (user will reset it via forgot-password)
+        const tempPassword = 'Temp' + Math.random().toString(36).substr(2, 12);
+        const saltRounds = 12;
+        const passwordHash = await bcrypt.hash(tempPassword, saltRounds);
+        
+        // Create new auto-registered user
+        const newUser = {
+            fullName: fullName.trim(),
+            email: lowerEmail,
+            phone: (phone || '').trim(),
+            country: (country || '').trim(),
+            authType: 'email',
+            autoCreated: true,
+            passwordHash: passwordHash,
+            passwordMigrated: true,
+            passwordMigratedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+        };
+        
+        // Add user to database
+        users.push(newUser);
+        
+        if (!writeAllUsers(users)) {
+            return res.status(500).json({ success: false, message: 'Failed to save user' });
+        }
+        
+        return res.json({ 
+            success: true, 
+            message: 'User auto-registered successfully', 
+            isNew: true,
+            user: {
+                email: newUser.email,
+                fullName: newUser.fullName,
+                authType: newUser.authType
+            }
+        });
+    } catch (err) {
+        console.error('/api/auto-register error:', err);
+        return res.status(500).json({ success: false, message: 'Server error: ' + err.message });
     }
 });
 
