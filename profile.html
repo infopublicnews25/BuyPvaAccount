@@ -1094,11 +1094,25 @@
                 }
             }, 3000);
 
-            // Also listen for storage changes from other tabs/windows
+            // Also refresh orders every 5 seconds
+            setInterval(() => {
+                if (document.querySelector('#orders.active')) {
+                    loadOrders();
+                }
+            }, 5000);
+
+            // Also refresh notifications every 4 seconds
+            setInterval(() => {
+                loadNotifications();
+            }, 4000);
+
+            // Listen for storage changes from other tabs/windows (admin changes)
             window.addEventListener('storage', (e) => {
                 if (e.key === 'all_orders') {
-                    console.log('Order status changed detected, updating tracking...');
+                    console.log('📢 Order status changed detected from admin, updating all sections...');
                     loadTracking();
+                    loadOrders();
+                    loadNotifications();
                 }
             });
         });
