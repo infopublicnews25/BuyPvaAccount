@@ -174,11 +174,7 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.json({
-    verify: (req, res, buf, encoding) => {
-        console.log(`📦 Express.json raw buf for ${req.path}:`, buf.toString('utf8'));
-    }
-}));
+app.use(express.json());
 
 // Trust proxy - needed for rate limiting with Nginx reverse proxy
 app.set('trust proxy', 1);
@@ -273,6 +269,10 @@ app.get('/media-library.html', authenticateAdmin, (req, res) => {
 app.get('/categories.html', authenticateAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'categories.html'));
 });
+
+// Serve static files from the parent directory (where admin.html is located)
+// IMPORTANT: This must be configured to serve from root
+app.use(express.static(path.join(__dirname, '..')));
 
 // Redirect root to marketplace
 app.get('/', (req, res) => {
@@ -613,40 +613,20 @@ app.post('/api/save-user', async (req, res) => {
         return res.status(400).json({ success: false, message: 'User data missing or invalid' });
     }
     const users = readAllUsers();
-    
-    // Check if user already exists (case-insensitive email)
-    const lowerEmail = String(user.email).toLowerCase();
-    if (users.some(u => (u.email || '').toLowerCase() === lowerEmail)) {
+    if (users.some(u => u.email === user.email)) {
         return res.status(409).json({ success: false, message: 'User already exists' });
     }
-    
     try {
-        // Check if password is already base64 encoded (from auto-registration)
-        // Auto-created users from checkout have base64 encoded passwords
-        let finalPassword;
-        if (user.autoCreated && user.password) {
-            // For auto-created users, store as-is (base64 for backward compatibility)
-            // but also store the original base64 string for login comparison
-            finalPassword = user.password;
-        } else {
-            // For normal sign-ups, hash the password
-            finalPassword = await bcrypt.hash(user.password, 10);
-        }
-        
+        const hashedPassword = await bcrypt.hash(user.password, 10);
         const newUser = {
-            fullName: user.fullName || '',
+            fullName: user.fullName,
             email: user.email,
-            phone: user.phone || '',
-            country: user.country || '',
-            // Store password differently based on how user was created
-            ...(user.autoCreated 
-                ? { password: finalPassword, autoCreated: true } // base64 for auto-created
-                : { passwordHash: finalPassword } // bcrypt hash for normal sign-up
-            ),
+            phone: user.phone,
+            country: user.country,
+            passwordHash: hashedPassword,
             authType: user.authType || 'email',
             createdAt: user.createdAt || new Date().toISOString()
         };
-        
         users.push(newUser);
         if (writeAllUsers(users)) {
             res.json({ success: true, message: 'User saved successfully' });
@@ -654,8 +634,7 @@ app.post('/api/save-user', async (req, res) => {
             res.status(500).json({ success: false, message: 'Failed to save user' });
         }
     } catch (error) {
-        console.error('Error saving user:', error);
-        res.status(500).json({ success: false, message: 'Error saving user' });
+        res.status(500).json({ success: false, message: 'Error hashing password' });
     }
 });
 
@@ -1955,10 +1934,8 @@ app.post('/api/reset-password', async (req, res) => {
 // Public login endpoint for clients
 app.post('/api/login', async (req, res) => {
     try {
-        console.log('📨 /api/login request body:', JSON.stringify(req.body, null, 2));
         const { email, password } = req.body || {};
         if (!email || !password) {
-            console.log('❌ Missing email or password:', { email: !!email, password: !!password });
             return res.status(400).json({ success: false, message: 'Email and password are required' });
         }
 
