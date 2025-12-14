@@ -1463,13 +1463,35 @@
             (async () => {
                 try {
                     const token = localStorage.getItem('admin_auth_token');
+                    if (!token) {
+                        alert('❌ Authentication required. Please login again.');
+                        window.location.href = 'admin.html';
+                        return;
+                    }
+
+                    console.log(`🗑️ Deleting order ${orderId} with token: ${token.substring(0, 10)}...`);
+                    
                     const resp = await fetch(`${CONFIG.API}/admin/orders/${orderId}`, { 
                         method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
                     });
+                    
+                    console.log(`Delete response status: ${resp.status} ${resp.statusText}`);
+                    
                     const data = await resp.json();
                     if (!resp.ok) {
-                        alert('Failed to delete order: ' + (data && data.message ? data.message : resp.statusText));
+                        const errorMsg = data && data.message ? data.message : resp.statusText;
+                        console.error(`Delete failed: ${resp.status} - ${errorMsg}`);
+                        alert('Failed to delete order: ' + errorMsg);
+                        
+                        // If 401, re-login
+                        if (resp.status === 401) {
+                            alert('Session expired. Please login again.');
+                            window.location.href = 'admin.html';
+                        }
                         return;
                     }
 

@@ -230,6 +230,7 @@ app.use((req, res, next) => {
 const authenticateAdmin = async (req, res, next) => {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
+        console.warn('❌ Auth failed: No token provided');
         return res.status(401).json({ success: false, message: 'No token provided' });
     }
 
@@ -237,11 +238,14 @@ const authenticateAdmin = async (req, res, next) => {
         const result = await verifyToken(token);
         if (result.success) {
             req.user = result.user;
+            console.log(`✅ Auth successful for admin: ${req.user}`);
             next();
         } else {
+            console.warn(`❌ Auth failed: Invalid token - ${result.message}`);
             res.status(401).json({ success: false, message: 'Invalid token' });
         }
     } catch (error) {
+        console.error(`❌ Auth exception: ${error.message}`);
         res.status(401).json({ success: false, message: 'Authentication failed' });
     }
 };
