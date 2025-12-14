@@ -369,8 +369,8 @@
       
       try{ sessionStorage.setItem('last_order_snapshot', JSON.stringify(order)); }catch{}
       
-      // Send order confirmation email
-      // sendOrderConfirmationEmail(em, order); // Commented out to prevent duplicate - sent from backend
+      // Send order confirmation email to user and admin via backend
+      sendOrderConfirmationEmail(em, order);
       
       // Handle payment method
       if(selectedPayment === 'crypto') {
@@ -450,9 +450,10 @@
       }
     }
 
-    // Send order confirmation email
+    // Send order confirmation email to both user and admin
     async function sendOrderConfirmationEmail(email, orderData) {
       try {
+        // The backend will handle sending emails to both user and admin
         const response = await fetch(`${CONFIG.API}/send-order-confirmation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -461,13 +462,14 @@
         
         const result = await response.json();
         if (result.success) {
-          console.log('✅ Order confirmation email sent to:', email);
+          console.log('✅ Order confirmation email sent to user and admin:', email);
         } else {
-          console.log('⚠️ Email not sent:', result.message);
+          console.log('⚠️ Email sending failed:', result.message || 'Unknown error');
         }
       } catch (error) {
-        console.log('⚠️ Email service unavailable:', error.message);
-        // Don't block the order flow if email fails
+        // Email errors should not block order completion
+        console.warn('⚠️ Email service not available:', error.message);
+        console.log('ℹ️ Order was still placed successfully. Email will be sent when service is available.');
       }
     }
 

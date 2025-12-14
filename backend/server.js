@@ -669,6 +669,76 @@ function writeAllOrders(orders) {
 }
 
 
+// Helper function to send order confirmation emails
+async function sendOrderConfirmationEmails(order) {
+    try {
+        // Wait for email transporter to be ready
+        let attempts = 0;
+        while ((!transporter || !emailConfig) && attempts < 15) {
+            console.log(`⏳ Email transporter initializing... (attempt ${attempts + 1}/15)`);
+            await new Promise(resolve => setTimeout(resolve, 200));
+            attempts++;
+        }
+
+        if (!transporter || !emailConfig) {
+            console.warn(`⚠️ Email transporter not ready after ${attempts} attempts. Emails not sent.`);
+            return false;
+        }
+
+        // Build items HTML table
+        let itemsHTML = '';
+        (order.items || []).forEach(item => {
+            const unitPrice = item.unitPrice || item.price || 0;
+            const itemTotal = item.total || (unitPrice * (item.quantity || 1));
+            itemsHTML += `<tr><td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity || 1}</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Number(unitPrice).toFixed(2)}</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Number(itemTotal).toFixed(2)}</td></tr>`;
+        });
+
+        const customerEmail = order.customer?.email || order.email;
+        const customerName = order.customer?.fullName || customerEmail;
+
+        // 1. Send admin notification
+        try {
+            const adminMailOptions = {
+                from: `"BuyPvaAccount" <${emailConfig.email}>`,
+                to: ADMIN_EMAIL,
+                subject: `🔔 New Order Received: #${order.orderId}`,
+                html: `<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;color:#333;}h2{color:#2563eb;}table{width:100%;border-collapse:collapse;}td{padding:10px;border-bottom:1px solid #eee;}</style></head><body><h2>📦 New Order Received</h2><p><strong>Order #:</strong> ${order.orderId}</p><p><strong>Customer:</strong> ${customerName}</p><p><strong>Email:</strong> ${customerEmail}</p><p><strong>Phone:</strong> ${order.customer?.phone || 'N/A'}</p><p><strong>Country:</strong> ${order.customer?.country || 'N/A'}</p><h3>Order Items:</h3><table><tr><th style="text-align:left;padding:10px;">Product</th><th style="text-align:center;padding:10px;">Qty</th><th style="text-align:right;padding:10px;">Price</th><th style="text-align:right;padding:10px;">Total</th></tr>${itemsHTML}</table><p style="font-size:18px;"><strong>Grand Total: $${(order.totals && order.totals.tot) ? Number(order.totals.tot).toFixed(2) : '0.00'}</strong></p><p><strong>Payment Method:</strong> ${order.paymentMethod || 'COD'}</p><p>Visit your <a href="${process.env.SITE_URL || 'http://localhost:3000'}/ordermanagement.html">Admin Dashboard</a> to manage this order.</p></body></html>`,
+                text: `New order #${order.orderId} from ${customerName} (${customerEmail})`
+            };
+            
+            await transporter.sendMail(adminMailOptions);
+            console.log(`✅ Admin email sent for order ${order.orderId} to ${ADMIN_EMAIL}`);
+        } catch (adminErr) {
+            console.error(`❌ Failed to send admin email for order ${order.orderId}:`, adminErr.message);
+        }
+
+        // 2. Send customer confirmation email
+        if (customerEmail) {
+            try {
+                const customerMailOptions = {
+                    from: `"BuyPvaAccount" <${emailConfig.email}>`,
+                    to: customerEmail,
+                    subject: `✅ Order Confirmation: #${order.orderId}`,
+                    html: `<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;color:#333;}.container{max-width:600px;margin:0 auto;}h2{color:#16a34a;}.order-info{background:#f5f5f5;padding:15px;border-radius:5px;margin:15px 0;}table{width:100%;border-collapse:collapse;}td{padding:10px;border-bottom:1px solid #eee;}.footer{color:#666;font-size:12px;margin-top:20px;}</style></head><body><div class="container"><h2>Thank You for Your Order! ✅</h2><p>Hello <strong>${order.customer?.first || customerName},</strong></p><p>We have successfully received your order. Here are your order details:</p><div class="order-info"><p><strong>Order Number:</strong> ${order.orderId}</p><p><strong>Order Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}</p><p><strong>Payment Method:</strong> ${order.paymentMethod || 'Cash on Delivery'}</p></div><h3>Order Items:</h3><table><tr><th style="text-align:left;padding:10px;">Product</th><th style="text-align:center;padding:10px;">Qty</th><th style="text-align:right;padding:10px;">Price</th><th style="text-align:right;padding:10px;">Total</th></tr>${itemsHTML}</table><p style="text-align:right;font-size:18px;margin-top:15px;"><strong>Total Amount: $${(order.totals && order.totals.tot) ? Number(order.totals.tot).toFixed(2) : '0.00'}</strong></p><h3>Next Steps:</h3><p>We will process your order shortly and send you an update once it's completed. You can track your order status on our <a href="${process.env.SITE_URL || 'http://localhost:3000'}/profile.html">Customer Portal</a>.</p><p>If you have any questions, please contact us at <strong>info.buypva@gmail.com</strong></p><div class="footer"><p>Best regards,<br/><strong>BuyPvaAccount Team</strong></p><p>This is an automated email. Please do not reply directly to this email.</p></div></div></body></html>`,
+                    text: `Thank you for your order #${order.orderId}. We have received your order and will process it shortly. Total: $${(order.totals && order.totals.tot) ? Number(order.totals.tot).toFixed(2) : '0.00'}`
+                };
+                
+                await transporter.sendMail(customerMailOptions);
+                console.log(`✅ Customer confirmation email sent to ${customerEmail} for order ${order.orderId}`);
+            } catch (custErr) {
+                console.error(`❌ Failed to send customer email to ${customerEmail}:`, custErr.message);
+            }
+        } else {
+            console.warn(`⚠️ No customer email for order ${order.orderId}`);
+        }
+        
+        return true;
+    } catch (err) {
+        console.error('Error sending confirmation emails:', err);
+        return false;
+    }
+}
+
 // API to save a new order
 app.post('/api/save-order', (req, res) => {
     const order = req.body;
@@ -679,87 +749,11 @@ app.post('/api/save-order', (req, res) => {
     const orders = readAllOrders();
     orders.push(order);
     if (writeAllOrders(orders)) {
-        console.log(`📦 Order saved successfully: ${order.orderId}`);
-        // After saving the order, attempt to send ADMIN-only notification (customer delivery email
-        // will be sent later when admin marks order as 'Completed')
-        Promise.resolve().then(async () => {
-            // Wait a bit for transporter to be ready if it's initializing
-            let attempts = 0;
-            while ((!transporter || !emailConfig) && attempts < 5) {
-                console.log(`⏳ Waiting for email transporter to be ready (attempt ${attempts + 1})...`);
-                await new Promise(resolve => setTimeout(resolve, 500));
-                attempts++;
-            }
-
-            if (!transporter || !emailConfig) {
-                console.warn(`⚠️  Email transporter still not available after ${attempts} attempts. Skipping email notifications.`);
-                return;
-            }
-
-            console.log(`📧 Sending emails for order ${order.orderId}...`);
-
-            try {
-                // Build items HTML for admin message
-                let itemsHTML = '';
-                (order.items || []).forEach(item => {
-                    const unitPrice = item.unitPrice || item.price || 0;
-                    const itemTotal = item.total || (unitPrice * (item.quantity || 1));
-                    itemsHTML += `\n                        <tr>\n                            <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>\n                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity || 1}</td>\n                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Number(unitPrice).toFixed(2)}</td>\n                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${Number(itemTotal).toFixed(2)}</td>\n                        </tr>\n                    `;
-                });
-
-                const adminMail = {
-                    from: { name: 'BuyPvaAccount', address: emailConfig.email },
-                    to: ADMIN_EMAIL,
-                    subject: `New Order Placed #${order.orderId}`,
-                    html: `<!doctype html><html><body><h2>New order received</h2>\n                        <p>Order #: <strong>${order.orderId}</strong></p>\n                        <p>Customer: <strong>${order.customer?.fullName || order.customer?.email || order.email}</strong></p>\n                        <p>Email: ${order.customer?.email || order.email || 'N/A'}</p>\n                        <p>Phone: ${order.customer?.phone || 'N/A'}</p>\n                        <h3>Items</h3>\n                        <table style="width:100%; border-collapse:collapse;">${itemsHTML}</table>\n                        <p>Total: <strong>$${(order.totals && order.totals.tot) ? Number(order.totals.tot).toFixed(2) : '0.00'}</strong></p>\n                        <p>View orders in admin dashboard.</p>\n                        </body></html>`,
-                    text: `New order #${order.orderId} placed by ${order.customer?.fullName || order.customer?.email || 'N/A'}`
-                };
-
-                try {
-                    await transporter.sendMail(adminMail);
-                    console.log(`✅ Admin notification sent for order ${order.orderId}`);
-                } catch (sendErr) {
-                    console.error(`❌ Failed to send admin notification for order ${order.orderId}:`, sendErr);
-                }
-
-                // Attempt to send order confirmation to the customer (immediate confirmation)
-                try {
-                    const customerEmail = order.customer?.email || order.email;
-                    if (customerEmail) {
-                        const customerMail = {
-                            from: { name: 'BuyPvaAccount', address: emailConfig.email },
-                            to: customerEmail,
-                            subject: `Order Confirmation - #${order.orderId}`,
-                            html: `<!doctype html><html><body><h2>Thank you for your order</h2>
-                                <p>Order #: <strong>${order.orderId}</strong></p>
-                                <p>Hello ${order.customer?.fullName || customerEmail},</p>
-                                <p>We have received your order. Here are the details:</p>
-                                <h3>Items</h3>
-                                <table style="width:100%; border-collapse:collapse;">${itemsHTML}</table>
-                                <p>Total: <strong>$${(order.totals && order.totals.tot) ? Number(order.totals.tot).toFixed(2) : '0.00'}</strong></p>
-                                <p>We will notify you when your order is delivered.</p>
-                                <p>Best regards,<br/>BuyPvaAccount Team</p>
-                                </body></html>`,
-                            text: `Order Confirmation - #${order.orderId}\n\nThank you for your order. We will notify you when your order is delivered.`
-                        };
-
-                        try {
-                            await transporter.sendMail(customerMail);
-                            console.log(`✅ Order confirmation sent to customer ${customerEmail} for order ${order.orderId}`);
-                        } catch (custErr) {
-                            console.error(`❌ Failed to send order confirmation to ${customerEmail} for order ${order.orderId}:`, custErr);
-                        }
-                    } else {
-                        console.warn(`No customer email provided for order ${order.orderId}; skipping customer confirmation.`);
-                    }
-                } catch (custPrepareErr) {
-                    console.error('Error preparing customer confirmation email:', custPrepareErr);
-                }
-            } catch (emailErr) {
-                console.error('Error preparing admin notification email:', emailErr);
-            }
-        }).catch(err => {
-            console.error('Error in order notification handler:', err);
+        console.log(`📦 Order saved to database: ${order.orderId}`);
+        
+        // Send confirmation emails asynchronously (don't block response)
+        sendOrderConfirmationEmails(order).catch(err => {
+            console.error('Error in order confirmation email task:', err);
         });
 
         res.json({ success: true, message: 'Order saved successfully' });
