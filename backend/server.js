@@ -842,6 +842,20 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Password reset server is running' });
 });
 
+// CSRF Token endpoint
+app.get('/api/csrf-token', (req, res) => {
+    // Generate a simple session-based CSRF token
+    const sessionId = Buffer.from(Date.now().toString() + Math.random().toString()).toString('base64');
+    const csrfToken = Buffer.from(Math.random().toString() + Date.now().toString()).toString('base64');
+    
+    res.json({
+        success: true,
+        sessionId: sessionId,
+        csrfToken: csrfToken,
+        message: 'CSRF token generated successfully'
+    });
+});
+
 // Get email configuration status
 app.get('/api/email-status', (req, res) => {
     if (emailConfig) {
