@@ -175,18 +175,13 @@ app.use((req, res, next) => {
 });
 
 // Debug middleware to log raw body before parsing
-app.use((req, res, next) => {
-    let rawBody = '';
-    req.on('data', chunk => {
-        rawBody += chunk.toString();
-    });
-    req.on('end', () => {
-        if (rawBody) {
-            console.log(`📦 Raw body for ${req.method} ${req.path}:`, rawBody);
-        }
-        req.rawBody = rawBody;
-        next();
-    });
+app.use(express.raw({ type: 'application/json', limit: '10mb' }), (req, res, next) => {
+    if (req.body && req.method === 'POST') {
+        const bodyStr = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body);
+        console.log(`📦 Raw bytes for ${req.method} ${req.path}:`, Buffer.from(bodyStr).toString('hex').substring(0, 200));
+        console.log(`📝 Raw string: ${bodyStr}`);
+    }
+    next();
 });
 
 app.use(express.json());
