@@ -857,6 +857,19 @@
             loadOrders();
         })();
 
+        // Show dashboard function
+        function showDashboard() {
+            const dashboardSection = document.getElementById('dashboardSection');
+            if (dashboardSection) {
+                dashboardSection.style.display = 'block';
+            }
+            const loadingState = document.getElementById('loadingState');
+            if (loadingState) {
+                loadingState.style.display = 'none';
+            }
+            loadOrders();
+        }
+
         // Tab Switching Function
         function switchTab(tabName) {
             // Hide all tabs
