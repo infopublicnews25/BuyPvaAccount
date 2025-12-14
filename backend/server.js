@@ -270,10 +270,6 @@ app.get('/categories.html', authenticateAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'categories.html'));
 });
 
-// Serve static files from the parent directory (where admin.html is located)
-// IMPORTANT: This must be configured to serve from root
-app.use(express.static(path.join(__dirname, '..')));
-
 // Redirect root to marketplace
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'marketplace.html'));
