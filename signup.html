@@ -331,7 +331,7 @@
                 let backendCheckFailed = false;
                 try {
                     // Get CSRF token first
-                    const csrfResponse = await fetch('http://localhost:3000/api/csrf-token');
+                    const csrfResponse = await fetch(CONFIG.API_BASE_URL + '/api/csrf-token');
                     const csrfData = await csrfResponse.json();
 
                     if (csrfData.success) {
@@ -395,7 +395,7 @@
                 // Try to persist to backend at port 3000 (the project's server)
                 try {
                     // Get CSRF token first
-                    const csrfResponse = await fetch('http://localhost:3000/api/csrf-token');
+                    const csrfResponse = await fetch(CONFIG.API_BASE_URL + '/api/csrf-token');
                     const csrfData = await csrfResponse.json();
 
                     if (csrfData.success) {
