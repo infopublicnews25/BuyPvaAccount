@@ -956,6 +956,30 @@
             console.log('Loading orders from localStorage...');
             console.log('Total orders found:', orders.length);
 
+            // If admin is logged in, fetch from backend API
+            const token = localStorage.getItem('admin_auth_token');
+            if (token) {
+                try {
+                    console.log('Admin authenticated - fetching orders from backend...');
+                    const response = await fetch(`${CONFIG.API}/api/admin/orders`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success && Array.isArray(result.orders)) {
+                            orders = result.orders;
+                            // Save to localStorage for offline access
+                            localStorage.setItem('all_orders', JSON.stringify(orders));
+                            console.log('Fetched orders from backend API. Orders count:', orders.length);
+                        }
+                    } else {
+                        console.warn('Backend API returned non-ok status, using localStorage fallback');
+                    }
+                } catch (err) {
+                    console.warn('Failed to fetch from backend API, using localStorage fallback:', err);
+                }
+            }
+
             // If no orders are present, try to fetch bundled orders.json (works only over HTTP)
             if (!orders || orders.length === 0) {
                 try {

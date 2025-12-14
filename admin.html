@@ -26,11 +26,15 @@
         }
 
         .login-page {
-            display: flex;
+            display: none;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .login-page.show {
+            display: flex;
         }
 
         .login-box {
@@ -709,7 +713,18 @@
         window.onload = () => {
             const token = localStorage.getItem(AUTH_KEY);
             if (token) {
-                showDashboard();
+                // Hide login page immediately to prevent blinking
+                document.getElementById('loginPage').classList.remove('show');
+                document.getElementById('dashboard').style.display = 'block';
+                // Load dashboard data
+                loadDashboardData();
+                // Restore the previously active tab
+                const savedTab = localStorage.getItem('activeAdminTab') || 'dashboard';
+                restoreActiveTab(savedTab);
+            } else {
+                // Show login page
+                document.getElementById('loginPage').classList.add('show');
+                document.getElementById('dashboard').style.display = 'none';
             }
         };
 
@@ -787,10 +802,13 @@
 
         function showDashboard() {
             // Show the dashboard within admin.html instead of redirecting
-            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('loginPage').classList.remove('show');
             document.getElementById('dashboard').style.display = 'block';
             // Load dashboard data
             loadDashboardData();
+            // Restore the previously active tab
+            const savedTab = localStorage.getItem('activeAdminTab') || 'dashboard';
+            restoreActiveTab(savedTab);
         }
 
         function loadDashboardData() {
@@ -810,7 +828,7 @@
                 localStorage.removeItem('adminToken');
                 // Show login page instead of reloading
                 document.getElementById('dashboard').style.display = 'none';
-                document.getElementById('loginPage').style.display = 'flex';
+                document.getElementById('loginPage').classList.add('show');
                 // Clear form
                 document.getElementById('username').value = '';
                 document.getElementById('password').value = '';
@@ -825,12 +843,33 @@
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
             document.getElementById(name + 'Tab').classList.add('active');
+            
+            // Save the active tab to localStorage
+            localStorage.setItem('activeAdminTab', name);
 
             if (name === 'products') loadProducts();
             else if (name === 'categories') loadCategories();
             else if (name === 'users') loadUsers();
             else if (name === 'news') loadNews();
             else if (name === 'settings') {}
+        }
+        
+        function restoreActiveTab(tabName) {
+            const tabElement = document.querySelector(`[onclick="switchTab('${tabName}')"]`);
+            if (tabElement) {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                tabElement.classList.add('active');
+                const contentElement = document.getElementById(tabName + 'Tab');
+                if (contentElement) {
+                    contentElement.classList.add('active');
+                }
+                // Load data for the tab
+                if (tabName === 'products') loadProducts();
+                else if (tabName === 'categories') loadCategories();
+                else if (tabName === 'users') loadUsers();
+                else if (tabName === 'news') loadNews();
+            }
         }
 
         // ========== PRODUCTS ==========

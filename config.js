@@ -8,12 +8,14 @@ const CONFIG = (() => {
     const port = window.location.port;
 
     // Determine if we're in development
-    const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
+    // Check for localhost, 127.0.0.1, or local network IPs
+    const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168') || hostname.startsWith('10.');
 
     let apiBase;
 
     if (isDevelopment) {
-        // Development: use localhost:3000
+        // Development: Always use localhost:3000 (backend server)
+        // This ensures all development frontends (on different ports) talk to the same backend
         apiBase = 'http://localhost:3000';
     } else {
         // Production: use the same domain
@@ -27,13 +29,17 @@ const CONFIG = (() => {
     return {
         API_BASE_URL: apiBase,
         API: `${apiBase}/api`,
-        isDevelopment: isDevelopment
+        isDevelopment: isDevelopment,
+        HOSTNAME: hostname,
+        PORT: port
     };
 })();
 
 // Log configuration (only in development)
 if (CONFIG.isDevelopment) {
-    console.log('🔧 Development Mode - API:', CONFIG.API);
+    console.log('🔧 Development Mode');
+    console.log('   Frontend: ' + window.location.protocol + '//' + CONFIG.HOSTNAME + (CONFIG.PORT ? ':' + CONFIG.PORT : ''));
+    console.log('   API Backend: ' + CONFIG.API);
 } else {
     console.log('🚀 Production Mode - API:', CONFIG.API);
 }

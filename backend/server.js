@@ -137,7 +137,43 @@ function logAdminAction(action, details, adminUser = 'unknown') {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// CORS configuration - Smart origin handling for development and production
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5502',
+        'http://127.0.0.1:5502',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+        'https://buypvaaccount.com',
+        'https://www.buypvaaccount.com'
+    ];
+    
+    // In production, only allow specific origins
+    // In development, allow all origins
+    if (process.env.NODE_ENV === 'production') {
+        if (allowedOrigins.includes(origin)) {
+            res.header('Access-Control-Allow-Origin', origin);
+        }
+    } else {
+        res.header('Access-Control-Allow-Origin', origin || '*');
+    }
+    
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    
+    next();
+});
+
 app.use(express.json());
 
 // Trust proxy - needed for rate limiting with Nginx reverse proxy
@@ -890,95 +926,104 @@ app.post('/api/test-email', async (req, res) => {
 
 // Send verification code endpoint
 app.post('/api/send-reset-code', async (req, res) => {
-    const { email, code } = req.body;
+    try {
+        const { email, code } = req.body;
+        console.log('📨 Received password reset request for:', email);
 
-    // Validation
-    if (!email || !code) {
-        return res.status(400).json({
-            success: false,
-            message: 'Email and verification code are required'
-        });
-    }
+        // Validation
+        if (!email || !code) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and verification code are required'
+            });
+        }
 
-    // Check if email is configured
-    if (!transporter || !emailConfig) {
-        return res.status(503).json({
-            success: false,
-            message: 'Email service not configured. Please configure email first.'
-        });
-    }
+        // Check if email is configured - with better diagnostics
+        if (!transporter || !emailConfig) {
+            console.error('❌ Email not configured. Transporter:', !!transporter, 'Config:', !!emailConfig);
+            // Reload config if failed
+            loadEmailConfig();
+            
+            if (!transporter || !emailConfig) {
+                console.error('❌ Still no email config after reload. User:', process.env.EMAIL_USER, 'Provider:', process.env.EMAIL_PROVIDER);
+                return res.status(503).json({
+                    success: false,
+                    message: 'Email service not configured. Please configure email first.'
+                });
+            }
+        }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid email address'
-        });
-    }
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid email address'
+            });
+        }
 
-    // Code validation (6 digits)
-    if (!/^\d{6}$/.test(code)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid verification code format'
-        });
-    }
+        // Code validation (6 digits)
+        if (!/^\d{6}$/.test(code)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid verification code format'
+            });
+        }
 
-    // Email options
-    const mailOptions = {
-        from: {
-            name: 'BuyPvaAccount',
-            address: emailConfig.email
-        },
-        to: email,
-        subject: 'Password Reset Verification Code - BuyPvaAccount',
-        html: `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-                    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-                    .code-box { background: white; border: 2px dashed #667eea; padding: 20px; margin: 20px 0; text-align: center; border-radius: 8px; }
-                    .code { font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 5px; }
-                    .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
-                    .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <h1>Password Reset Request</h1>
-                    </div>
-                    <div class="content">
-                        <p>Hello,</p>
-                        <p>You have requested to reset your password for your BuyPvaAccount. Please use the verification code below to proceed:</p>
-                        
-                        <div class="code-box">
-                            <div class="code">${code}</div>
-                            <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">This code will expire in 10 minutes</p>
+        // Email options
+        const mailOptions = {
+            from: {
+                name: 'BuyPvaAccount',
+                address: emailConfig.email
+            },
+            to: email,
+            subject: 'Password Reset Verification Code - BuyPvaAccount',
+            html: `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+                        .code-box { background: white; border: 2px dashed #667eea; padding: 20px; margin: 20px 0; text-align: center; border-radius: 8px; }
+                        .code { font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 5px; }
+                        .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+                        .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>Password Reset Request</h1>
                         </div>
+                        <div class="content">
+                            <p>Hello,</p>
+                            <p>You have requested to reset your password for your BuyPvaAccount. Please use the verification code below to proceed:</p>
+                            
+                            <div class="code-box">
+                                <div class="code">${code}</div>
+                                <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">This code will expire in 10 minutes</p>
+                            </div>
 
-                        <div class="warning">
-                            <strong>⚠️ Security Notice:</strong> If you did not request this password reset, please ignore this email. Your account remains secure.
+                            <div class="warning">
+                                <strong>⚠️ Security Notice:</strong> If you did not request this password reset, please ignore this email. Your account remains secure.
+                            </div>
+
+                            <p>For security reasons, do not share this code with anyone.</p>
+                            
+                            <p>Best regards,<br><strong>BuyPvaAccount Team</strong></p>
                         </div>
-
-                        <p>For security reasons, do not share this code with anyone.</p>
-                        
-                        <p>Best regards,<br><strong>BuyPvaAccount Team</strong></p>
+                        <div class="footer">
+                            <p>This is an automated message, please do not reply to this email.</p>
+                            <p>&copy; 2025 BuyPvaAccount. All rights reserved.</p>
+                        </div>
                     </div>
-                    <div class="footer">
-                        <p>This is an automated message, please do not reply to this email.</p>
-                        <p>&copy; 2025 BuyPvaAccount. All rights reserved.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        `,
-        text: `
+                </body>
+                </html>
+            `,
+            text: `
 Password Reset Verification Code
 
 Hello,
@@ -993,10 +1038,10 @@ If you did not request this password reset, please ignore this email.
 
 Best regards,
 BuyPvaAccount Team
-        `
-    };
+            `
+        };
 
-    try {
+        console.log('📧 Attempting to send email...');
         await transporter.sendMail(mailOptions);
         console.log(`✅ Reset code sent to: ${email} (from: ${emailConfig.email})`);
 
@@ -1005,11 +1050,12 @@ BuyPvaAccount Team
             message: 'Verification code sent successfully'
         });
     } catch (error) {
-        console.error('❌ Error sending email:', error);
+        console.error('❌ Error in send-reset-code:', error.message);
+        console.error('Full error stack:', error);
 
         res.status(500).json({
             success: false,
-            message: 'Failed to send verification code. Please check email configuration.'
+            message: 'Failed to send verification code. Please try again or contact support.'
         });
     }
 });
