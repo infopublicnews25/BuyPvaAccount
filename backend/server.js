@@ -18,6 +18,7 @@ const USERS_FILE = path.join(__dirname, '../registered_users.json');
 const CATEGORIES_FILE = path.join(__dirname, '../categories.json');
 const NOTIFICATIONS_FILE = path.join(__dirname, '../notifications.json');
 const PAYMENT_SETTINGS_FILE = path.join(__dirname, '../payment_settings.json');
+const PROMO_CODES_FILE = path.join(__dirname, '../promo_codes.json');
 const UPLOADS_DIR = path.join(__dirname, '../uploads');
 
 function readPaymentSettings() {
@@ -57,6 +58,62 @@ function writePaymentSettings(settings) {
         return normalized;
     } catch (e) {
         console.error('Error writing payment_settings.json:', e);
+        return null;
+    }
+}
+
+function normalizePromoCodeEntry(entry) {
+    const code = String(entry?.code || '').trim().toUpperCase();
+    const discountPercentRaw = Number(entry?.discountPercent);
+    const discountPercent = Number.isFinite(discountPercentRaw) ? Math.max(0, Math.min(100, discountPercentRaw)) : 0;
+    const memberOnly = entry?.memberOnly === true;
+    const active = entry?.active !== false;
+
+    if (!code) return null;
+    return {
+        code,
+        discountPercent,
+        memberOnly,
+        active,
+        createdAt: entry?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+}
+
+function readPromoCodes() {
+    try {
+        if (fs.existsSync(PROMO_CODES_FILE)) {
+            const data = fs.readFileSync(PROMO_CODES_FILE, 'utf8');
+            const parsed = JSON.parse(data);
+            const codes = Array.isArray(parsed?.codes) ? parsed.codes : (Array.isArray(parsed) ? parsed : []);
+            return {
+                codes: codes.map(normalizePromoCodeEntry).filter(Boolean),
+                updatedAt: parsed?.updatedAt || new Date().toISOString()
+            };
+        }
+    } catch (e) {
+        console.error('Error reading promo_codes.json:', e);
+    }
+    return { codes: [], updatedAt: new Date().toISOString() };
+}
+
+function writePromoCodes(payload) {
+    try {
+        const incomingCodes = Array.isArray(payload?.codes) ? payload.codes : (Array.isArray(payload) ? payload : []);
+        const normalized = incomingCodes.map(normalizePromoCodeEntry).filter(Boolean);
+
+        // De-duplicate by code, keep latest
+        const map = new Map();
+        normalized.forEach(c => map.set(c.code, c));
+
+        const out = {
+            codes: Array.from(map.values()).sort((a, b) => a.code.localeCompare(b.code)),
+            updatedAt: new Date().toISOString()
+        };
+        fs.writeFileSync(PROMO_CODES_FILE, JSON.stringify(out, null, 2));
+        return out;
+    } catch (e) {
+        console.error('Error writing promo_codes.json:', e);
         return null;
     }
 }
@@ -399,6 +456,131 @@ app.put('/api/admin/payment-settings', authenticateAdmin, (req, res) => {
     } catch (err) {
         console.error('Error saving payment settings:', err);
         return res.status(500).json({ success: false, message: 'Failed to save payment settings' });
+    }
+});
+
+// ========== PROMO CODES ==========
+
+// Validate a promo code (public). If promo is memberOnly, it requires a valid client Bearer token.
+app.get('/api/promo-codes/validate', (req, res) => {
+    try {
+        const code = String(req.query.code || '').trim().toUpperCase();
+        if (!code) {
+            return res.status(400).json({ success: false, message: 'Missing code' });
+        }
+
+        const { codes } = readPromoCodes();
+        const found = codes.find(c => c && c.active !== false && String(c.code).toUpperCase() === code);
+        if (!found) {
+            return res.json({ success: true, valid: false, message: 'Invalid promo code' });
+        }
+
+        if (found.memberOnly) {
+            const token = getBearerToken(req);
+            if (!token) {
+                return res.json({ success: true, valid: false, message: 'Promo code is for members only' });
+            }
+
+            const users = readAllUsers();
+            const user = users.find(u => u && u.userToken === token);
+            if (!user) {
+                return res.json({ success: true, valid: false, message: 'Promo code is for members only' });
+            }
+
+            const role = String(user.role || '').toLowerCase();
+            const isMember = role === 'member' || role === 'admin';
+            if (!isMember) {
+                return res.json({ success: true, valid: false, message: 'Promo code is for members only' });
+            }
+        }
+
+        const discountPercent = Number(found.discountPercent) || 0;
+        const discountPct = Math.max(0, Math.min(1, discountPercent / 100));
+        return res.json({
+            success: true,
+            valid: discountPct > 0,
+            code,
+            discountPercent,
+            discountPct,
+            memberOnly: found.memberOnly === true
+        });
+    } catch (err) {
+        console.error('Error validating promo code:', err);
+        return res.status(500).json({ success: false, message: 'Failed to validate promo code' });
+    }
+});
+
+// Admin: list promo codes
+app.get('/api/admin/promo-codes', authenticateAdmin, (req, res) => {
+    try {
+        const data = readPromoCodes();
+        return res.json({ success: true, ...data });
+    } catch (err) {
+        console.error('Error fetching promo codes:', err);
+        return res.status(500).json({ success: false, message: 'Failed to fetch promo codes' });
+    }
+});
+
+// Admin: upsert a promo code
+app.post('/api/admin/promo-codes', authenticateAdmin, (req, res) => {
+    try {
+        const incoming = normalizePromoCodeEntry(req.body || {});
+        if (!incoming) {
+            return res.status(400).json({ success: false, message: 'Promo code is required' });
+        }
+
+        const current = readPromoCodes();
+        const existing = current.codes.find(c => c.code === incoming.code);
+        const merged = existing
+            ? { ...existing, ...incoming, code: existing.code, createdAt: existing.createdAt, updatedAt: new Date().toISOString() }
+            : incoming;
+
+        const next = current.codes.filter(c => c.code !== incoming.code).concat([merged]);
+        const saved = writePromoCodes({ codes: next });
+        if (!saved) return res.status(500).json({ success: false, message: 'Failed to persist promo codes' });
+
+        logAdminAction('upsert_promo_code', { code: merged.code, discountPercent: merged.discountPercent, memberOnly: merged.memberOnly, active: merged.active }, req.adminUser || 'admin');
+        return res.json({ success: true, promo: merged, codes: saved.codes, updatedAt: saved.updatedAt });
+    } catch (err) {
+        console.error('Error saving promo code:', err);
+        return res.status(500).json({ success: false, message: 'Failed to save promo code' });
+    }
+});
+
+// Admin: replace all promo codes (bulk)
+app.put('/api/admin/promo-codes', authenticateAdmin, (req, res) => {
+    try {
+        const saved = writePromoCodes(req.body);
+        if (!saved) return res.status(500).json({ success: false, message: 'Failed to persist promo codes' });
+        logAdminAction('bulk_update_promo_codes', { count: saved.codes.length }, req.adminUser || 'admin');
+        return res.json({ success: true, ...saved });
+    } catch (err) {
+        console.error('Error bulk saving promo codes:', err);
+        return res.status(500).json({ success: false, message: 'Failed to save promo codes' });
+    }
+});
+
+// Admin: delete a promo code
+app.delete('/api/admin/promo-codes/:code', authenticateAdmin, (req, res) => {
+    try {
+        const code = String(decodeURIComponent(req.params.code || '')).trim().toUpperCase();
+        if (!code) return res.status(400).json({ success: false, message: 'Promo code is required' });
+
+        const current = readPromoCodes();
+        const removed = current.codes.find(c => c.code === code) || null;
+        const next = current.codes.filter(c => c.code !== code);
+        if (next.length === current.codes.length) {
+            return res.status(404).json({ success: false, message: 'Promo code not found' });
+        }
+
+        const saved = writePromoCodes({ codes: next });
+        if (!saved) return res.status(500).json({ success: false, message: 'Failed to persist promo codes' });
+
+        logAdminAction('delete_promo_code', { code }, req.adminUser || 'admin');
+        return res.json({ success: true, promo: removed, codes: saved.codes, updatedAt: saved.updatedAt });
+    } catch (err) {
+        console.error('Error deleting promo code:', err);
+        return res.status(500).json({ success: false, message: 'Failed to delete promo code' });
     }
 });
 

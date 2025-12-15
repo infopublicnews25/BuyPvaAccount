@@ -141,6 +141,7 @@
     // ---------- state ----------
     let cart=migrate(readAll());
     let coupon=(localStorage.getItem(COUPON_KEY)||'').trim().toUpperCase();
+    let couponPct=0;
 
     // ---------- country list (all ISO countries) ----------
     const COUNTRIES = [
@@ -198,8 +199,7 @@
     // ---------- totals & discounts ----------
     function calcTotals(){
       const sub=cart.reduce((s,it)=>s+(it.unitPrice||0)*(it.quantity||1),0);
-      const couponPct = (coupon==='COUPON5') ? 0.05 : 0;
-      const couponDis = +(sub*couponPct).toFixed(2);
+      const couponDis = +(sub*(couponPct||0)).toFixed(2);
       const afterCoupon = sub - couponDis;
       
       // Check selected payment method
@@ -278,13 +278,67 @@
 
     applyPaymentVisibility();
 
+    // ---------- promo/coupon validation (server-backed) ----------
+    function getClientTokenFromLocal(){
+      try{
+        const raw = localStorage.getItem('client_auth');
+        const obj = raw ? JSON.parse(raw) : null;
+        return obj && obj.token ? String(obj.token) : null;
+      }catch{ return null; }
+    }
+
+    async function validateCoupon(code){
+      const token = getClientTokenFromLocal();
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const resp = await fetch(`${CONFIG.API}/promo-codes/validate?code=${encodeURIComponent(code)}`, { headers, cache: 'no-store' });
+      const data = await resp.json().catch(()=>null);
+      if(!resp.ok || !data || !data.success) {
+        return { ok:false, message:(data && data.message) ? data.message : 'Failed to validate promo code' };
+      }
+      if(!data.valid) {
+        return { ok:false, message:data.message || 'Invalid promo code' };
+      }
+      return { ok:true, discountPct: Number(data.discountPct)||0, discountPercent: Number(data.discountPercent)||0 };
+    }
+
+    async function refreshCouponFromStorage(){
+      coupon=(localStorage.getItem(COUPON_KEY)||'').trim().toUpperCase();
+      if(!coupon){ couponPct=0; $('#coupon').value=''; totals(); return; }
+      if($('#coupon')) $('#coupon').value=coupon;
+      try{
+        const v = await validateCoupon(coupon);
+        if(!v.ok){
+          couponPct=0;
+          totals();
+          return;
+        }
+        couponPct = v.discountPct;
+        totals();
+      }catch{
+        // Non-blocking
+        couponPct=0;
+        totals();
+      }
+    }
+
     // ---------- coupon ----------
-    $('#apply-coupon')?.addEventListener('click',()=>{
+    refreshCouponFromStorage();
+
+    $('#apply-coupon')?.addEventListener('click', async ()=>{
       const code=($('#coupon')?.value||'').trim().toUpperCase();
       if(!code) return alert('Enter a coupon code.');
-      if(code!=='COUPON5') return alert('Invalid coupon. (demo: use COUPON5)');
-      coupon=code; localStorage.setItem(COUPON_KEY,coupon);
-      totals(); alert('Coupon applied: 5% off subtotal.');
+      try{
+        const v = await validateCoupon(code);
+        if(!v.ok) return alert(v.message || 'Invalid promo code');
+
+        coupon=code;
+        couponPct=v.discountPct;
+        localStorage.setItem(COUPON_KEY,coupon);
+        totals();
+        alert(`Coupon applied: ${v.discountPercent}% off subtotal.`);
+      }catch(e){
+        alert('Failed to validate promo code. Please try again.');
+      }
     });
 
     // ---------- auto-register user from billing details ----------

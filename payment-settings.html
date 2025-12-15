@@ -20,6 +20,12 @@
     .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
     .loading{padding:16px;text-align:center}
     .hidden{display:none}
+    .grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+    .field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .inp{padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .pill{display:inline-flex;align-items:center;gap:8px}
+    .code{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
   </style>
 </head>
 <body>
@@ -62,6 +68,49 @@
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
         <button class="btn" id="reload" type="button">Reload</button>
         <button class="btn primary" id="save" type="button">Save</button>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+
+      <div class="title" style="margin:0 0 6px 0">Promo Code</div>
+      <div class="muted">Create promo codes for member discounts (used on Checkout coupon box).</div>
+
+      <div class="grid" style="margin-top:10px">
+        <div style="border:1px solid var(--line);border-radius:12px;padding:12px">
+          <div class="muted" style="margin-bottom:8px">Add / Update promo code</div>
+
+          <div class="cols">
+            <div class="field">
+              <label class="muted" for="promo-code">Code</label>
+              <input id="promo-code" class="inp code" placeholder="EX: MEMBER10" />
+            </div>
+            <div class="field">
+              <label class="muted" for="promo-percent">Discount (%)</label>
+              <input id="promo-percent" class="inp" type="number" min="0" max="100" step="0.01" placeholder="10" />
+            </div>
+          </div>
+
+          <div class="cols">
+            <label class="pill muted" style="margin-top:10px">
+              <input id="promo-member" type="checkbox" checked />
+              Members only
+            </label>
+            <label class="pill muted" style="margin-top:10px">
+              <input id="promo-active" type="checkbox" checked />
+              Active
+            </label>
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+            <button class="btn" id="promo-clear" type="button">Clear</button>
+            <button class="btn primary" id="promo-save" type="button">Save Promo</button>
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--line);border-radius:12px;padding:12px">
+          <div class="muted" style="margin-bottom:8px">Existing promo codes</div>
+          <div id="promo-list" class="muted">Loading…</div>
+        </div>
       </div>
     </div>
   </div>
@@ -154,21 +203,128 @@
       alert('Saved! Checkout page updated.');
     }
 
+    function promoRow(item){
+      const code = String(item.code || '');
+      const percent = Number(item.discountPercent) || 0;
+      const memberOnly = item.memberOnly === true;
+      const active = item.active !== false;
+
+      return `
+        <div class="row" style="margin-top:8px">
+          <div>
+            <div style="font-weight:900" class="code">${code}</div>
+            <div class="muted">${percent}% off • ${memberOnly ? 'Members only' : 'All users'} • ${active ? 'Active' : 'Disabled'}</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" type="button" onclick='fillPromo(${JSON.stringify(code)}, ${JSON.stringify(percent)}, ${JSON.stringify(memberOnly)}, ${JSON.stringify(active)})'>Edit</button>
+            <button class="btn danger" type="button" onclick='deletePromo(${JSON.stringify(code)})'>Delete</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadPromos(){
+      const list = $('promo-list');
+      list.textContent = 'Loading…';
+      const resp = await fetch(CONFIG.API + '/admin/promo-codes', {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await resp.json().catch(()=>null);
+      if(!resp.ok || !data || !data.success){
+        throw new Error((data && data.message) ? data.message : 'Failed to load promo codes');
+      }
+      const codes = Array.isArray(data.codes) ? data.codes : [];
+      if(!codes.length){
+        list.innerHTML = '<div class="muted">No promo codes yet.</div>';
+        return;
+      }
+      list.innerHTML = codes.map(promoRow).join('');
+    }
+
+    window.fillPromo = function(code, percent, memberOnly, active){
+      $('promo-code').value = String(code || '').toUpperCase();
+      $('promo-percent').value = String(Number(percent) || 0);
+      $('promo-member').checked = memberOnly === true;
+      $('promo-active').checked = active !== false;
+    };
+
+    window.deletePromo = async function(code){
+      if(!confirm(`Delete promo code "${code}"?`)) return;
+      const resp = await fetch(CONFIG.API + '/admin/promo-codes/' + encodeURIComponent(code), {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const raw = await resp.text();
+      let data;
+      try { data = raw ? JSON.parse(raw) : {}; } catch { data = { success: false, message: raw || `Request failed (${resp.status})` }; }
+      if(!resp.ok || !data.success){
+        alert(data.message || 'Failed to delete');
+        return;
+      }
+      await loadPromos();
+      alert('Deleted!');
+    };
+
+    function clearPromoForm(){
+      $('promo-code').value='';
+      $('promo-percent').value='';
+      $('promo-member').checked=true;
+      $('promo-active').checked=true;
+    }
+
+    async function savePromo(){
+      const code = String($('promo-code').value || '').trim().toUpperCase();
+      const discountPercent = Number($('promo-percent').value);
+      const memberOnly = $('promo-member').checked;
+      const active = $('promo-active').checked;
+
+      if(!code) return alert('Promo code required');
+      if(!Number.isFinite(discountPercent) || discountPercent <= 0) return alert('Discount must be greater than 0');
+
+      const resp = await fetch(CONFIG.API + '/admin/promo-codes', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ code, discountPercent, memberOnly, active })
+      });
+      const raw = await resp.text();
+      let data;
+      try { data = raw ? JSON.parse(raw) : {}; } catch { data = { success: false, message: raw || `Request failed (${resp.status})` }; }
+      if(!resp.ok || !data.success){
+        alert(data.message || 'Failed to save');
+        return;
+      }
+      await loadPromos();
+      clearPromoForm();
+      alert('Promo saved!');
+    }
+
     (async () => {
       const ok = await verifyAdmin();
       if (!ok) return;
       try {
         await loadSettings();
+        await loadPromos();
       } catch (e) {
         alert(e.message);
       }
     })();
 
     $('reload').addEventListener('click', async () => {
-      try { await loadSettings(); } catch (e) { alert(e.message); }
+      try { await loadSettings(); await loadPromos(); } catch (e) { alert(e.message); }
     });
     $('save').addEventListener('click', async () => {
       try { await saveSettings(); } catch (e) { alert(e.message); }
+    });
+
+    $('promo-clear').addEventListener('click', () => clearPromoForm());
+    $('promo-save').addEventListener('click', async () => {
+      try { await savePromo(); } catch (e) { alert(e.message); }
     });
   </script>
 </body>

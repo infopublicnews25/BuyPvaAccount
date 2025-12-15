@@ -16,6 +16,7 @@ admin_users.json
 orders.json
 notifications.json
 payment_settings.json
+promo_codes.json
 
 # Backend credentials / local config
 backend/admin-credentials.json
