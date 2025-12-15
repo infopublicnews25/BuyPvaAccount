@@ -101,6 +101,15 @@ function loadNewsUpdates() {
     }
   }
 
+  function normalizeCategoryName(value) {
+    const raw = (value && typeof value === 'object' && 'name' in value) ? value.name : value;
+    return String(raw || '').trim().toLowerCase();
+  }
+
+  function getCategoryValue(value) {
+    return (value && typeof value === 'object' && 'name' in value) ? value.name : value;
+  }
+
   function getCurrentCategory() {
     const params = new URLSearchParams(window.location.search);
     return params.get('category') || 'all';
@@ -120,6 +129,7 @@ function loadNewsUpdates() {
     const container = document.getElementById('categoryTabs');
     const categories = await loadCategories();
     const currentCategory = getCurrentCategory();
+    const currentCategoryNorm = normalizeCategoryName(currentCategory);
     const lang = detectLanguage();
     const allTranslations = {
       en: 'ALL',
@@ -130,8 +140,9 @@ function loadNewsUpdates() {
     const allText = allTranslations[lang] || 'ALL';
     let html = `<a href="?category=all" class="category-tab ${currentCategory === 'all' ? 'active' : ''}" data-category="all">${allText}</a>`;
     categories.forEach(cat => {
-      const isActive = currentCategory === cat;
-      html += `<a href="?category=${encodeURIComponent(cat)}" class="category-tab ${isActive ? 'active' : ''}" data-category="${cat}">${cat.toUpperCase()}</a>`;
+      const catValue = String(getCategoryValue(cat) || '');
+      const isActive = currentCategoryNorm === normalizeCategoryName(catValue);
+      html += `<a href="?category=${encodeURIComponent(catValue)}" class="category-tab ${isActive ? 'active' : ''}" data-category="${catValue}">${catValue.toUpperCase()}</a>`;
     });
     safeSetInnerHTML(container, html, true);
     container.querySelectorAll('.category-tab').forEach(tab => {
@@ -239,6 +250,8 @@ function loadNewsUpdates() {
     safeSetInnerHTML(rowsHost, '', true);
     const q = (search?.value || '').toLowerCase().trim();
     const currentCategory = getCurrentCategory();
+    const currentCategoryNorm = normalizeCategoryName(currentCategory);
+    const isAllCategory = currentCategoryNorm === 'all' || currentCategory === 'all';
     const lang = detectLanguage();
     const buyNowTranslations = {
       en: 'Buy Now',
@@ -254,7 +267,7 @@ function loadNewsUpdates() {
       const translatedNote = p[`note_${lang}`] || p.note;
 
       if (q && !translatedTitle.toLowerCase().includes(q) && !p.title.toLowerCase().includes(q) && !(translatedNote || '').toLowerCase().includes(q) && !(p.note || '').toLowerCase().includes(q)) return;
-      if (currentCategory !== 'all' && p.category !== currentCategory) return;
+      if (!isAllCategory && normalizeCategoryName(p.category) !== currentCategoryNorm) return;
 
       const row = document.createElement('div');
       row.className = 'row cols';
