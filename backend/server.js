@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
@@ -15,6 +16,7 @@ const MEDIA_FILE = path.join(__dirname, '../media-files.json');
 const FOLDERS_FILE = path.join(__dirname, '../media-folders.json');
 const USERS_FILE = path.join(__dirname, '../registered_users.json');
 const CATEGORIES_FILE = path.join(__dirname, '../categories.json');
+const NOTIFICATIONS_FILE = path.join(__dirname, '../notifications.json');
 const UPLOADS_DIR = path.join(__dirname, '../uploads');
 
 // Ensure uploads directory exists
@@ -289,7 +291,7 @@ app.post('/api/admin-login', async (req, res) => {
         const result = await verifyAdmin(username, password);
         if (result.success) {
             // Generate a secure random token (simple string instead of bcrypt hash for comparison)
-            const token = require('crypto').randomBytes(32).toString('hex');
+            const token = crypto.randomBytes(32).toString('hex');
 
             // Store token for the user
             await storeUserToken(username, token);
@@ -306,6 +308,50 @@ app.post('/api/admin-login', async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
+
+function getBearerToken(req) {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    if (!authHeader || typeof authHeader !== 'string') return null;
+    const match = authHeader.match(/^Bearer\s+(.+)$/i);
+    return match ? match[1].trim() : null;
+}
+
+function authenticateClient(req, res, next) {
+    try {
+        const token = getBearerToken(req);
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Missing authorization token' });
+        }
+
+        const users = readAllUsers();
+        const user = users.find(u => u && u.userToken === token);
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Invalid authorization token' });
+        }
+
+        req.clientUser = user;
+        req.clientToken = token;
+        return next();
+    } catch (err) {
+        console.error('authenticateClient error:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+}
+
+function ensureUserTokenForEmail(email) {
+    const users = readAllUsers();
+    const lowerEmail = String(email || '').toLowerCase();
+    const idx = users.findIndex(u => (u.email || '').toLowerCase() === lowerEmail);
+    if (idx === -1) return null;
+
+    if (!users[idx].userToken) {
+        users[idx].userToken = crypto.randomBytes(24).toString('hex');
+        users[idx].userTokenCreatedAt = new Date().toISOString();
+        const ok = writeAllUsers(users);
+        if (!ok) return null;
+    }
+    return users[idx];
+}
 
 // User management endpoints
 app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
@@ -397,6 +443,16 @@ app.put('/api/admin/orders/:orderId/status', authenticateAdmin, async (req, res)
         orders[idx].status = status;
         orders[idx].statusUpdatedAt = new Date().toISOString();
 
+        if (String(oldStatus) !== String(status)) {
+            if (!Array.isArray(orders[idx].statusHistory)) orders[idx].statusHistory = [];
+            orders[idx].statusHistory.push({
+                from: oldStatus,
+                to: status,
+                timestamp: new Date().toISOString(),
+                by: (req.user && req.user.username) ? req.user.username : 'admin'
+            });
+        }
+
         const writeOk = writeAllOrders(orders);
         if (!writeOk) return res.status(500).json({ success: false, message: 'Failed to persist order status' });
 
@@ -415,9 +471,141 @@ app.put('/api/admin/orders/:orderId/status', authenticateAdmin, async (req, res)
             })();
         }
 
-        return res.json({ success: true, message: 'Order status updated', order: orders[idx] });
+        return res.json({ success: true, message: 'Order status updated', order: orders[idx], orders });
     } catch (err) {
         console.error('Error updating order status:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Update order delivery info (admin only)
+app.put('/api/admin/orders/:orderId/delivery', authenticateAdmin, async (req, res) => {
+    const { orderId } = req.params;
+    const { deliveryFile, attachedFiles, deliveryFiles, deliveryHidden } = req.body || {};
+
+    if (!orderId) {
+        return res.status(400).json({ success: false, message: 'orderId is required' });
+    }
+
+    try {
+        const orders = readAllOrders();
+        const idx = orders.findIndex(o => String(o.orderId) === String(orderId));
+        if (idx === -1) return res.status(404).json({ success: false, message: 'Order not found' });
+
+        const order = orders[idx];
+
+        if (typeof deliveryHidden === 'boolean') {
+            order.deliveryHidden = deliveryHidden;
+        }
+
+        const hasDeliveryContent =
+            (typeof deliveryFile === 'string' && deliveryFile.trim().length > 0) ||
+            (Array.isArray(attachedFiles) && attachedFiles.length > 0) ||
+            (Array.isArray(deliveryFiles) && deliveryFiles.length > 0);
+
+        if (typeof deliveryFile === 'string') {
+            order.deliveryFile = deliveryFile;
+        }
+
+        if (Array.isArray(attachedFiles)) {
+            order.attachedFiles = attachedFiles;
+        }
+
+        if (Array.isArray(deliveryFiles)) {
+            order.deliveryFiles = deliveryFiles;
+        }
+
+        if (hasDeliveryContent) {
+            order.deliveryDate = new Date().toISOString();
+            order.deliveryStatus = 'sent';
+
+            // Mark completed when delivery is sent
+            const oldStatus = order.status;
+            if (String(oldStatus || '').toLowerCase() !== 'completed') {
+                order.status = 'completed';
+                order.statusUpdatedAt = new Date().toISOString();
+                if (!Array.isArray(order.statusHistory)) order.statusHistory = [];
+                order.statusHistory.push({
+                    from: oldStatus,
+                    to: 'completed',
+                    timestamp: new Date().toISOString(),
+                    by: (req.user && req.user.username) ? req.user.username : 'admin'
+                });
+            }
+        }
+
+        const writeOk = writeAllOrders(orders);
+        if (!writeOk) return res.status(500).json({ success: false, message: 'Failed to persist delivery info' });
+
+        logAdminAction('update_order_delivery', { orderId }, req.adminUser || 'admin');
+
+        return res.json({ success: true, message: 'Order delivery updated', order: orders[idx], orders });
+    } catch (err) {
+        console.error('Error updating order delivery:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+function readAllNotifications() {
+    try {
+        if (fs.existsSync(NOTIFICATIONS_FILE)) {
+            const data = fs.readFileSync(NOTIFICATIONS_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (e) {
+        console.error('Error reading notifications.json:', e);
+    }
+    return [];
+}
+
+function writeAllNotifications(notifications) {
+    try {
+        fs.writeFileSync(NOTIFICATIONS_FILE, JSON.stringify(notifications, null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error writing notifications.json:', e);
+        return false;
+    }
+}
+
+// Admin notifications (persisted)
+app.get('/api/admin/notifications', authenticateAdmin, (req, res) => {
+    try {
+        const notifications = readAllNotifications();
+        return res.json({ success: true, notifications });
+    } catch (err) {
+        console.error('Error fetching notifications:', err);
+        return res.status(500).json({ success: false, message: 'Failed to fetch notifications' });
+    }
+});
+
+app.post('/api/admin/notifications', authenticateAdmin, (req, res) => {
+    try {
+        const { email, icon, title, message, orderId } = req.body || {};
+        if (!email || !title || !message) {
+            return res.status(400).json({ success: false, message: 'email, title, and message are required' });
+        }
+
+        const notifications = readAllNotifications();
+        const newNotification = {
+            id: 'NOTIF-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex'),
+            email: String(email).toLowerCase(),
+            icon: icon || '📢',
+            title: String(title),
+            message: String(message),
+            orderId: orderId || null,
+            sentDate: new Date().toISOString(),
+            read: false
+        };
+        notifications.push(newNotification);
+
+        if (!writeAllNotifications(notifications)) {
+            return res.status(500).json({ success: false, message: 'Failed to persist notification' });
+        }
+
+        return res.json({ success: true, notification: newNotification, notifications });
+    } catch (err) {
+        console.error('Error creating notification:', err);
         return res.status(500).json({ success: false, message: 'Server error' });
     }
 });
@@ -2064,6 +2252,8 @@ app.post('/api/signup', async (req, res) => {
             country: country.trim(),
             authType: authType || 'email',
             passwordHash: passwordHash,
+            userToken: crypto.randomBytes(24).toString('hex'),
+            userTokenCreatedAt: new Date().toISOString(),
             passwordMigrated: true,
             passwordMigratedAt: new Date().toISOString(),
             createdAt: new Date().toISOString()
@@ -2082,7 +2272,8 @@ app.post('/api/signup', async (req, res) => {
             fullName: newUser.fullName,
             phone: newUser.phone,
             country: newUser.country,
-            authType: newUser.authType
+            authType: newUser.authType,
+            token: newUser.userToken
         };
         
         // Send signup confirmation email (non-blocking)
@@ -2114,8 +2305,23 @@ app.post('/api/auto-register', async (req, res) => {
         // Check if user already exists
         const existingUser = users.find(u => (u.email || '').toLowerCase() === lowerEmail);
         if (existingUser) {
-            // User exists, just return success
-            return res.json({ success: true, message: 'User already exists', isNew: false });
+            const updated = ensureUserTokenForEmail(lowerEmail);
+            if (!updated) {
+                return res.status(500).json({ success: false, message: 'Failed to prepare user session token' });
+            }
+            return res.json({
+                success: true,
+                message: 'User already exists',
+                isNew: false,
+                user: {
+                    email: updated.email,
+                    fullName: updated.fullName,
+                    phone: updated.phone,
+                    country: updated.country,
+                    authType: updated.authType || 'email',
+                    token: updated.userToken
+                }
+            });
         }
         
         // Generate temporary password (user will reset it via forgot-password)
@@ -2132,6 +2338,8 @@ app.post('/api/auto-register', async (req, res) => {
             authType: 'email',
             autoCreated: true,
             passwordHash: passwordHash,
+            userToken: crypto.randomBytes(24).toString('hex'),
+            userTokenCreatedAt: new Date().toISOString(),
             passwordMigrated: true,
             passwordMigratedAt: new Date().toISOString(),
             createdAt: new Date().toISOString()
@@ -2151,7 +2359,10 @@ app.post('/api/auto-register', async (req, res) => {
             user: {
                 email: newUser.email,
                 fullName: newUser.fullName,
-                authType: newUser.authType
+                phone: newUser.phone,
+                country: newUser.country,
+                authType: newUser.authType,
+                token: newUser.userToken
             }
         });
     } catch (err) {
@@ -2194,13 +2405,19 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Incorrect password' });
         }
 
+        const updatedUser = ensureUserTokenForEmail(lowerEmail);
+        if (!updatedUser) {
+            return res.status(500).json({ success: false, message: 'Failed to prepare user session token' });
+        }
+
         // Return minimal user profile
         const safeUser = {
-            email: user.email,
-            fullName: user.fullName,
-            phone: user.phone,
-            country: user.country,
-            authType: user.authType || 'email'
+            email: updatedUser.email,
+            fullName: updatedUser.fullName,
+            phone: updatedUser.phone,
+            country: updatedUser.country,
+            authType: updatedUser.authType || 'email',
+            token: updatedUser.userToken
         };
 
         return res.json({ success: true, user: safeUser });
@@ -2208,6 +2425,96 @@ app.post('/api/login', async (req, res) => {
         console.error('/api/login error:', err);
         return res.status(500).json({ success: false, message: 'Server error' });
     }
+});
+
+// Client "me" endpoints (token-based)
+app.get('/api/me', authenticateClient, (req, res) => {
+    const u = req.clientUser;
+    return res.json({
+        success: true,
+        user: {
+            email: u.email,
+            fullName: u.fullName,
+            phone: u.phone,
+            country: u.country,
+            authType: u.authType || 'email',
+            createdAt: u.createdAt
+        }
+    });
+});
+
+app.put('/api/me', authenticateClient, (req, res) => {
+    const { fullName, phone, country } = req.body || {};
+    const users = readAllUsers();
+    const idx = users.findIndex(u => u && u.userToken === req.clientToken);
+    if (idx === -1) {
+        return res.status(401).json({ success: false, message: 'Invalid authorization token' });
+    }
+
+    if (typeof fullName === 'string') users[idx].fullName = fullName.trim();
+    if (typeof phone === 'string') users[idx].phone = phone.trim();
+    if (typeof country === 'string') users[idx].country = country.trim();
+    users[idx].updatedAt = new Date().toISOString();
+
+    if (!writeAllUsers(users)) {
+        return res.status(500).json({ success: false, message: 'Failed to update profile' });
+    }
+
+    return res.json({
+        success: true,
+        user: {
+            email: users[idx].email,
+            fullName: users[idx].fullName,
+            phone: users[idx].phone,
+            country: users[idx].country,
+            authType: users[idx].authType || 'email',
+            createdAt: users[idx].createdAt
+        }
+    });
+});
+
+app.post('/api/me/password', authenticateClient, async (req, res) => {
+    try {
+        const { password } = req.body || {};
+        if (!password || typeof password !== 'string' || password.length < 6) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+        }
+
+        const users = readAllUsers();
+        const idx = users.findIndex(u => u && u.userToken === req.clientToken);
+        if (idx === -1) {
+            return res.status(401).json({ success: false, message: 'Invalid authorization token' });
+        }
+
+        users[idx].passwordHash = await bcrypt.hash(password, 12);
+        delete users[idx].password;
+        users[idx].passwordMigrated = true;
+        users[idx].passwordMigratedAt = new Date().toISOString();
+        users[idx].passwordResetAt = new Date().toISOString();
+
+        if (!writeAllUsers(users)) {
+            return res.status(500).json({ success: false, message: 'Failed to update password' });
+        }
+
+        return res.json({ success: true, message: 'Password updated' });
+    } catch (err) {
+        console.error('/api/me/password error:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+app.get('/api/me/orders', authenticateClient, (req, res) => {
+    const email = String(req.clientUser.email || '').toLowerCase();
+    const orders = readAllOrders();
+    const myOrders = orders.filter(o => (o?.customer?.email || o?.email || '').toLowerCase() === email);
+    return res.json({ success: true, orders: myOrders });
+});
+
+app.get('/api/me/notifications', authenticateClient, (req, res) => {
+    const email = String(req.clientUser.email || '').toLowerCase();
+    const notifications = readAllNotifications();
+    const myNotifications = notifications.filter(n => (n?.email || '').toLowerCase() === email);
+    return res.json({ success: true, notifications: myNotifications });
 });
 
 // Blog posts file path

@@ -239,21 +239,25 @@
     });
 
     // ---------- auto-register user from billing details ----------
-    function autoRegisterUser(email, fullName, phone, country) {
+    async function autoRegisterUser(email, fullName, phone, country) {
       try {
         // Register user on backend via auto-register endpoint
-        fetch(`${CONFIG.API}/auto-register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fullName: fullName,
-            email: email,
-            phone: phone || '',
-            country: country || ''
-          })
-        }).then(r => r.json()).then(res => {
-          if (res && res.success) {
+        let token = undefined;
+        try {
+          const resp = await fetch(`${CONFIG.API}/auto-register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fullName: fullName,
+              email: email,
+              phone: phone || '',
+              country: country || ''
+            })
+          });
+          const res = await resp.json();
+          if (resp.ok && res && res.success) {
             console.log('Auto-registered user on backend:', email);
+            token = res.user && res.user.token ? res.user.token : undefined;
             if (res.isNew) {
               console.log('✅ New user created. They can reset password via forgot-password page.');
             } else {
@@ -262,9 +266,9 @@
           } else {
             console.warn('Server rejected auto-register:', res && res.message);
           }
-        }).catch(err => {
+        } catch (err) {
           console.warn('Could not reach backend to auto-register user:', err);
-        });
+        }
 
         // Also set local auth data for immediate profile access
         const authData = {
@@ -273,6 +277,7 @@
           phone: phone || '',
           country: country || '',
           authType: 'Email',
+          token: token,
           loginTime: new Date().toISOString()
         };
         localStorage.setItem('client_auth', JSON.stringify(authData));
@@ -333,12 +338,16 @@
         localStorage.setItem('all_orders', JSON.stringify(allOrders));
         
         // Set client auth for profile access
+        const existingAuth = (() => {
+          try { return JSON.parse(localStorage.getItem('client_auth') || 'null'); } catch { return null; }
+        })();
         const authData = {
           email: em,
           fullName: f + ' ' + l,
           phone: $('#b-phone')?.value || '',
           country: $('#b-country')?.value || '',
           authType: 'Email',
+          token: existingAuth && existingAuth.token ? existingAuth.token : undefined,
           loginTime: new Date().toISOString()
         };
         localStorage.setItem('client_auth', JSON.stringify(authData));

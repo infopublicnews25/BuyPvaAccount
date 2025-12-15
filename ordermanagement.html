@@ -1475,6 +1475,27 @@
             // Add notification
             notifications.push(notification);
             localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+
+            // Persist to backend (best-effort)
+            try {
+                const token = secureStorage.getSensitive('admin_auth_token') || localStorage.getItem('admin_auth_token');
+                if (token) {
+                    fetch(`${CONFIG.API}/admin/notifications`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            email: notification.email,
+                            icon: notification.icon,
+                            title: notification.title,
+                            message: notification.message,
+                            orderId: notification.orderId
+                        })
+                    }).catch(() => {});
+                }
+            } catch (e) {}
             
             console.log('✅ Auto-notification created:', notification);
         }
@@ -1501,6 +1522,27 @@
             // Add notification
             notifications.push(notification);
             localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+
+            // Persist to backend (best-effort)
+            try {
+                const token = secureStorage.getSensitive('admin_auth_token') || localStorage.getItem('admin_auth_token');
+                if (token) {
+                    fetch(`${CONFIG.API}/admin/notifications`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            email: notification.email,
+                            icon: notification.icon,
+                            title: notification.title,
+                            message: notification.message,
+                            orderId: notification.orderId
+                        })
+                    }).catch(() => {});
+                }
+            } catch (e) {}
             
             console.log('✅ Delivery notification created:', notification);
         }
@@ -1601,6 +1643,13 @@
             const fileUrl = $('deliveryFileUrl').value.trim();
             const files = $('deliveryFiles').files;
 
+            const token = secureStorage.getSensitive('admin_auth_token') || localStorage.getItem('admin_auth_token');
+            if (!token) {
+                alert('❌ Authentication required. Please login again.');
+                window.location.href = 'admin.html';
+                return;
+            }
+
             // Find order by Order ID
             const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
             const orderIndex = orders.findIndex(o => o.orderId === orderId);
@@ -1630,25 +1679,63 @@
                 }
             }
 
-            // Update order with delivery information
-            orders[orderIndex].deliveryFile = fileUrl;
-            orders[orderIndex].deliveryDate = new Date().toISOString();
-            orders[orderIndex].deliveryStatus = 'sent';
-            if (attachedFiles.length > 0) {
-                orders[orderIndex].attachedFiles = attachedFiles;
+            // Persist delivery to backend (also marks order completed)
+            let persisted = false;
+            try {
+                const resp = await fetch(`${CONFIG.API}/admin/orders/${orderId}/delivery`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        deliveryFile: fileUrl,
+                        attachedFiles: attachedFiles,
+                        deliveryHidden: false
+                    })
+                });
+                const data = await resp.json();
+                if (resp.ok && data && data.success) {
+                    if (data.orders && Array.isArray(data.orders)) {
+                        localStorage.setItem('all_orders', JSON.stringify(data.orders));
+                    } else if (data.order) {
+                        orders[orderIndex] = data.order;
+                        localStorage.setItem('all_orders', JSON.stringify(orders));
+                    }
+                    persisted = true;
+                } else {
+                    console.warn('Backend delivery save failed:', data && data.message);
+                }
+            } catch (err) {
+                console.warn('Backend delivery save failed (network):', err);
             }
 
-            localStorage.setItem('all_orders', JSON.stringify(orders));
+            if (!persisted) {
+                // Local fallback
+                orders[orderIndex].deliveryFile = fileUrl;
+                orders[orderIndex].deliveryDate = new Date().toISOString();
+                orders[orderIndex].deliveryStatus = 'sent';
+                orders[orderIndex].status = 'completed';
+                orders[orderIndex].statusUpdatedAt = new Date().toISOString();
+                if (attachedFiles.length > 0) {
+                    orders[orderIndex].attachedFiles = attachedFiles;
+                }
+                localStorage.setItem('all_orders', JSON.stringify(orders));
+            }
             
             // Dispatch event to notify other windows/tabs
+            const updatedOrdersForEvent = JSON.parse(localStorage.getItem('all_orders') || '[]');
             window.dispatchEvent(new StorageEvent('storage', {
                 key: 'all_orders',
-                newValue: JSON.stringify(orders),
+                newValue: JSON.stringify(updatedOrdersForEvent),
                 oldValue: null
             }));
             
             // Create automatic notification for delivery
             createDeliveryNotification(orders[orderIndex], attachedFiles.length);
+
+            // Send delivery confirmation email (non-blocking)
+            try { sendOrderConfirmationEmail(orders[orderIndex]); } catch (e) {}
             
             // Dispatch notification event
             window.dispatchEvent(new Event('notificationsUpdated'));
@@ -1722,6 +1809,27 @@
 
             // Save to localStorage
             localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+
+            // Persist to backend (best-effort)
+            try {
+                const token = secureStorage.getSensitive('admin_auth_token') || localStorage.getItem('admin_auth_token');
+                if (token) {
+                    fetch(`${CONFIG.API}/admin/notifications`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            email: newNotification.email,
+                            icon: newNotification.icon,
+                            title: newNotification.title,
+                            message: newNotification.message,
+                            orderId: newNotification.orderId || null
+                        })
+                    }).catch(() => {});
+                }
+            } catch (e) {}
             
             // Dispatch event to notify other windows/tabs
             window.dispatchEvent(new StorageEvent('storage', {
@@ -1743,7 +1851,25 @@
         }
 
         // Load notification history
-        function loadNotificationHistory() {
+        async function loadNotificationHistory() {
+            // Best-effort: sync persisted notifications (works across admin devices)
+            try {
+                const token = secureStorage.getSensitive('admin_auth_token') || localStorage.getItem('admin_auth_token');
+                if (token) {
+                    const res = await fetch(`${CONFIG.API}/admin/notifications`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.success && Array.isArray(data.notifications)) {
+                            localStorage.setItem('admin_notifications', JSON.stringify(data.notifications));
+                        }
+                    }
+                }
+            } catch (e) {
+                // ignore
+            }
+
             const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
             const historyContainer = $('notificationHistoryList');
 
@@ -1970,6 +2096,26 @@
             if (!confirm('This will hide the delivery file from the user\'s downloads section. Continue?')) {
                 return;
             }
+
+            // Best-effort: persist hide/show to backend
+            try {
+                const token = secureStorage.getSensitive('admin_auth_token') || localStorage.getItem('admin_auth_token');
+                if (token) {
+                    fetch(`${CONFIG.API}/admin/orders/${orderId}/delivery`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ deliveryHidden: true })
+                    }).then(r => r.json()).then(data => {
+                        if (data && data.success && data.orders && Array.isArray(data.orders)) {
+                            localStorage.setItem('all_orders', JSON.stringify(data.orders));
+                        }
+                        loadDeliveryHistory();
+                    }).catch(() => {});
+                }
+            } catch (e) {}
             
             const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
             const orderIndex = orders.findIndex(o => o.orderId === orderId);
@@ -1987,6 +2133,26 @@
             if (!confirm('This will show the delivery file in the user\'s downloads section again. Continue?')) {
                 return;
             }
+
+            // Best-effort: persist hide/show to backend
+            try {
+                const token = secureStorage.getSensitive('admin_auth_token') || localStorage.getItem('admin_auth_token');
+                if (token) {
+                    fetch(`${CONFIG.API}/admin/orders/${orderId}/delivery`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ deliveryHidden: false })
+                    }).then(r => r.json()).then(data => {
+                        if (data && data.success && data.orders && Array.isArray(data.orders)) {
+                            localStorage.setItem('all_orders', JSON.stringify(data.orders));
+                        }
+                        loadDeliveryHistory();
+                    }).catch(() => {});
+                }
+            } catch (e) {}
             
             const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
             const orderIndex = orders.findIndex(o => o.orderId === orderId);

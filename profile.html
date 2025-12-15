@@ -54,53 +54,46 @@
         }
 
         .user-avatar {
-            width: 120px;
-            height: 120px;
+            width: 110px;
+            height: 110px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 48px;
-            color: white;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-            border: 4px solid white;
             position: relative;
-            cursor: pointer;
             overflow: hidden;
+            cursor: pointer;
             background-size: cover;
             background-position: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         }
 
-        .user-avatar:hover .avatar-overlay {
-            opacity: 1;
+        .avatar-letter {
+            color: white;
+            font-size: 42px;
+            font-weight: 700;
+            line-height: 1;
         }
 
         .avatar-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.6);
+            inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s;
-            border-radius: 50%;
-        }
-
-        .avatar-overlay span {
+            text-align: center;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.45);
             color: white;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.2s;
         }
 
-        .avatar-letter {
-            position: relative;
-            z-index: 1;
+        .user-avatar:hover .avatar-overlay {
+            opacity: 1;
         }
 
         #avatarInput {
@@ -108,23 +101,23 @@
         }
 
         .user-info {
+            margin-top: 12px;
             text-align: center;
-            margin-bottom: 30px;
             width: 100%;
         }
 
         .user-name {
-            font-size: 18px;
-            font-weight: bold;
+            font-weight: 700;
+            font-size: 16px;
             color: #333;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             word-break: break-word;
         }
 
         .user-email {
-            font-size: 13px;
+            font-size: 12px;
             color: #666;
-            word-break: break-all;
+            word-break: break-word;
         }
 
         .sidebar-buttons {
@@ -910,6 +903,7 @@
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="config.js"></script>
     <script src="safe-html.js"></script>
     <script src="secure-storage.js"></script>
 </head>
@@ -1049,7 +1043,7 @@
         let currentUser = null;
 
         // Initialize on page load
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             // Use secure storage for authentication data
             currentUser = secureStorage.getSensitive('client_auth') ||
                          secureStorage.get('client_auth') ||
@@ -1059,6 +1053,14 @@
                 alert('Please login first');
                 window.location.href = 'login.html';
                 return;
+            }
+
+            // Best-effort: sync profile + orders from backend (works across devices)
+            try {
+                await syncProfileFromBackend();
+                await syncOrdersFromBackend();
+            } catch (e) {
+                console.warn('Backend sync skipped/failed, using local data only:', e);
             }
 
             // Sync with users array to get all registration data
@@ -1136,6 +1138,50 @@
             });
         });
 
+        function getClientToken() {
+            return (currentUser && currentUser.token) ? String(currentUser.token) : null;
+        }
+
+        async function syncProfileFromBackend() {
+            if (typeof CONFIG === 'undefined' || !CONFIG.API) return false;
+            const token = getClientToken();
+            if (!token) return false;
+
+            const resp = await fetch(`${CONFIG.API}/me`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await resp.json().catch(() => null);
+            if (!resp.ok || !data || !data.success || !data.user) return false;
+
+            currentUser = { ...currentUser, ...data.user, token };
+            secureStorage.setSensitive('client_auth', currentUser);
+            try { localStorage.setItem('client_auth', JSON.stringify(currentUser)); } catch(e) {}
+            return true;
+        }
+
+        async function syncOrdersFromBackend() {
+            if (typeof CONFIG === 'undefined' || !CONFIG.API) return false;
+            const token = getClientToken();
+            if (!token) return false;
+
+            const resp = await fetch(`${CONFIG.API}/me/orders`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await resp.json().catch(() => null);
+            if (!resp.ok || !data || !data.success || !Array.isArray(data.orders)) return false;
+
+            // Store as "all_orders" to keep the existing UI working
+            try {
+                localStorage.setItem('all_orders', JSON.stringify(data.orders));
+                window.dispatchEvent(new Event('ordersUpdated'));
+            } catch(e) {}
+            return true;
+        }
+
         function showTab(tabName) {
             // Hide all tab contents
             document.querySelectorAll('.tab-content').forEach(tab => {
@@ -1186,7 +1232,7 @@
             const downloads = userOrders.filter(o => 
                 o.status === 'completed' && 
                 o.deliveryHidden !== true &&
-                (o.deliveryFile || (o.attachedFiles && o.attachedFiles.length > 0))
+                (o.deliveryFile || (o.attachedFiles && o.attachedFiles.length > 0) || (o.deliveryFiles && o.deliveryFiles.length > 0))
             ).length;
 
             // Update top row cards
@@ -1209,7 +1255,7 @@
             
             // Filter orders that have delivery files (completed status recommended but not required)
             const userOrders = myOrders.filter(order => {
-                const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0);
+                const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0) || (order.deliveryFiles && order.deliveryFiles.length > 0);
                 const notHidden = order.deliveryHidden !== true;
                 const isCompleted = order.status.toLowerCase() === "completed";
                 
@@ -1219,7 +1265,8 @@
                     notHidden,
                     isCompleted,
                     deliveryFile: order.deliveryFile,
-                    attachedFilesCount: order.attachedFiles ? order.attachedFiles.length : 0
+                    attachedFilesCount: order.attachedFiles ? order.attachedFiles.length : 0,
+                    deliveryFilesCount: order.deliveryFiles ? order.deliveryFiles.length : 0
                 });
                 
                 // Show if has delivery files and not hidden (prefer completed orders)
@@ -1242,7 +1289,7 @@
             const downloadsHTML = userOrders.map(order => {
                 const productNames = order.items.map(item => item.name).join(', ');
                 const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
-                const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0);
+                const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0) || (order.deliveryFiles && order.deliveryFiles.length > 0);
 
                 return `<div class="order-card" style="margin-bottom: 12px;">
                     <div class="order-header">
@@ -1264,6 +1311,28 @@
                 <div style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
                     <strong style="font-size: 13px; color: #333; display: block; margin-bottom: 6px;">📄 Delivery Information:</strong>
                     <div style="font-size: 12px; color: #666; line-height: 1.6;">${order.deliveryFile.replace(/\n/g, '<br>')}</div>
+                </div>
+                ` : ''}
+
+                ${order.deliveryFiles && order.deliveryFiles.length > 0 ? `
+                <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                    <strong style="font-size: 13px; color: #333; display: block; margin-bottom: 8px;">📎 Delivery Files (${order.deliveryFiles.length}):</strong>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        ${order.deliveryFiles.map(file => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📄 ${file.name}</div>
+                                    <div style="font-size: 11px; color: #666; word-break: break-all;">${file.url || ''}</div>
+                                </div>
+                                <button style="padding: 5px 12px; font-size: 11px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; white-space: nowrap; margin-left: 10px;" 
+                                    onmouseover="this.style.background='#5568d3'" 
+                                    onmouseout="this.style.background='#667eea'" 
+                                    onclick="downloadAttachedFile('${order.orderId}', '${file.name}')">
+                                    📥 Download
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
                 ` : ''}
                 
@@ -1289,7 +1358,7 @@
                 </div>
                 ` : ''}
                 
-                ${!order.deliveryFile && (!order.attachedFiles || order.attachedFiles.length === 0) ? `
+                ${!order.deliveryFile && (!order.attachedFiles || order.attachedFiles.length === 0) && (!order.deliveryFiles || order.deliveryFiles.length === 0) ? `
                 <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 10px; margin-bottom: 12px;">
                     <strong style="color: #856404; font-size: 12px;">⏳ Waiting for Delivery</strong>
                 </div>
@@ -1315,35 +1384,36 @@
                 return;
             }
             
-            if (!order.attachedFiles) {
-                console.error('No attached files in order:', orderId);
-                alert('No files attached to this order!');
+            // Prefer attachedFiles (base64)
+            const attached = (order.attachedFiles || []).find(f => f.name === fileName);
+            if (attached) {
+                console.log('File found, downloading...', attached.name, attached.type, attached.size);
+                try {
+                    const a = document.createElement('a');
+                    a.href = attached.data;
+                    a.download = attached.name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    console.log('Download initiated successfully');
+                    return;
+                } catch (error) {
+                    console.error('Download error:', error);
+                    alert('Error downloading file: ' + error.message);
+                    return;
+                }
+            }
+
+            // Fallback: deliveryFiles (URL)
+            const delivery = (order.deliveryFiles || []).find(f => f.name === fileName);
+            if (delivery && delivery.url) {
+                window.open(delivery.url, '_blank', 'noopener');
                 return;
             }
+
+            console.error('File not found:', fileName);
+            alert('File not found!');
             
-            const file = order.attachedFiles.find(f => f.name === fileName);
-            
-            if (!file) {
-                console.error('File not found:', fileName);
-                alert('File not found!');
-                return;
-            }
-            
-            console.log('File found, downloading...', file.name, file.type, file.size);
-            
-            try {
-                // Create a download link using the data URL directly
-                const a = document.createElement('a');
-                a.href = file.data; // file.data is already a complete data URL
-                a.download = file.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                console.log('Download initiated successfully');
-            } catch (error) {
-                console.error('Download error:', error);
-                alert('Error downloading file: ' + error.message);
-            }
         }
 
         function base64ToBlob(base64String, mimeType) {
@@ -1361,19 +1431,68 @@
             return new Blob([new Uint8Array(array)], { type: mimeType });
         }
 
-        function loadNotifications() {
+        async function loadNotifications() {
+            const userEmail = (currentUser && currentUser.email) ? String(currentUser.email) : String(localStorage.getItem('user_email') || '');
+            const emailLower = userEmail.toLowerCase();
+
             const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-            const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
+            const userOrders = allOrders.filter(order => {
+                const orderEmail = (order && order.customer && order.customer.email) ? order.customer.email : order.email;
+                return orderEmail && emailLower && String(orderEmail).toLowerCase() === emailLower;
+            });
 
-            // Get admin notifications - filter by email (not customerEmail)
+            // 1) Backend-persisted notifications (cross-device)
+            let serverAdminNotifs = [];
+            try {
+                const auth = JSON.parse(localStorage.getItem('client_auth') || 'null');
+                if (auth && auth.token) {
+                    const res = await fetch(`${CONFIG.API}/me/notifications`, {
+                        headers: { 'Authorization': `Bearer ${auth.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const list = (data && Array.isArray(data.notifications)) ? data.notifications : [];
+                        serverAdminNotifs = list
+                            .filter(n => !n.email || String(n.email).toLowerCase() === emailLower)
+                            .map(n => ({
+                                id: n.id || ('srv-' + Date.now() + '-' + Math.random().toString(16).slice(2)),
+                                icon: n.icon || '📢',
+                                title: n.title || 'Admin Message',
+                                message: n.message || n.text || 'You have a new message from admin.',
+                                date: n.sentDate || n.createdAt || n.timestamp || new Date().toISOString(),
+                                type: 'admin',
+                                read: false,
+                                orderId: n.orderId || null
+                            }));
+                    }
+                }
+            } catch (e) {}
+
+            // 2) Local admin notifications fallback
             const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
-            const userAdminNotifs = adminNotifications.filter(n => 
-                n.email && n.email.toLowerCase() === currentUser.email.toLowerCase()
-            );
+            const localAdminNotifs = adminNotifications
+                .filter(n => {
+                    const nEmail = n.email || n.userEmail;
+                    return nEmail && emailLower && String(nEmail).toLowerCase() === emailLower;
+                })
+                .map(n => ({
+                    id: n.id || 'admin-' + Date.now(),
+                    icon: n.icon || '📢',
+                    title: n.title || 'Admin Message',
+                    message: n.message || 'You have a new message from admin.',
+                    date: n.sentDate || n.timestamp || new Date().toISOString(),
+                    type: 'admin',
+                    read: n.read || false,
+                    orderId: n.orderId || null
+                }));
 
-            console.log('Loading notifications for:', currentUser.email);
-            console.log('Admin notifications found:', userAdminNotifs.length);
-            console.log('Order notifications found:', userOrders.length);
+            // Merge + de-dup admin notifications
+            const adminMap = new Map();
+            [...serverAdminNotifs, ...localAdminNotifs].forEach(n => {
+                const key = n.id || `${n.title}||${n.message}||${n.date}`;
+                if (!adminMap.has(key)) adminMap.set(key, n);
+            });
+            const userAdminNotifs = Array.from(adminMap.values());
 
             // Generate order-based notifications with more detail
             const orderNotifications = userOrders.map(order => {
@@ -1429,6 +1548,36 @@
                 };
             });
 
+            // Status history notifications (one per transition)
+            const historyNotifications = [];
+            userOrders.forEach(order => {
+                const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+                history.forEach((h, index) => {
+                    const fromStatus = (h && h.from != null) ? String(h.from) : '';
+                    const toStatus = (h && h.to != null) ? String(h.to) : '';
+                    const ts = (h && h.timestamp) ? h.timestamp : (order.statusUpdatedAt || order.lastUpdated || order.createdAt || new Date().toISOString());
+
+                    let icon = '📌';
+                    const toLower = toStatus.toLowerCase();
+                    if (toLower === 'confirmed') icon = '✔️';
+                    else if (toLower === 'processing') icon = '⚙️';
+                    else if (toLower === 'completed') icon = '✅';
+                    else if (toLower === 'cancelled') icon = '❌';
+                    else if (toLower === 'refunded') icon = '💰';
+                    else if (toLower === 'hold') icon = '⏸️';
+
+                    historyNotifications.push({
+                        id: `status-${order.orderId}-${h && h.timestamp ? h.timestamp : index}`,
+                        icon,
+                        title: `Order #${order.orderId} Status Changed`,
+                        message: `${fromStatus || 'unknown'} → ${toStatus || 'unknown'}`,
+                        date: ts,
+                        type: 'order',
+                        orderId: order.orderId
+                    });
+                });
+            });
+
             // Combine all notifications
             const allNotifications = [
                 ...userAdminNotifs.map(n => ({
@@ -1440,11 +1589,12 @@
                     type: 'admin',
                     read: n.read || false
                 })),
+                ...historyNotifications,
                 ...orderNotifications
             ];
 
             // Get deleted notifications for this user
-            const deletedNotifications = JSON.parse(localStorage.getItem(`deleted_notifications_${currentUser.email}`) || "[]");
+            const deletedNotifications = JSON.parse(localStorage.getItem(`deleted_notifications_${userEmail}`) || "[]");
             
             // Filter out deleted notifications
             const visibleNotifications = allNotifications.filter(n => !deletedNotifications.includes(n.id));
@@ -1453,7 +1603,7 @@
             visibleNotifications.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             // Get read notifications
-            const readNotifications = JSON.parse(localStorage.getItem(`read_notifications_${currentUser.email}`) || "[]");
+            const readNotifications = JSON.parse(localStorage.getItem(`read_notifications_${userEmail}`) || "[]");
 
             const container = document.getElementById("notificationsContainer");
 
@@ -1578,9 +1728,19 @@
                 n.email && n.email.toLowerCase() === currentUser.email.toLowerCase()
             );
 
+            // Status history notification IDs
+            const historyNotifIds = [];
+            userOrders.forEach(order => {
+                const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+                history.forEach((h, index) => {
+                    historyNotifIds.push(`status-${order.orderId}-${h && h.timestamp ? h.timestamp : index}`);
+                });
+            });
+
             // Generate all notification IDs
             const allNotifIds = [
                 ...userAdminNotifs.map(n => n.id || 'admin-' + Date.now()),
+                ...historyNotifIds,
                 ...userOrders.map(order => `order-${order.orderId}`)
             ];
 
@@ -1929,7 +2089,7 @@
             }
         }
 
-        function saveAccountChanges() {
+        async function saveAccountChanges() {
             const fullName = document.getElementById('editFullName').value.trim();
             const phone = document.getElementById('editPhone').value.trim();
             const country = document.getElementById('editCountry').value.trim();
@@ -1948,23 +2108,48 @@
                 }
             }
 
-            // Update current user data
-            currentUser.fullName = fullName;
-            currentUser.phone = phone;
-            currentUser.country = country;
-            if (password) {
-                currentUser.password = btoa(password); // Encode password like in login
-            }
+            const token = getClientToken();
+            if (typeof CONFIG !== 'undefined' && CONFIG.API && token) {
+                // Update profile
+                const resp = await fetch(`${CONFIG.API}/me`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ fullName, phone, country })
+                });
+                const result = await resp.json().catch(() => null);
+                if (!resp.ok || !result || !result.success) {
+                    alert((result && result.message) ? result.message : 'Failed to update profile');
+                    return;
+                }
+                currentUser = { ...currentUser, ...result.user, token };
+                secureStorage.setSensitive('client_auth', currentUser);
+                try { localStorage.setItem('client_auth', JSON.stringify(currentUser)); } catch(e) {}
 
-            // Update in localStorage
-            localStorage.setItem('client_auth', JSON.stringify(currentUser));
-
-            // Update in users array
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const userIndex = users.findIndex(u => u.email === currentUser.email);
-            if (userIndex !== -1) {
-                users[userIndex] = { ...users[userIndex], ...currentUser };
-                localStorage.setItem('users', JSON.stringify(users));
+                // Update password if provided
+                if (password) {
+                    const pwResp = await fetch(`${CONFIG.API}/me/password`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ password })
+                    });
+                    const pwResult = await pwResp.json().catch(() => null);
+                    if (!pwResp.ok || !pwResult || !pwResult.success) {
+                        alert((pwResult && pwResult.message) ? pwResult.message : 'Password update failed');
+                        return;
+                    }
+                }
+            } else {
+                // Fallback: local-only update
+                currentUser.fullName = fullName;
+                currentUser.phone = phone;
+                currentUser.country = country;
+                localStorage.setItem('client_auth', JSON.stringify(currentUser));
             }
 
             // Refresh sidebar and account info

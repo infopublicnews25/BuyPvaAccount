@@ -104,6 +104,7 @@
                         phone: user.phone,
                         country: user.country,
                         authType: user.authType,
+                        token: user.token,
                         loginTime: new Date().toISOString()
                     };
                     localStorage.setItem('client_auth', JSON.stringify(authData));
