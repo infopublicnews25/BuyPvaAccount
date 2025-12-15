@@ -442,6 +442,19 @@
             font-size: 14px;
         }
 
+        .order-action-btn {
+            transition: all 0.3s ease;
+        }
+
+        .order-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .order-action-btn:active {
+            transform: translateY(0);
+        }
+
         .status-badge {
             padding: 5px 15px;
             border-radius: 20px;
@@ -1623,26 +1636,112 @@
 
             const ordersHTML = userOrders.map(order => {
                 const productNames = order.items.map(item => `${item.name} (x${item.quantity})`).join(', ');
+                
+                // Generate action buttons based on order status
+                let actionButtons = '';
+                const status = order.status.toLowerCase();
+                
+                if (status === 'pending') {
+                    actionButtons = `
+                        <button class="order-action-btn track-btn" onclick="event.stopPropagation(); showTab('tracking')" style="background: #667eea; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px; font-size: 12px; transition: all 0.3s;">
+                            📦 Track Order
+                        </button>
+                        <button class="order-action-btn cancel-btn" onclick="if(confirm('Cancel this order?')) cancelOrderRequest('${order.orderId}')" style="background: #f56565; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.3s;">
+                            ✕ Cancel
+                        </button>
+                    `;
+                } else if (status === 'confirmed') {
+                    actionButtons = `
+                        <button class="order-action-btn track-btn" onclick="event.stopPropagation(); showTab('tracking')" style="background: #667eea; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px; font-size: 12px; transition: all 0.3s;">
+                            📦 Track Order
+                        </button>
+                    `;
+                } else if (status === 'processing') {
+                    actionButtons = `
+                        <button class="order-action-btn track-btn" onclick="event.stopPropagation(); showTab('tracking')" style="background: #667eea; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px; font-size: 12px; transition: all 0.3s;">
+                            📦 Track Order
+                        </button>
+                    `;
+                } else if (status === 'completed') {
+                    actionButtons = `
+                        <button class="order-action-btn track-btn" onclick="event.stopPropagation(); showTab('tracking')" style="background: #667eea; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px; font-size: 12px; transition: all 0.3s;">
+                            📦 Track Order
+                        </button>
+                        <button class="order-action-btn download-btn" onclick="event.stopPropagation(); showTab('downloads')" style="background: #48bb78; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.3s;">
+                            📥 Downloads
+                        </button>
+                    `;
+                } else if (status === 'cancelled') {
+                    actionButtons = `
+                        <span style="color: #f56565; font-weight: 600; font-size: 12px;">Order Cancelled</span>
+                    `;
+                } else if (status === 'refunded') {
+                    actionButtons = `
+                        <span style="color: #ff9800; font-weight: 600; font-size: 12px;">Refund Processed</span>
+                    `;
+                } else if (status === 'hold') {
+                    actionButtons = `
+                        <span style="color: #ed8936; font-weight: 600; font-size: 12px;">Order On Hold</span>
+                    `;
+                }
 
-                return `<div class="order-card">
-                    <div class="order-header">
-                        <div class="order-id">#${order.orderId}</div>
-                        <div class="order-date">${new Date(order.createdAt).toLocaleDateString()}</div>
+                return `<div class="order-card" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div class="order-id" style="font-weight: 700; color: #2563eb; font-size: 14px;">#${order.orderId}</div>
+                            <div class="order-date" style="font-size: 12px; color: #666;">${new Date(order.createdAt).toLocaleDateString()}</div>
+                        </div>
+                        <div style="flex: 1; font-size: 13px; color: #555; margin-bottom: 8px;">
+                            <strong>Products:</strong> ${productNames}
+                        </div>
+                        <div style="display: flex; gap: 20px; font-size: 13px; color: #555; margin-bottom: 10px;">
+                            <div><strong>Total:</strong> $${order.totals.tot.toFixed(2)}</div>
+                            <div><strong>Payment:</strong> ${order.paymentMethod === 'cod' ? 'COD' : order.paymentMethod}</div>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <span class="status-badge status-${order.status}" style="padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600;">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
+                            ${actionButtons}
+                        </div>
                     </div>
-                    <div style="flex: 1; font-size: 13px; color: #555;">
-                        <strong>Products:</strong> ${productNames}
-                    </div>
-                    <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
-                        <strong>Total:</strong> $${order.totals.tot.toFixed(2)}
-                    </div>
-                    <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
-                        <strong>Payment:</strong> ${order.paymentMethod === 'cod' ? 'COD' : order.paymentMethod}
-                    </div>
-                    <span class="status-badge status-${order.status}">${order.status}</span>
                 </div>`;
             }).join('');
 
             safeSetInnerHTML(container, ordersHTML, true);
+        }
+        
+        // Function to request order cancellation
+        function cancelOrderRequest(orderId) {
+            const allOrders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+            const order = allOrders.find(o => o.orderId === orderId);
+            
+            if (order && order.status === 'pending') {
+                order.status = 'cancelled';
+                localStorage.setItem('all_orders', JSON.stringify(allOrders));
+                
+                // Create notification for admin
+                const notification = {
+                    id: 'CANCEL-' + Date.now(),
+                    email: order.customer.email,
+                    icon: '❌',
+                    title: 'Order Cancelled by Customer',
+                    message: `Customer has cancelled order #${orderId}`,
+                    sentDate: new Date().toISOString(),
+                    orderId: orderId,
+                    type: 'cancellation'
+                };
+                
+                const adminNotifs = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+                adminNotifs.push(notification);
+                localStorage.setItem('admin_notifications', JSON.stringify(adminNotifs));
+                
+                // Dispatch event to sync with admin
+                window.dispatchEvent(new CustomEvent('ordersUpdated'));
+                
+                alert('Order cancelled successfully');
+                loadOrders();
+            } else {
+                alert('This order cannot be cancelled. Only pending orders can be cancelled.');
+            }
         }
 
         function loadTracking() {
