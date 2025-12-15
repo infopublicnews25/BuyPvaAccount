@@ -1,0 +1,18 @@
+[
+  {
+    "id": "AUTO-1765788935024-processing",
+    "email": "jfk60874@gmail.com",
+    "icon": "⚙️",
+    "title": "Order Processing Started",
+    "message": "Your order #ORD1765788935024V3RHJ is now being processed. We will ship it soon.",
+    "sentDate": "2025-12-15T09:00:32.883Z",
+    "orderId": "ORD1765788935024V3RHJ",
+    "linkedOrder": {
+      "orderId": "ORD1765788935024V3RHJ",
+      "status": "processing",
+      "total": 0.6,
+      "createdAt": "2025-12-15T08:50:00.000Z"
+    },
+    "read": false
+  }
+]
