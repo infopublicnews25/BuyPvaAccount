@@ -7,6 +7,16 @@ function sendNotificationRequest(event) {
   const requests = JSON.parse(localStorage.getItem('account_requests') || '[]');
   requests.unshift({ accountType, quantity, email, timestamp: new Date().toISOString(), new: true });
   localStorage.setItem('account_requests', JSON.stringify(requests));
+
+  // Also persist on backend to trigger admin bell badge (non-blocking)
+  try {
+    fetch(`${CONFIG.API}/account-requests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accountType, quantity, email })
+    }).catch(() => {});
+  } catch (e) {}
+
   const subject = encodeURIComponent('Notification Request: ' + accountType);
   const body = encodeURIComponent('New Notification Request:\n\nAccount Type: ' + accountType + '\nQuantity: ' + quantity + '\nCustomer Email: ' + email);
   window.location.href = `mailto:info.buypva@gmail.com?subject=${subject}&body=${body}`;

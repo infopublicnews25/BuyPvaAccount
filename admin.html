@@ -700,16 +700,49 @@
         }, 60000); // Check every minute
 
         // Update notification count
-        function updateNotificationCount() {
-            const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
-            const newCount = requests.filter(r => r.status === 'new' || !r.status).length;
+        async function updateNotificationCount() {
             const badge = document.getElementById('notificationBadge');
+            const token = localStorage.getItem(AUTH_KEY);
 
-            if (newCount > 0) {
-                badge.textContent = newCount;
-                badge.style.display = 'flex';
-            } else {
+            // Fallback: localStorage account_requests (legacy)
+            function fallbackCount() {
+                try {
+                    const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+                    return requests.filter(r => r && (r.status === 'new' || r.new === true || !r.status)).length;
+                } catch {
+                    return 0;
+                }
+            }
+
+            if (!token) {
                 badge.style.display = 'none';
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${API}/admin/alerts/unread-count`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    cache: 'no-store'
+                });
+                const data = await resp.json().catch(() => null);
+                const count = (resp.ok && data && data.success && typeof data.unreadCount === 'number')
+                    ? data.unreadCount
+                    : fallbackCount();
+
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (e) {
+                const count = fallbackCount();
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
             }
         }
 
@@ -721,6 +754,9 @@
                 document.getElementById('dashboard').style.display = 'block';
                 // Load dashboard data
                 loadDashboardData();
+                // Update bell badge immediately and periodically
+                updateNotificationCount();
+                setInterval(updateNotificationCount, 30000);
                 // Restore the previously active tab
                 const savedTab = localStorage.getItem('activeAdminTab') || 'dashboard';
                 restoreActiveTab(savedTab);
@@ -821,6 +857,9 @@
             document.getElementById('dashboard').style.display = 'block';
             // Load dashboard data
             loadDashboardData();
+            // Update bell badge immediately and periodically
+            updateNotificationCount();
+            setInterval(updateNotificationCount, 30000);
             // Restore the previously active tab
             const savedTab = localStorage.getItem('activeAdminTab') || 'dashboard';
             restoreActiveTab(savedTab);

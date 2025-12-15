@@ -19,7 +19,95 @@ const CATEGORIES_FILE = path.join(__dirname, '../categories.json');
 const NOTIFICATIONS_FILE = path.join(__dirname, '../notifications.json');
 const PAYMENT_SETTINGS_FILE = path.join(__dirname, '../payment_settings.json');
 const PROMO_CODES_FILE = path.join(__dirname, '../promo_codes.json');
+const ADMIN_ALERTS_FILE = path.join(__dirname, '../admin_alerts.json');
+const ACCOUNT_REQUESTS_FILE = path.join(__dirname, '../account_requests.json');
+const TICKETS_FILE = path.join(__dirname, '../tickets.json');
 const UPLOADS_DIR = path.join(__dirname, '../uploads');
+
+function readJsonArrayFile(filePath) {
+    try {
+        if (!fs.existsSync(filePath)) return [];
+        const data = fs.readFileSync(filePath, 'utf8');
+        const parsed = JSON.parse(data);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function writeJsonArrayFile(filePath, items) {
+    try {
+        fs.writeFileSync(filePath, JSON.stringify(Array.isArray(items) ? items : [], null, 2));
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function readAdminAlerts() {
+    try {
+        if (!fs.existsSync(ADMIN_ALERTS_FILE)) return [];
+        const data = fs.readFileSync(ADMIN_ALERTS_FILE, 'utf8');
+        const parsed = JSON.parse(data);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        console.error('Error reading admin_alerts.json:', e);
+        return [];
+    }
+}
+
+function writeAdminAlerts(alerts) {
+    try {
+        fs.writeFileSync(ADMIN_ALERTS_FILE, JSON.stringify(Array.isArray(alerts) ? alerts : [], null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error writing admin_alerts.json:', e);
+        return false;
+    }
+}
+
+function addAdminAlert({ type, title, message, meta }) {
+    try {
+        const alerts = readAdminAlerts();
+        const alert = {
+            id: 'ALERT-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex'),
+            type: String(type || 'info'),
+            title: String(title || 'Notification'),
+            message: String(message || ''),
+            meta: meta && typeof meta === 'object' ? meta : null,
+            createdAt: new Date().toISOString(),
+            read: false
+        };
+        alerts.push(alert);
+        const ok = writeAdminAlerts(alerts);
+        return ok ? alert : null;
+    } catch (e) {
+        console.error('Error adding admin alert:', e);
+        return null;
+    }
+}
+
+function readAccountRequests() {
+    try {
+        if (!fs.existsSync(ACCOUNT_REQUESTS_FILE)) return [];
+        const data = fs.readFileSync(ACCOUNT_REQUESTS_FILE, 'utf8');
+        const parsed = JSON.parse(data);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        console.error('Error reading account_requests.json:', e);
+        return [];
+    }
+}
+
+function writeAccountRequests(requests) {
+    try {
+        fs.writeFileSync(ACCOUNT_REQUESTS_FILE, JSON.stringify(Array.isArray(requests) ? requests : [], null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error writing account_requests.json:', e);
+        return false;
+    }
+}
 
 function readPaymentSettings() {
     try {
@@ -456,6 +544,86 @@ app.put('/api/admin/payment-settings', authenticateAdmin, (req, res) => {
     } catch (err) {
         console.error('Error saving payment settings:', err);
         return res.status(500).json({ success: false, message: 'Failed to save payment settings' });
+    }
+});
+
+// ========== ADMIN ALERTS (BELL BADGE) ==========
+
+app.get('/api/admin/alerts', authenticateAdmin, (req, res) => {
+    try {
+        const alerts = readAdminAlerts().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+        const unreadCount = alerts.filter(a => a && a.read !== true).length;
+        return res.json({ success: true, alerts, unreadCount });
+    } catch (err) {
+        console.error('Error fetching admin alerts:', err);
+        return res.status(500).json({ success: false, message: 'Failed to fetch alerts' });
+    }
+});
+
+app.get('/api/admin/alerts/unread-count', authenticateAdmin, (req, res) => {
+    try {
+        const alerts = readAdminAlerts();
+        const unreadCount = alerts.filter(a => a && a.read !== true).length;
+        return res.json({ success: true, unreadCount });
+    } catch (err) {
+        console.error('Error fetching unread count:', err);
+        return res.status(500).json({ success: false, message: 'Failed to fetch unread count' });
+    }
+});
+
+app.post('/api/admin/alerts/mark-all-read', authenticateAdmin, (req, res) => {
+    try {
+        const alerts = readAdminAlerts();
+        const updated = alerts.map(a => (a && a.read !== true) ? { ...a, read: true, readAt: new Date().toISOString() } : a);
+        const ok = writeAdminAlerts(updated);
+        if (!ok) return res.status(500).json({ success: false, message: 'Failed to update alerts' });
+        return res.json({ success: true, unreadCount: 0 });
+    } catch (err) {
+        console.error('Error marking alerts read:', err);
+        return res.status(500).json({ success: false, message: 'Failed to mark read' });
+    }
+});
+
+// ========== ACCOUNT PURCHASE REQUESTS ==========
+
+// Public: submit an account purchase request (creates an admin alert)
+app.post('/api/account-requests', (req, res) => {
+    try {
+        const { accountType, quantity, email } = req.body || {};
+        const type = String(accountType || '').trim();
+        const qty = String(quantity || '').trim();
+        const mail = String(email || '').trim().toLowerCase();
+
+        if (!type || !qty || !mail) {
+            return res.status(400).json({ success: false, message: 'accountType, quantity, and email are required' });
+        }
+
+        const requests = readAccountRequests();
+        const newReq = {
+            id: 'REQ-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex'),
+            accountType: type,
+            quantity: qty,
+            email: mail,
+            status: 'new',
+            createdAt: new Date().toISOString()
+        };
+        requests.unshift(newReq);
+
+        if (!writeAccountRequests(requests)) {
+            return res.status(500).json({ success: false, message: 'Failed to save request' });
+        }
+
+        addAdminAlert({
+            type: 'account_request',
+            title: 'New Account Purchase Request',
+            message: `${type} • Qty: ${qty} • ${mail}`,
+            meta: { requestId: newReq.id, accountType: type, quantity: qty, email: mail }
+        });
+
+        return res.json({ success: true, request: newReq });
+    } catch (err) {
+        console.error('Error saving account request:', err);
+        return res.status(500).json({ success: false, message: 'Failed to save request' });
     }
 });
 
@@ -1330,6 +1498,19 @@ app.post('/api/save-order', (req, res) => {
     orders.push(order);
     if (writeAllOrders(orders)) {
         console.log(`📦 Order saved to database: ${order.orderId}`);
+
+        try {
+            const customerEmail = String(order.customer?.email || order.email || '').trim().toLowerCase();
+            const total = (order.totals && order.totals.tot) ? Number(order.totals.tot).toFixed(2) : null;
+            addAdminAlert({
+                type: 'order',
+                title: `New Order #${order.orderId}`,
+                message: `${customerEmail || 'unknown'}${total ? ` • $${total}` : ''} • ${order.paymentMethod || 'COD'}`,
+                meta: { orderId: order.orderId, email: customerEmail || null, total: total ? Number(total) : null, paymentMethod: order.paymentMethod || null }
+            });
+        } catch (e) {
+            // non-blocking
+        }
         
         // Send confirmation emails asynchronously (don't block response)
         sendOrderConfirmationEmails(order).catch(err => {
@@ -2397,16 +2578,26 @@ app.post('/api/ticket', async (req, res) => {
             return res.status(400).json({ success: false, message: 'trackingId and email required' });
         }
 
-        // Create tickets.json file if it doesn't exist
-        const ticketsFile = path.join(__dirname, '..', 'tickets.json');
+        // Load existing tickets
         let tickets = [];
-        if (fs.existsSync(ticketsFile)) {
-            tickets = JSON.parse(fs.readFileSync(ticketsFile, 'utf8'));
+        if (fs.existsSync(TICKETS_FILE)) {
+            tickets = JSON.parse(fs.readFileSync(TICKETS_FILE, 'utf8'));
         }
 
-        // Add ticket
         tickets.push(ticket);
-        fs.writeFileSync(ticketsFile, JSON.stringify(tickets, null, 2));
+        fs.writeFileSync(TICKETS_FILE, JSON.stringify(tickets, null, 2));
+
+        try {
+            const mail = String(ticket.email || '').trim().toLowerCase();
+            addAdminAlert({
+                type: 'support_ticket',
+                title: `New Support Ticket #${ticket.trackingId}`,
+                message: `${mail || 'unknown'} • ${String(ticket.subject || '').slice(0, 80)}`,
+                meta: { trackingId: ticket.trackingId, email: mail || null, subject: ticket.subject || null }
+            });
+        } catch (e) {
+            // non-blocking
+        }
 
         console.log(`✅ Ticket saved: ${ticket.trackingId}`);
         return res.json({ success: true, message: 'Ticket saved successfully' });
@@ -2428,12 +2619,11 @@ app.get('/api/ticket/:token', async (req, res) => {
         // For now, assume token contains or is the tracking ID
         // In a real app, you'd have a token-to-trackingID mapping
         
-        const ticketsFile = path.join(__dirname, '..', 'tickets.json');
-        if (!fs.existsSync(ticketsFile)) {
+        if (!fs.existsSync(TICKETS_FILE)) {
             return res.status(404).json({ success: false, message: 'Ticket not found' });
         }
 
-        const tickets = JSON.parse(fs.readFileSync(ticketsFile, 'utf8'));
+        const tickets = JSON.parse(fs.readFileSync(TICKETS_FILE, 'utf8'));
         
         // Try to find ticket - could be by token or by tracking ID if token is the tracking ID
         let ticket = tickets.find(t => t.trackingId === token);
