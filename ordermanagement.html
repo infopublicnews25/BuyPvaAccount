@@ -1419,6 +1419,11 @@
         function createOrderStatusNotification(order, newStatus, oldStatus) {
             const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
             
+            // Debug: verify order has email
+            console.log('🔔 Creating notification - Order:', order);
+            console.log('🔔 Customer email:', order.customer?.email);
+            console.log('🔔 Status:', { oldStatus, newStatus });
+            
             // Define notification details based on status
             let icon = '📦';
             let title = 'Order Status Update';
@@ -1484,7 +1489,18 @@
             notifications.push(notification);
             localStorage.setItem('admin_notifications', JSON.stringify(notifications));
             
+            // Verify it was added
+            const verify = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
             console.log('✅ Auto-notification created:', notification);
+            console.log('✅ Total notifications in storage now:', verify.length);
+            console.log('✅ All notifications:', verify);
+            
+            // Dispatch event to all tabs
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'admin_notifications',
+                newValue: JSON.stringify(verify),
+                oldValue: null
+            }));
         }
 
         // Function to create automatic notification when delivery file is sent

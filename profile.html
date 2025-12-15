@@ -1100,24 +1100,20 @@
             }
 
             // Auto-sync tracking with ordermanagement changes
-            // Refresh tracking every 3 seconds to catch any order status updates
+            // Refresh tracking CONSTANTLY to catch any order status updates
             setInterval(() => {
-                if (document.querySelector('#tracking.active')) {
-                    loadTracking();
-                }
-            }, 3000);
+                loadTracking();  // Always refresh, not just when active
+            }, 1500);  // Refresh every 1.5 seconds for faster updates
 
-            // Also refresh orders every 5 seconds
+            // Also refresh orders constantly
             setInterval(() => {
-                if (document.querySelector('#orders.active')) {
-                    loadOrders();
-                }
-            }, 5000);
+                loadOrders();  // Always refresh, not just when active
+            }, 2000);  // Refresh every 2 seconds
 
-            // Also refresh notifications every 4 seconds
+            // Also refresh notifications constantly
             setInterval(() => {
                 loadNotifications();
-            }, 4000);
+            }, 2000);  // Refresh every 2 seconds
 
             // Listen for storage changes from other tabs/windows (admin changes)
             window.addEventListener('storage', (e) => {
@@ -1378,6 +1374,10 @@
             // Get ALL notifications from admin_notifications storage
             const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
             const userEmail = currentUser.email.toLowerCase();
+            
+            // Debug: Show what's in admin_notifications
+            console.log('🔍 DEBUG - All admin notifications in localStorage:', adminNotifications);
+            console.log('🔍 DEBUG - Current user email:', userEmail);
             
             // Filter admin notifications by user's email
             const userAdminNotifs = adminNotifications.filter(n => 
@@ -1747,6 +1747,11 @@
         function loadTracking() {
             const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
             const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
+            
+            // Debug log to track updates
+            if (userOrders.length > 0) {
+                console.log('📊 Tracking updated:', userOrders.map(o => ({ id: o.orderId, status: o.status, lastUpdate: new Date().toLocaleTimeString() })));
+            }
 
             const container = document.getElementById("trackingContainer");
 
