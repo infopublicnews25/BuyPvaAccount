@@ -993,15 +993,26 @@
         async function deleteProduct(id) {
             if (!confirm('Delete this product?')) return;
             try {
-                const res = await fetch(`${API}/products/${id}`, {
+                const res = await fetch(`${API}/products/${encodeURIComponent(String(id))}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}` }
                 });
-                const data = await res.json();
-                if (data.success) {
-                    loadProducts();
-                    alert('Product deleted!');
+                const raw = await res.text();
+                let data;
+                try {
+                    data = raw ? JSON.parse(raw) : {};
+                } catch {
+                    data = { success: false, message: raw || `Request failed (${res.status})` };
                 }
+
+                if (!res.ok || !data.success) {
+                    alert(data.message || 'Failed to delete product');
+                    return;
+                }
+
+                // If backend returned updated products list, refresh from API anyway (authoritative)
+                loadProducts();
+                alert('Product deleted!');
             } catch (err) {
                 alert('Failed to delete product');
             }

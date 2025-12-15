@@ -12,11 +12,7 @@ function getAuthHeaders() {
 // Initialize products in localStorage
 async function initializeProducts() {
     const existingProducts = localStorage.getItem('admin_products_v1');
-    if (existingProducts && JSON.parse(existingProducts).length > 0) {
-        console.log('Products already exist in localStorage:', JSON.parse(existingProducts).length);
-        return;
-    }
-
+    // Always prefer API as the source of truth (prevents stale localStorage re-adding deleted products)
     console.log('Initializing products...');
     try {
         // Try to load from API first
@@ -30,6 +26,14 @@ async function initializeProducts() {
     } catch (error) {
         console.warn('API not available, trying to load from local products.json');
     }
+
+    // If API is unavailable, keep existing localStorage if present
+    try {
+        if (existingProducts && Array.isArray(JSON.parse(existingProducts)) && JSON.parse(existingProducts).length > 0) {
+            console.log('Keeping existing products from localStorage:', JSON.parse(existingProducts).length);
+            return;
+        }
+    } catch (e) {}
 
     // Fallback: load from local products.json file
     try {
@@ -2824,10 +2828,16 @@ async function syncAllProductsWithBackend() {
 
         console.log('Syncing products with backend:', validProducts.length, 'valid products');
 
-        const response = await fetch('http://localhost:3000/api/products', {
+        const authHeaders = getAuthHeaders();
+        if (!authHeaders || !authHeaders.Authorization) {
+            throw new Error('Admin authentication required to sync products');
+        }
+
+        const response = await fetch('/api/products', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
+                , ...authHeaders
             },
             body: JSON.stringify(validProducts)
         });

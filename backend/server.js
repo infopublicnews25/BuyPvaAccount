@@ -2859,8 +2859,8 @@ app.get('/api/products', (req, res) => {
     }
 });
 
-// Add new product (public for demo)
-app.post('/api/products', (req, res) => {
+// Add new product (admin only)
+app.post('/api/products', authenticateAdmin, (req, res) => {
     const product = req.body;
 
     if (!product || !product.title) {
@@ -2878,7 +2878,8 @@ app.post('/api/products', (req, res) => {
         products.push(product);
 
         if (writeAllProducts(products)) {
-            res.json({ success: true, product });
+            logAdminAction('create_product', { productId: product.id, title: product.title }, req.adminUser || 'admin');
+            res.json({ success: true, product, products });
         } else {
             res.status(500).json({ success: false, message: 'Failed to save product' });
         }
@@ -2888,8 +2889,8 @@ app.post('/api/products', (req, res) => {
     }
 });
 
-// Update product (public for demo)
-app.put('/api/products/:id', (req, res) => {
+// Update product (admin only)
+app.put('/api/products/:id', authenticateAdmin, (req, res) => {
     const { id } = req.params;
     const updatedProduct = req.body;
 
@@ -2904,7 +2905,8 @@ app.put('/api/products/:id', (req, res) => {
         products[index] = { ...products[index], ...updatedProduct, id };
 
         if (writeAllProducts(products)) {
-            res.json({ success: true, product: products[index] });
+            logAdminAction('update_product', { productId: id, title: products[index]?.title }, req.adminUser || 'admin');
+            res.json({ success: true, product: products[index], products });
         } else {
             res.status(500).json({ success: false, message: 'Failed to update product' });
         }
@@ -2914,12 +2916,13 @@ app.put('/api/products/:id', (req, res) => {
     }
 });
 
-// Delete product (public for demo)
-app.delete('/api/products/:id', (req, res) => {
+// Delete product (admin only)
+app.delete('/api/products/:id', authenticateAdmin, (req, res) => {
     const { id } = req.params;
 
     try {
         const products = readAllProducts();
+        const removed = products.find(p => String(p?.id) === String(id)) || null;
         const filtered = products.filter(p => p.id !== id);
 
         if (filtered.length === products.length) {
@@ -2927,7 +2930,8 @@ app.delete('/api/products/:id', (req, res) => {
         }
 
         if (writeAllProducts(filtered)) {
-            res.json({ success: true, message: 'Product deleted successfully' });
+            logAdminAction('delete_product', { productId: id, title: removed?.title }, req.adminUser || 'admin');
+            res.json({ success: true, message: 'Product deleted successfully', product: removed, products: filtered });
         } else {
             res.status(500).json({ success: false, message: 'Failed to delete product' });
         }
@@ -2937,8 +2941,8 @@ app.delete('/api/products/:id', (req, res) => {
     }
 });
 
-// Bulk update products (public for demo) - for saving all products at once
-app.put('/api/products', (req, res) => {
+// Bulk update products (admin only) - for saving all products at once
+app.put('/api/products', authenticateAdmin, (req, res) => {
     const products = req.body;
 
     if (!Array.isArray(products)) {
@@ -2947,6 +2951,7 @@ app.put('/api/products', (req, res) => {
 
     try {
         if (writeAllProducts(products)) {
+            logAdminAction('bulk_update_products', { count: products.length }, req.adminUser || 'admin');
             res.json({ success: true, products });
         } else {
             res.status(500).json({ success: false, message: 'Failed to save products' });
