@@ -550,6 +550,9 @@
         // Configuration
         const REQUESTS_KEY = 'account_requests';
         const SECURE_LINKS_KEY = 'secure_ticket_links';
+        const ADMIN_AUTH_KEY = 'admin_auth_token';
+
+        let currentTicket = null;
 
         // Get ticket token from URL parameters
         function getTicketToken() {
@@ -613,6 +616,16 @@
                 }
                 const data = await res.json();
                 if (data.success && data.ticket) {
+                    // If ticket has trackingId + token, persist secure mapping for this browser
+                    try {
+                        const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
+                        if (!secureLinks[token] && data.ticket.trackingId) {
+                            secureLinks[token] = data.ticket.trackingId;
+                            localStorage.setItem(SECURE_LINKS_KEY, JSON.stringify(secureLinks));
+                        }
+                    } catch {
+                        // ignore
+                    }
                     displayTicketDetails(data.ticket);
                 } else {
                     showNoTicket();
@@ -625,6 +638,7 @@
 
         // Display ticket details
         function displayTicketDetails(ticket) {
+            currentTicket = ticket;
             // Hide no ticket message
             document.getElementById('noTicket').style.display = 'none';
 
@@ -897,10 +911,7 @@
             const token = getTicketToken();
             if (!token) return;
 
-            const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
-            const trackingId = secureLinks[token];
-
-            if (!trackingId) return;
+            const adminToken = localStorage.getItem(ADMIN_AUTH_KEY);
 
             const message = document.getElementById('replyMessage').value.trim();
 
@@ -909,66 +920,95 @@
                 return;
             }
 
-            // Create new reply
+            // Post message/reply to backend (preferred)
+            try {
+                const endpoint = adminToken
+                    ? `${CONFIG.API}/admin/ticket/${encodeURIComponent(token)}/reply`
+                    : `${CONFIG.API}/ticket/${encodeURIComponent(token)}/message`;
+
+                const headers = { 'Content-Type': 'application/json' };
+                if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+
+                const payload = adminToken
+                    ? { message }
+                    : { message, name: currentTicket?.name || 'Customer', email: currentTicket?.email || '' };
+
+                const resp = await fetch(endpoint, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await resp.json().catch(() => null);
+                if (!resp.ok || !data || !data.success || !data.ticket) {
+                    throw new Error((data && data.message) ? data.message : 'Failed to post message');
+                }
+
+                // If admin replied, send customer email notification (non-blocking)
+                if (adminToken) {
+                    try {
+                        await fetch(`${CONFIG.API}/send-ticket-reply-notification`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                customerEmail: data.ticket.email,
+                                ticketData: {
+                                    trackingId: data.ticket.trackingId,
+                                    name: data.ticket.name,
+                                    subject: data.ticket.subject,
+                                    status: data.ticket.status || 'Open',
+                                    ticketLink: window.location.href
+                                },
+                                replyData: {
+                                    date: new Date().toISOString(),
+                                    name: 'Support Team',
+                                    message
+                                }
+                            })
+                        });
+                    } catch (emailError) {
+                        console.error('Reply notification email error:', emailError);
+                    }
+                }
+
+                currentTicket = data.ticket;
+                displayReplies(currentTicket);
+                clearReplyForm();
+                showStatusMessage(adminToken ? 'Reply posted successfully!' : 'Message sent successfully!', 'success');
+                return;
+            } catch (err) {
+                console.error('Failed to post via backend, falling back to localStorage:', err);
+            }
+
+            // Fallback: keep legacy localStorage behavior if backend fails
+            const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
+            const trackingId = secureLinks[token];
+            if (!trackingId) {
+                showStatusMessage('Could not find ticket mapping in this browser.', 'warning');
+                return;
+            }
+
             const newReply = {
                 date: new Date().toISOString(),
-                name: 'Support Team', // Default name since field was removed
-                email: '',
+                name: adminToken ? 'Support Team' : (currentTicket?.name || 'Customer'),
+                email: adminToken ? '' : (currentTicket?.email || ''),
                 message: message,
                 attachments: []
             };
 
-            // Add reply to ticket
             const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
             const ticketIndex = requests.findIndex(r => r.trackingId === trackingId);
-
-            if (ticketIndex !== -1) {
-                if (!requests[ticketIndex].replies) {
-                    requests[ticketIndex].replies = [];
-                }
-                requests[ticketIndex].replies.push(newReply);
-                localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
-
-                // Send email notification to customer
-                try {
-                    console.log('Sending reply notification email to customer...');
-                    const emailResponse = await fetch('http://localhost:3000/api/send-ticket-reply-notification', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            customerEmail: requests[ticketIndex].email,
-                            ticketData: {
-                                trackingId: requests[ticketIndex].trackingId,
-                                name: requests[ticketIndex].name,
-                                subject: requests[ticketIndex].subject,
-                                status: requests[ticketIndex].status || 'Open',
-                                ticketLink: window.location.href // Current page URL
-                            },
-                            replyData: newReply
-                        })
-                    });
-
-                    if (emailResponse.ok) {
-                        const emailResult = await emailResponse.json();
-                        console.log('Reply notification email sent successfully:', emailResult);
-                    } else {
-                        console.error('Reply notification email failed:', emailResponse.status, emailResponse.statusText);
-                        // Don't show error to user, just log it - reply was still saved
-                    }
-                } catch (emailError) {
-                    console.error('Reply notification email network error:', emailError);
-                    // Don't show error to user, just log it - reply was still saved
-                }
-
-                // Update the UI
-                displayReplies(requests[ticketIndex]);
-                clearReplyForm();
-
-                // Show success message
-                showStatusMessage('Reply posted successfully! Customer has been notified via email.', 'success');
+            if (ticketIndex === -1) {
+                showStatusMessage('Ticket not found locally.', 'warning');
+                return;
             }
+
+            if (!requests[ticketIndex].replies) requests[ticketIndex].replies = [];
+            requests[ticketIndex].replies.push(newReply);
+            localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+            displayReplies(requests[ticketIndex]);
+            clearReplyForm();
+            showStatusMessage('Message saved locally (server unavailable).', 'warning');
         }
 
         // Clear reply form

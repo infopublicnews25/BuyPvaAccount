@@ -915,7 +915,7 @@ This helps us resolve your issue faster!"></textarea>
             secureLinks[token] = trackingId;
             localStorage.setItem(SECURE_LINKS_KEY, JSON.stringify(secureLinks));
 
-            return `/support-ticket.html?token=${token}`;
+            return { path: `/support-ticket.html?token=${token}`, token };
         }
 
         function handleFileSelect(event) {
@@ -1046,9 +1046,9 @@ This helps us resolve your issue faster!"></textarea>
             };
 
             // Send ticket confirmation email FIRST (synchronously like order notifications)
-            const secureLink = createSecureLink(trackingId);
+            const secure = createSecureLink(trackingId);
             console.log('Sending email to:', formData.email);
-            console.log('Ticket link:', window.location.origin + secureLink);
+            console.log('Ticket link:', window.location.origin + secure.path);
 
             const emailResponse = await fetch(`${CONFIG.API}/send-ticket-confirmation`, {
                 method: 'POST',
@@ -1064,7 +1064,7 @@ This helps us resolve your issue faster!"></textarea>
                         priority: formData.priority,
                         subject: formData.subject,
                         message: formData.message,
-                        ticketLink: window.location.origin + secureLink,
+                        ticketLink: window.location.origin + secure.path,
                         // Additional form data
                         accountType: formData.accountType,
                         accountLink: formData.accountLink,
@@ -1097,6 +1097,7 @@ This helps us resolve your issue faster!"></textarea>
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        token: secure.token,
                         trackingId: trackingId,
                         name: formData.name,
                         email: formData.email,
@@ -1164,7 +1165,7 @@ This helps us resolve your issue faster!"></textarea>
                     <p style="margin: 0 0 15px 0; color: #065f46;">
                         Your support ticket has been created and a confirmation email has been sent to ${formData.email}.
                     </p>
-                    <a href="${secureLink}" style="background: #059669; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 10px;">
+                    <a href="${secure.path}" style="background: #059669; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 10px;">
                         👁️ View Your Ticket
                     </a>
                     <p style="margin: 15px 0 0 0; font-size: 14px; color: #065f46;">
@@ -1230,7 +1231,7 @@ This helps us resolve your issue faster!"></textarea>
             if (ticket) {
                 // Create secure link and redirect to ticket view (like admin View Details)
                 const secureLink = createSecureLink(ticket.trackingId);
-                window.location.href = secureLink;
+                window.location.href = secureLink.path;
             } else {
                 resultsDiv.innerHTML = `
                     <div style="text-align: center; padding: 40px; color: #e53e3e; background: #fed7d7; border-radius: 8px; border: 1px solid #feb2b2;">

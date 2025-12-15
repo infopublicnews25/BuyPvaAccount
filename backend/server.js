@@ -365,6 +365,14 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+// Handle malformed JSON bodies cleanly (avoid 500s from body-parser)
+app.use((err, req, res, next) => {
+    if (err && err.type === 'entity.parse.failed') {
+        return res.status(400).json({ success: false, message: 'Invalid JSON body' });
+    }
+    return next(err);
+});
+
 // Trust proxy - needed for rate limiting with Nginx reverse proxy
 app.set('trust proxy', 1);
 
@@ -2573,19 +2581,27 @@ BuyPvaAccount Support Team`
 // Endpoint to save support ticket
 app.post('/api/ticket', async (req, res) => {
     try {
-        const ticket = req.body;
+        const ticket = req.body || {};
         if (!ticket.trackingId || !ticket.email) {
             return res.status(400).json({ success: false, message: 'trackingId and email required' });
         }
 
         // Load existing tickets
-        let tickets = [];
-        if (fs.existsSync(TICKETS_FILE)) {
-            tickets = JSON.parse(fs.readFileSync(TICKETS_FILE, 'utf8'));
-        }
+        const tickets = readJsonArrayFile(TICKETS_FILE);
 
-        tickets.push(ticket);
-        fs.writeFileSync(TICKETS_FILE, JSON.stringify(tickets, null, 2));
+        const normalized = {
+            ...ticket,
+            trackingId: String(ticket.trackingId),
+            email: String(ticket.email).toLowerCase(),
+            token: ticket.token ? String(ticket.token) : undefined,
+            timestamp: ticket.timestamp || new Date().toISOString(),
+            replies: Array.isArray(ticket.replies) ? ticket.replies : []
+        };
+
+        tickets.push(normalized);
+        if (!writeJsonArrayFile(TICKETS_FILE, tickets)) {
+            return res.status(500).json({ success: false, message: 'Failed to save ticket' });
+        }
 
         try {
             const mail = String(ticket.email || '').trim().toLowerCase();
@@ -2599,7 +2615,7 @@ app.post('/api/ticket', async (req, res) => {
             // non-blocking
         }
 
-        console.log(`✅ Ticket saved: ${ticket.trackingId}`);
+        console.log(`✅ Ticket saved: ${normalized.trackingId}`);
         return res.json({ success: true, message: 'Ticket saved successfully' });
     } catch (error) {
         console.error('Error saving ticket:', error);
@@ -2619,14 +2635,10 @@ app.get('/api/ticket/:token', async (req, res) => {
         // For now, assume token contains or is the tracking ID
         // In a real app, you'd have a token-to-trackingID mapping
         
-        if (!fs.existsSync(TICKETS_FILE)) {
-            return res.status(404).json({ success: false, message: 'Ticket not found' });
-        }
+        const tickets = readJsonArrayFile(TICKETS_FILE);
 
-        const tickets = JSON.parse(fs.readFileSync(TICKETS_FILE, 'utf8'));
-        
-        // Try to find ticket - could be by token or by tracking ID if token is the tracking ID
-        let ticket = tickets.find(t => t.trackingId === token);
+        // Find by stored token (preferred) or by trackingId (legacy)
+        const ticket = tickets.find(t => (t && t.token && String(t.token) === token) || (t && String(t.trackingId) === token));
         
         if (!ticket) {
             return res.status(404).json({ success: false, message: 'Ticket not found' });
@@ -2636,6 +2648,108 @@ app.get('/api/ticket/:token', async (req, res) => {
     } catch (error) {
         console.error('Error retrieving ticket:', error);
         return res.status(500).json({ success: false, message: 'Failed to retrieve ticket' });
+    }
+});
+
+// Customer: add a new message to an existing ticket (creates an admin alert)
+app.post('/api/ticket/:token/message', (req, res) => {
+    try {
+        const { token } = req.params;
+        const { message, name, email } = req.body || {};
+
+        const text = String(message || '').trim();
+        if (!text) {
+            return res.status(400).json({ success: false, message: 'message is required' });
+        }
+
+        const tickets = readJsonArrayFile(TICKETS_FILE);
+        const idx = tickets.findIndex(t => (t && t.token && String(t.token) === token) || (t && String(t.trackingId) === token));
+        if (idx === -1) {
+            return res.status(404).json({ success: false, message: 'Ticket not found' });
+        }
+
+        const ticket = tickets[idx];
+        if (!Array.isArray(ticket.replies)) ticket.replies = [];
+
+        const reply = {
+            id: 'MSG-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex'),
+            date: new Date().toISOString(),
+            name: String(name || ticket.name || 'Customer'),
+            email: String(email || ticket.email || '').toLowerCase(),
+            message: text,
+            attachments: [],
+            from: 'customer'
+        };
+
+        ticket.replies.push(reply);
+        ticket.updatedAt = new Date().toISOString();
+        tickets[idx] = ticket;
+
+        if (!writeJsonArrayFile(TICKETS_FILE, tickets)) {
+            return res.status(500).json({ success: false, message: 'Failed to save message' });
+        }
+
+        try {
+            const mail = String(ticket.email || '').trim().toLowerCase();
+            addAdminAlert({
+                type: 'support_message',
+                title: `New Message on Ticket #${ticket.trackingId}`,
+                message: `${mail || 'unknown'} • ${text.slice(0, 80)}`,
+                meta: { trackingId: ticket.trackingId, token: ticket.token || null, email: mail || null }
+            });
+        } catch (e) {
+            // non-blocking
+        }
+
+        return res.json({ success: true, ticket });
+    } catch (error) {
+        console.error('Error saving ticket message:', error);
+        return res.status(500).json({ success: false, message: 'Failed to save message' });
+    }
+});
+
+// Admin: add a support-team reply to an existing ticket
+app.post('/api/admin/ticket/:token/reply', authenticateAdmin, (req, res) => {
+    try {
+        const { token } = req.params;
+        const { message } = req.body || {};
+
+        const text = String(message || '').trim();
+        if (!text) {
+            return res.status(400).json({ success: false, message: 'message is required' });
+        }
+
+        const tickets = readJsonArrayFile(TICKETS_FILE);
+        const idx = tickets.findIndex(t => (t && t.token && String(t.token) === token) || (t && String(t.trackingId) === token));
+        if (idx === -1) {
+            return res.status(404).json({ success: false, message: 'Ticket not found' });
+        }
+
+        const ticket = tickets[idx];
+        if (!Array.isArray(ticket.replies)) ticket.replies = [];
+
+        const reply = {
+            id: 'REPLY-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex'),
+            date: new Date().toISOString(),
+            name: 'Support Team',
+            email: '',
+            message: text,
+            attachments: [],
+            from: 'support'
+        };
+
+        ticket.replies.push(reply);
+        ticket.updatedAt = new Date().toISOString();
+        tickets[idx] = ticket;
+
+        if (!writeJsonArrayFile(TICKETS_FILE, tickets)) {
+            return res.status(500).json({ success: false, message: 'Failed to save reply' });
+        }
+
+        return res.json({ success: true, ticket });
+    } catch (error) {
+        console.error('Error saving admin reply:', error);
+        return res.status(500).json({ success: false, message: 'Failed to save reply' });
     }
 });
 

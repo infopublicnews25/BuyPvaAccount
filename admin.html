@@ -674,6 +674,7 @@
         const DEFAULT_CATEGORIES = ['Gmail', 'Facebook', 'Instagram', 'Twitter', 'LinkedIn', 'YouTube', 'TikTok', 'Telegram', 'WhatsApp', 'Other'];
         let lastProductsHash = ''; // For tracking dashboard inventory changes
         let cachedCategories = [];
+        let notificationIntervalId = null;
 
         // Session timeout settings
         const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
@@ -746,6 +747,20 @@
             }
         }
 
+        function startNotificationPolling() {
+            if (notificationIntervalId) {
+                clearInterval(notificationIntervalId);
+            }
+            notificationIntervalId = setInterval(updateNotificationCount, 30000);
+        }
+
+        function stopNotificationPolling() {
+            if (notificationIntervalId) {
+                clearInterval(notificationIntervalId);
+                notificationIntervalId = null;
+            }
+        }
+
         window.onload = () => {
             const token = localStorage.getItem(AUTH_KEY);
             if (token) {
@@ -756,7 +771,7 @@
                 loadDashboardData();
                 // Update bell badge immediately and periodically
                 updateNotificationCount();
-                setInterval(updateNotificationCount, 30000);
+                startNotificationPolling();
                 // Restore the previously active tab
                 const savedTab = localStorage.getItem('activeAdminTab') || 'dashboard';
                 restoreActiveTab(savedTab);
@@ -859,7 +874,7 @@
             loadDashboardData();
             // Update bell badge immediately and periodically
             updateNotificationCount();
-            setInterval(updateNotificationCount, 30000);
+            startNotificationPolling();
             // Restore the previously active tab
             const savedTab = localStorage.getItem('activeAdminTab') || 'dashboard';
             restoreActiveTab(savedTab);
@@ -876,6 +891,7 @@
 
         function logout() {
             if (confirm('Are you sure you want to logout?')) {
+                stopNotificationPolling();
                 // Clear all admin authentication data
                 localStorage.removeItem(AUTH_KEY);
                 localStorage.removeItem('adminLoggedIn');
