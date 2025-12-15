@@ -21,7 +21,7 @@ async function verifyAdmin(username, password) {
         }
 
         // Then check regular admin users
-        const user = statements.getAdminUserByUsername.get(username);
+        const user = statements.getAdminUserByUsername.get(username) || statements.getAdminUserByEmail.get(username);
         if (user) {
             const isValid = await bcrypt.compare(password, user.passwordHash);
             if (isValid) {
@@ -93,7 +93,8 @@ async function storeUserToken(username, token) {
         // For regular users
         if (fs.existsSync(USERS_FILE)) {
             const users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-            const user = users.find(u => u.username === username);
+            const needle = String(username || '').toLowerCase();
+            const user = users.find(u => String(u.username || '').toLowerCase() === needle || String(u.email || '').toLowerCase() === needle);
             if (user) {
                 user.token = token;
                 fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));

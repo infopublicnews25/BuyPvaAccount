@@ -49,14 +49,40 @@ const statements = {
         }
     },
 
+    getAdminUserByEmail: {
+        get: (email) => {
+            try {
+                if (fs.existsSync(USERS_FILE)) {
+                    const users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+                    const needle = String(email || '').toLowerCase();
+                    return users.find(user => String(user.email || '').toLowerCase() === needle);
+                }
+                return null;
+            } catch (error) {
+                console.error('Error reading admin users:', error);
+                return null;
+            }
+        }
+    },
+
     updateAdminUser: {
         run: (username, email, role, passwordHash, lastLogin, id) => {
             try {
                 if (fs.existsSync(USERS_FILE)) {
                     const users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-                    const userIndex = users.findIndex(user => user.id === id);
+                    const userIndex = (id !== undefined && id !== null)
+                        ? users.findIndex(user => user.id === id)
+                        : users.findIndex(user => user.username === username);
                     if (userIndex !== -1) {
-                        users[userIndex] = { id, username, email, role, passwordHash, lastLogin };
+                        users[userIndex] = {
+                            ...users[userIndex],
+                            id,
+                            username,
+                            email,
+                            role,
+                            passwordHash,
+                            lastLogin
+                        };
                         fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
                     }
                 }
