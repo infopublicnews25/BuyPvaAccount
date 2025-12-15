@@ -88,17 +88,21 @@
 
             <div class="title" style="margin-top:8px">Payment</div>
             <div class="pm-box">
-              <label class="pm-option">
-                <input type="radio" name="pm" value="cod" checked> 
-                <span>💵 Cash on Delivery (COD)</span>
-              </label>
-              <div class="muted" style="margin-left:28px;margin-top:4px">Pay with cash upon delivery</div>
-              
-              <label class="pm-option" style="margin-top:12px">
-                <input type="radio" name="pm" value="crypto"> 
-                <span>₿ Crypto Currency Payment</span>
-              </label>
-              <div class="muted" style="margin-left:28px;margin-top:4px">Pay with Bitcoin, USDT, Ethereum and more via NOWPayments</div>
+              <div data-pm="cod">
+                <label class="pm-option">
+                  <input type="radio" name="pm" value="cod" checked>
+                  <span>💵 Cash on Delivery (COD)</span>
+                </label>
+                <div class="muted" style="margin-left:28px;margin-top:4px">Pay with cash upon delivery</div>
+              </div>
+
+              <div data-pm="crypto" style="margin-top:12px">
+                <label class="pm-option">
+                  <input type="radio" name="pm" value="crypto">
+                  <span>₿ Crypto Currency Payment</span>
+                </label>
+                <div class="muted" style="margin-left:28px;margin-top:4px">Pay with Bitcoin, USDT, Ethereum and more via NOWPayments</div>
+              </div>
             </div>
 
             <div class="field terms" style="margin-top:12px">
@@ -228,6 +232,51 @@
         pushDL({event:'add_payment_info',ecommerce:{currency:'USD',payment_type:e.target.value,value:t.tot,items:gaItems()}});
       });
     });
+
+    // ---------- payment method visibility (admin-controlled) ----------
+    async function applyPaymentVisibility() {
+      try {
+        const resp = await fetch(`${CONFIG.API}/payment-settings`, { cache: 'no-store' });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (!data || !data.success || !data.settings || !data.settings.methods) return;
+
+        const methods = data.settings.methods;
+        const enabled = {
+          cod: methods.cod !== false,
+          crypto: methods.crypto !== false
+        };
+
+        // Must have at least one enabled (fallback to cod)
+        if (!enabled.cod && !enabled.crypto) {
+          enabled.cod = true;
+        }
+
+        // Show/hide containers and disable radios accordingly
+        document.querySelectorAll('[data-pm]').forEach(box => {
+          const pm = box.getAttribute('data-pm');
+          const isOn = enabled[pm] !== false;
+          box.style.display = isOn ? '' : 'none';
+          box.querySelectorAll('input[type="radio"][name="pm"]').forEach(r => {
+            r.disabled = !isOn;
+          });
+        });
+
+        // Ensure selected method is visible
+        const selected = document.querySelector('input[name="pm"]:checked');
+        const selectedVal = selected ? selected.value : null;
+        if (selectedVal && enabled[selectedVal] === false) {
+          const firstEnabled = document.querySelector('input[name="pm"]:not([disabled])');
+          if (firstEnabled) firstEnabled.checked = true;
+        }
+
+        totals();
+      } catch (e) {
+        // Non-blocking
+      }
+    }
+
+    applyPaymentVisibility();
 
     // ---------- coupon ----------
     $('#apply-coupon')?.addEventListener('click',()=>{

@@ -17,7 +17,49 @@ const FOLDERS_FILE = path.join(__dirname, '../media-folders.json');
 const USERS_FILE = path.join(__dirname, '../registered_users.json');
 const CATEGORIES_FILE = path.join(__dirname, '../categories.json');
 const NOTIFICATIONS_FILE = path.join(__dirname, '../notifications.json');
+const PAYMENT_SETTINGS_FILE = path.join(__dirname, '../payment_settings.json');
 const UPLOADS_DIR = path.join(__dirname, '../uploads');
+
+function readPaymentSettings() {
+    try {
+        if (fs.existsSync(PAYMENT_SETTINGS_FILE)) {
+            const data = fs.readFileSync(PAYMENT_SETTINGS_FILE, 'utf8');
+            const parsed = JSON.parse(data);
+            const methods = parsed && parsed.methods ? parsed.methods : {};
+            return {
+                methods: {
+                    cod: methods.cod !== false,
+                    crypto: methods.crypto !== false
+                },
+                updatedAt: parsed.updatedAt || new Date().toISOString()
+            };
+        }
+    } catch (e) {
+        console.error('Error reading payment_settings.json:', e);
+    }
+    return {
+        methods: { cod: true, crypto: true },
+        updatedAt: new Date().toISOString()
+    };
+}
+
+function writePaymentSettings(settings) {
+    try {
+        const methods = settings && settings.methods ? settings.methods : {};
+        const normalized = {
+            methods: {
+                cod: methods.cod !== false,
+                crypto: methods.crypto !== false
+            },
+            updatedAt: new Date().toISOString()
+        };
+        fs.writeFileSync(PAYMENT_SETTINGS_FILE, JSON.stringify(normalized, null, 2));
+        return normalized;
+    } catch (e) {
+        console.error('Error writing payment_settings.json:', e);
+        return null;
+    }
+}
 
 // Ensure uploads directory exists
 if (!fs.existsSync(UPLOADS_DIR)) {
@@ -314,6 +356,49 @@ app.post('/api/admin-login', async (req, res) => {
         }
     } catch (e) {
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Payment settings (public read)
+app.get('/api/payment-settings', (req, res) => {
+    try {
+        const settings = readPaymentSettings();
+        return res.json({ success: true, settings });
+    } catch (err) {
+        console.error('Error fetching payment settings:', err);
+        return res.status(500).json({ success: false, message: 'Failed to fetch payment settings' });
+    }
+});
+
+// Payment settings (admin manage)
+app.get('/api/admin/payment-settings', authenticateAdmin, (req, res) => {
+    try {
+        const settings = readPaymentSettings();
+        return res.json({ success: true, settings });
+    } catch (err) {
+        console.error('Error fetching admin payment settings:', err);
+        return res.status(500).json({ success: false, message: 'Failed to fetch payment settings' });
+    }
+});
+
+app.put('/api/admin/payment-settings', authenticateAdmin, (req, res) => {
+    try {
+        const incoming = req.body || {};
+        const methods = incoming.methods || {};
+
+        // Ensure at least one payment method is enabled
+        const cod = methods.cod !== false;
+        const crypto = methods.crypto !== false;
+        const safeMethods = (cod || crypto) ? { cod, crypto } : { cod: true, crypto: false };
+
+        const saved = writePaymentSettings({ methods: safeMethods });
+        if (!saved) return res.status(500).json({ success: false, message: 'Failed to persist payment settings' });
+
+        logAdminAction('update_payment_settings', { methods: saved.methods }, req.adminUser || 'admin');
+        return res.json({ success: true, settings: saved });
+    } catch (err) {
+        console.error('Error saving payment settings:', err);
+        return res.status(500).json({ success: false, message: 'Failed to save payment settings' });
     }
 });
 
