@@ -1387,8 +1387,24 @@
                         } catch (e) {}
                     }
 
-                    // Create automatic notification locally as before
-                    try { createOrderStatusNotification(data.order || { orderId, customer: { email: '' } }, newStatus, oldStatus); } catch (e) {}
+                    // Create automatic notification locally with proper order data
+                    // If data.order is not returned, get it from updated orders array
+                    let orderForNotif = data.order;
+                    if (!orderForNotif) {
+                        // Get order from localStorage with updated data
+                        const allOrders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+                        orderForNotif = allOrders.find(o => o.orderId === orderId);
+                    }
+                    
+                    if (orderForNotif && orderForNotif.customer && orderForNotif.customer.email) {
+                        try { 
+                            createOrderStatusNotification(orderForNotif, newStatus, oldStatus); 
+                        } catch (e) {
+                            console.error('Error creating notification:', e);
+                        }
+                    } else {
+                        console.warn('Cannot create notification - missing order customer email', { orderId, orderForNotif });
+                    }
 
                     loadOrders();
                     alert('Order status updated successfully!');

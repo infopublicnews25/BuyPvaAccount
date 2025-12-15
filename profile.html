@@ -1362,86 +1362,34 @@
         }
 
         function loadNotifications() {
-            const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-            const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
-
-            // Get admin notifications - filter by email (not customerEmail)
+            // Get ALL notifications from admin_notifications storage
             const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+            const userEmail = currentUser.email.toLowerCase();
+            
+            // Filter admin notifications by user's email
             const userAdminNotifs = adminNotifications.filter(n => 
-                n.email && n.email.toLowerCase() === currentUser.email.toLowerCase()
+                n.email && n.email.toLowerCase() === userEmail
             );
 
             console.log('Loading notifications for:', currentUser.email);
             console.log('Admin notifications found:', userAdminNotifs.length);
-            console.log('Order notifications found:', userOrders.length);
+            console.log('Admin notifications list:', userAdminNotifs);
 
-            // Generate order-based notifications with more detail
-            const orderNotifications = userOrders.map(order => {
-                let icon = '📦';
-                let title = 'Order Update';
-                let message = '';
-
-                switch(order.status) {
-                    case 'completed':
-                        icon = '✅';
-                        title = 'Order Completed';
-                        message = `Your order #${order.orderId} has been completed successfully!`;
-                        break;
-                    case 'processing':
-                        icon = '⚙️';
-                        title = 'Order Processing';
-                        message = `Your order #${order.orderId} is being processed.`;
-                        break;
-                    case 'confirmed':
-                        icon = '✔️';
-                        title = 'Order Confirmed';
-                        message = `Your order #${order.orderId} has been confirmed.`;
-                        break;
-                    case 'cancelled':
-                        icon = '❌';
-                        title = 'Order Cancelled';
-                        message = `Your order #${order.orderId} has been cancelled.`;
-                        break;
-                    case 'refunded':
-                        icon = '💰';
-                        title = 'Order Refunded';
-                        message = `Your order #${order.orderId} has been refunded.`;
-                        break;
-                    case 'hold':
-                        icon = '⏸️';
-                        title = 'Order On Hold';
-                        message = `Your order #${order.orderId} is currently on hold.`;
-                        break;
-                    default:
-                        icon = '🆕';
-                        title = 'New Order';
-                        message = `Your order #${order.orderId} has been placed.`;
-                }
-
-                return {
-                    id: `order-${order.orderId}`,
-                    icon: icon,
-                    title: title,
-                    message: message,
-                    date: order.createdAt,
-                    type: 'order',
-                    orderId: order.orderId
-                };
-            });
-
-            // Combine all notifications
-            const allNotifications = [
-                ...userAdminNotifs.map(n => ({
-                    id: n.id || 'admin-' + Date.now(),
-                    icon: n.icon || '📢',
-                    title: n.title || 'Admin Message',
-                    message: n.message || 'You have a new message from admin.',
-                    date: n.sentDate || n.timestamp || new Date().toISOString(),
-                    type: 'admin',
-                    read: n.read || false
-                })),
-                ...orderNotifications
-            ];
+            // Convert admin notifications to display format
+            // This includes:
+            // 1. Automatic status change notifications (from ordermanagement.html)
+            // 2. Delivery notifications (from ordermanagement.html)
+            // 3. Manual admin notifications (from admin)
+            const allNotifications = userAdminNotifs.map(n => ({
+                id: n.id || 'admin-' + Date.now(),
+                icon: n.icon || '📢',
+                title: n.title || 'Admin Message',
+                message: n.message || 'You have a new message from admin.',
+                date: n.sentDate || n.timestamp || new Date().toISOString(),
+                type: 'admin',
+                read: n.read || false,
+                orderId: n.orderId || null
+            }));
 
             // Get deleted notifications for this user
             const deletedNotifications = JSON.parse(localStorage.getItem(`deleted_notifications_${currentUser.email}`) || "[]");
@@ -1461,7 +1409,7 @@
                 safeSetInnerHTML(container, `<div class="empty-state">
                     <div style="font-size: 64px; opacity: 0.3;">🔔</div>
                     <h3>No Notifications</h3>
-                    <p>You have no notifications at the moment.</p>
+                    <p>You will receive notifications here when orders are placed and status changes occur.</p>
                 </div>`, true);
                 const badge = document.getElementById('notificationBadge');
                 if (badge) badge.style.display = 'none';
@@ -1482,15 +1430,22 @@
 
             const notificationsHTML = visibleNotifications.map(notif => {
                 const isRead = readNotifications.includes(notif.id);
-                let badgeClass = 'badge-system';
-                let badgeText = 'System';
+                let badgeClass = 'badge-admin';
+                let badgeText = 'Status Update';
                 
+                // Determine badge type
                 if (notif.type === 'admin') {
-                    badgeClass = 'badge-admin';
-                    badgeText = 'Admin Message';
-                } else if (notif.type === 'order') {
-                    badgeClass = 'badge-order';
-                    badgeText = 'Order Update';
+                    // Check if it's a status change or delivery or manual
+                    if (notif.title && notif.title.includes('Status')) {
+                        badgeClass = 'badge-order';
+                        badgeText = 'Order Update';
+                    } else if (notif.title && notif.title.includes('Delivered')) {
+                        badgeClass = 'badge-order';
+                        badgeText = 'Delivery';
+                    } else {
+                        badgeClass = 'badge-admin';
+                        badgeText = 'Admin Message';
+                    }
                 }
 
                 return `<div class="notification-item ${isRead ? 'read' : 'unread'}" onclick="markAsRead(this, '${notif.id}')">
