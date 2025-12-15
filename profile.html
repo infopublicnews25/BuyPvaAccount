@@ -1055,6 +1055,14 @@
                 return;
             }
 
+            // If token is missing (common for older sessions), re-issue it via auto-register.
+            // This enables backend sync for orders/notifications on live.
+            try {
+                await ensureClientToken();
+            } catch (e) {
+                console.warn('Token ensure skipped/failed:', e);
+            }
+
             // Best-effort: sync profile + orders from backend (works across devices)
             try {
                 await syncProfileFromBackend();
@@ -1140,6 +1148,34 @@
 
         function getClientToken() {
             return (currentUser && currentUser.token) ? String(currentUser.token) : null;
+        }
+
+        async function ensureClientToken() {
+            if (typeof CONFIG === 'undefined' || !CONFIG.API) return false;
+            if (!currentUser || !currentUser.email) return false;
+            if (currentUser.token) return true;
+
+            const payload = {
+                fullName: currentUser.fullName || currentUser.name || String(currentUser.email),
+                email: String(currentUser.email),
+                phone: currentUser.phone || '',
+                country: currentUser.country || ''
+            };
+
+            const resp = await fetch(`${CONFIG.API}/auto-register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await resp.json().catch(() => null);
+            if (!resp.ok || !data || !data.success || !data.user || !data.user.token) return false;
+
+            currentUser = { ...currentUser, ...data.user, token: data.user.token };
+            secureStorage.setSensitive('client_auth', currentUser);
+            try { localStorage.setItem('client_auth', JSON.stringify(currentUser)); } catch (e) {}
+            try { localStorage.setItem('user_email', String(currentUser.email)); } catch (e) {}
+            return true;
         }
 
         async function syncProfileFromBackend() {
