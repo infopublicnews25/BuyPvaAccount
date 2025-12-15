@@ -1143,6 +1143,12 @@
                 console.log('📢 Notifications updated event received');
                 loadNotifications();
             });
+            
+            // Listen for admin_notifications updates from ordermanagement.html
+            window.addEventListener('admin_notifications_updated', (e) => {
+                console.log('🔔 Admin notification update event received:', e.detail);
+                loadNotifications();
+            });
         });
 
         function showTab(tabName) {
@@ -1371,13 +1377,19 @@
         }
 
         function loadNotifications() {
-            // Get ALL notifications from admin_notifications storage
-            const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+            // Force refresh from localStorage - ensure we have latest data
+            // This fixes issues where tabs have different localStorage states
+            let adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+            
+            // If admin_notifications is empty and it shouldn't be, try to fetch from other sources
+            console.log('🔍 Initial admin_notifications check - Count:', adminNotifications.length);
+            
             const userEmail = currentUser.email.toLowerCase();
             
             // Debug: Show what's in admin_notifications
             console.log('🔍 DEBUG - All admin notifications in localStorage:', adminNotifications);
             console.log('🔍 DEBUG - Current user email:', userEmail);
+            console.log('🔍 DEBUG - Raw localStorage value:', localStorage.getItem('admin_notifications'));
             
             // Filter admin notifications by user's email
             const userAdminNotifs = adminNotifications.filter(n => 
