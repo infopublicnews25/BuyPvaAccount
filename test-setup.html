@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Data Setup - BuyPvaAccount</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .info-box {
+            background: #cce5ff;
+            color: #004085;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #004085;
+        }
+        .info-box strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Data Setup</h1>
+        
+        <div class="info-box">
+            <strong>📋 Create Test Environment</strong>
+            <p>এই টুল দিয়ে test user এবং orders তৈরি করুন যাতে সব features কাজ করে।</p>
+        </div>
+
+        <div class="success" id="successMsg"></div>
+        <div class="error" id="errorMsg"></div>
+
+        <div class="form-group">
+            <label>📧 Email Address</label>
+            <input type="email" id="email" placeholder="test@example.com" value="test@buypvaaccount.com">
+        </div>
+
+        <div class="form-group">
+            <label>👤 Full Name</label>
+            <input type="text" id="fullName" placeholder="John Doe" value="Test User">
+        </div>
+
+        <div class="form-group">
+            <label>🔐 Password</label>
+            <input type="password" id="password" placeholder="Enter password" value="test123456">
+        </div>
+
+        <div class="form-group">
+            <label>📞 Phone</label>
+            <input type="tel" id="phone" placeholder="Phone number" value="+8801234567890">
+        </div>
+
+        <div class="form-group">
+            <label>🌍 Country</label>
+            <input type="text" id="country" placeholder="Bangladesh" value="Bangladesh">
+        </div>
+
+        <button onclick="createTestUser()">✅ Create Test User</button>
+        <button onclick="createTestOrders()">📦 Create Test Orders</button>
+        <button onclick="createTestNotifications()">🔔 Create Test Notifications</button>
+        <button onclick="goToProfile()">🚀 Go to Profile (Login First)</button>
+        <button onclick="clearAllData()">🗑️ Clear All Data (WARNING!)</button>
+    </div>
+
+    <script>
+        function showSuccess(msg) {
+            const el = document.getElementById('successMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        function createTestUser() {
+            try {
+                const email = document.getElementById('email').value.trim().toLowerCase();
+                const fullName = document.getElementById('fullName').value.trim();
+                const password = document.getElementById('password').value;
+                const phone = document.getElementById('phone').value.trim();
+                const country = document.getElementById('country').value.trim();
+
+                if (!email || !fullName || !password) {
+                    showError('❌ Please fill in all required fields');
+                    return;
+                }
+
+                // Create user object
+                const user = {
+                    email: email,
+                    fullName: fullName,
+                    password: btoa(password), // Basic encoding like in login
+                    phone: phone,
+                    country: country,
+                    authType: 'Email',
+                    createdAt: new Date().toISOString(),
+                    avatarImage: null
+                };
+
+                // Add to users array
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const exists = users.find(u => u.email === email);
+                
+                if (exists) {
+                    // Update existing user
+                    const index = users.findIndex(u => u.email === email);
+                    users[index] = user;
+                    showSuccess('✅ User updated successfully: ' + email);
+                } else {
+                    users.push(user);
+                    showSuccess('✅ Test user created successfully: ' + email);
+                }
+
+                localStorage.setItem('users', JSON.stringify(users));
+                localStorage.setItem('client_auth', JSON.stringify(user));
+                
+                console.log('Test user created:', user);
+                
+            } catch (error) {
+                showError('❌ Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function createTestOrders() {
+            try {
+                const email = document.getElementById('email').value.trim().toLowerCase();
+                
+                if (!email) {
+                    showError('❌ Please enter email first');
+                    return;
+                }
+
+                const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+
+                // Create multiple test orders with different statuses
+                const testOrders = [
+                    {
+                        orderId: 'TEST-001',
+                        customer: { email: email, name: document.getElementById('fullName').value },
+                        items: [
+                            { id: 1, name: 'Premium Account 1 Month', quantity: 1 }
+                        ],
+                        totals: { subtotal: 99, tax: 0, shipping: 0, tot: 99 },
+                        total: 99,
+                        paymentMethod: 'stripe',
+                        status: 'completed',
+                        createdAt: new Date(Date.now() - 10*24*60*60*1000).toISOString(),
+                        deliveryDate: new Date(Date.now() - 5*24*60*60*1000).toISOString(),
+                        deliveryFile: 'Account Credentials:\nUsername: testuser123\nPassword: TempPassword123\n\nActivation Link: https://example.com/activate',
+                        attachedFiles: [
+                            { name: 'account-details.txt', size: 2048, data: 'data:text/plain;base64,QWNjb3VudCBEZXRhaWxzOlxuVXNlcm5hbWU6IHRlc3R1c2VyMTIzXG5QYXNzd29yZDogVGVtcFBhc3N3b3JkMTIz' }
+                        ],
+                        deliveryHidden: false,
+                        statusHistory: [
+                            { from: null, to: 'pending', timestamp: new Date(Date.now() - 10*24*60*60*1000).toISOString() },
+                            { from: 'pending', to: 'confirmed', timestamp: new Date(Date.now() - 9*24*60*60*1000).toISOString() },
+                            { from: 'confirmed', to: 'processing', timestamp: new Date(Date.now() - 8*24*60*60*1000).toISOString() },
+                            { from: 'processing', to: 'completed', timestamp: new Date(Date.now() - 5*24*60*60*1000).toISOString() }
+                        ]
+                    },
+                    {
+                        orderId: 'TEST-002',
+                        customer: { email: email, name: document.getElementById('fullName').value },
+                        items: [
+                            { id: 2, name: 'Business Account 3 Month', quantity: 1 }
+                        ],
+                        totals: { subtotal: 249, tax: 0, shipping: 0, tot: 249 },
+                        total: 249,
+                        paymentMethod: 'cod',
+                        status: 'processing',
+                        createdAt: new Date(Date.now() - 3*24*60*60*1000).toISOString(),
+                        deliveryFile: null,
+                        attachedFiles: [],
+                        deliveryHidden: false,
+                        statusHistory: [
+                            { from: null, to: 'pending', timestamp: new Date(Date.now() - 3*24*60*60*1000).toISOString() },
+                            { from: 'pending', to: 'confirmed', timestamp: new Date(Date.now() - 2.5*24*60*60*1000).toISOString() },
+                            { from: 'confirmed', to: 'processing', timestamp: new Date(Date.now() - 2*24*60*60*1000).toISOString() }
+                        ]
+                    },
+                    {
+                        orderId: 'TEST-003',
+                        customer: { email: email, name: document.getElementById('fullName').value },
+                        items: [
+                            { id: 3, name: 'Enterprise Account 6 Month', quantity: 1 }
+                        ],
+                        totals: { subtotal: 499, tax: 0, shipping: 0, tot: 499 },
+                        total: 499,
+                        paymentMethod: 'stripe',
+                        status: 'confirmed',
+                        createdAt: new Date(Date.now() - 1*24*60*60*1000).toISOString(),
+                        deliveryFile: null,
+                        attachedFiles: [],
+                        deliveryHidden: false,
+                        statusHistory: [
+                            { from: null, to: 'pending', timestamp: new Date(Date.now() - 1*24*60*60*1000).toISOString() },
+                            { from: 'pending', to: 'confirmed', timestamp: new Date(Date.now() - 12*60*60*1000).toISOString() }
+                        ]
+                    },
+                    {
+                        orderId: 'TEST-004',
+                        customer: { email: email, name: document.getElementById('fullName').value },
+                        items: [
+                            { id: 4, name: 'Premium Account 1 Month', quantity: 2 }
+                        ],
+                        totals: { subtotal: 198, tax: 0, shipping: 0, tot: 198 },
+                        total: 198,
+                        paymentMethod: 'cod',
+                        status: 'cancelled',
+                        createdAt: new Date(Date.now() - 20*24*60*60*1000).toISOString(),
+                        deliveryFile: null,
+                        attachedFiles: [],
+                        deliveryHidden: false,
+                        statusHistory: [
+                            { from: null, to: 'pending', timestamp: new Date(Date.now() - 20*24*60*60*1000).toISOString() },
+                            { from: 'pending', to: 'cancelled', timestamp: new Date(Date.now() - 19*24*60*60*1000).toISOString() }
+                        ]
+                    }
+                ];
+
+                // Add to orders (update if exists)
+                testOrders.forEach(testOrder => {
+                    const exists = orders.findIndex(o => o.orderId === testOrder.orderId);
+                    if (exists >= 0) {
+                        orders[exists] = testOrder;
+                    } else {
+                        orders.push(testOrder);
+                    }
+                });
+
+                localStorage.setItem('all_orders', JSON.stringify(orders));
+                showSuccess('✅ ' + testOrders.length + ' test orders created successfully');
+                console.log('Test orders created:', testOrders);
+                
+            } catch (error) {
+                showError('❌ Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function createTestNotifications() {
+            try {
+                const email = document.getElementById('email').value.trim().toLowerCase();
+                
+                if (!email) {
+                    showError('❌ Please enter email first');
+                    return;
+                }
+
+                const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+
+                // Create test notifications
+                const testNotifications = [
+                    {
+                        id: 'NOTIF-001',
+                        email: email,
+                        icon: '✅',
+                        title: 'Order Completed',
+                        message: 'Your order #TEST-001 has been completed successfully! Check your downloads section for files.',
+                        sentDate: new Date(Date.now() - 5*24*60*60*1000).toISOString(),
+                        timestamp: new Date(Date.now() - 5*24*60*60*1000).toISOString(),
+                        read: false,
+                        orderId: 'TEST-001',
+                        statusChange: { from: 'processing', to: 'completed' }
+                    },
+                    {
+                        id: 'NOTIF-002',
+                        email: email,
+                        icon: '⚙️',
+                        title: 'Order Processing',
+                        message: 'Your order #TEST-002 is being processed. We will keep you updated.',
+                        sentDate: new Date(Date.now() - 2*24*60*60*1000).toISOString(),
+                        timestamp: new Date(Date.now() - 2*24*60*60*1000).toISOString(),
+                        read: false,
+                        orderId: 'TEST-002',
+                        statusChange: { from: 'confirmed', to: 'processing' }
+                    },
+                    {
+                        id: 'NOTIF-003',
+                        email: email,
+                        icon: '📢',
+                        title: 'Important Update',
+                        message: 'Thank you for your business! We have special offers coming soon.',
+                        sentDate: new Date(Date.now() - 1*24*60*60*1000).toISOString(),
+                        timestamp: new Date(Date.now() - 1*24*60*60*1000).toISOString(),
+                        read: false,
+                        orderId: null
+                    }
+                ];
+
+                // Add to notifications
+                testNotifications.forEach(testNotif => {
+                    const exists = notifications.findIndex(n => n.id === testNotif.id);
+                    if (exists >= 0) {
+                        notifications[exists] = testNotif;
+                    } else {
+                        notifications.push(testNotif);
+                    }
+                });
+
+                localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+                showSuccess('✅ ' + testNotifications.length + ' test notifications created successfully');
+                console.log('Test notifications created:', testNotifications);
+                
+            } catch (error) {
+                showError('❌ Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function goToProfile() {
+            const email = document.getElementById('email').value.trim();
+            if (!email) {
+                showError('❌ Please enter email first and create user');
+                return;
+            }
+            window.location.href = 'profile.html';
+        }
+
+        function clearAllData() {
+            if (!confirm('⚠️ Are you sure? This will delete ALL users, orders, and notifications!')) {
+                return;
+            }
+            if (!confirm('🚨 FINAL WARNING: This action cannot be undone!')) {
+                return;
+            }
+
+            localStorage.removeItem('users');
+            localStorage.removeItem('all_orders');
+            localStorage.removeItem('admin_notifications');
+            localStorage.removeItem('client_auth');
+            
+            showSuccess('✅ All data cleared successfully');
+        }
+
+        // Auto-fill with test data on load
+        window.addEventListener('load', () => {
+            console.log('🧪 Test Setup Page Loaded');
+            console.log('Current localStorage state:');
+            console.log('Users:', JSON.parse(localStorage.getItem('users') || '[]').length);
+            console.log('Orders:', JSON.parse(localStorage.getItem('all_orders') || '[]').length);
+            console.log('Notifications:', JSON.parse(localStorage.getItem('admin_notifications') || '[]').length);
+        });
+    </script>
+</body>
+</html>

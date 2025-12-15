@@ -1323,132 +1323,187 @@
         }
 
         function loadDashboard() {
-            const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-            const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
+            console.log('📊 loadDashboard called for user:', currentUser?.email);
+            
+            try {
+                if (!currentUser || !currentUser.email) {
+                    console.error('❌ Current user not available');
+                    return;
+                }
 
-            const totalOrders = userOrders.length;
-            const completedOrders = userOrders.filter(o => o.status === 'completed').length;
-            const processingOrders = userOrders.filter(o => o.status === 'processing').length;
-            const cancelledOrders = userOrders.filter(o => o.status === 'cancelled').length;
-            const refundedOrders = userOrders.filter(o => o.status === 'refunded').length;
-            const downloads = userOrders.filter(o => 
-                o.status === 'completed' && 
-                o.deliveryHidden !== true &&
-                (o.deliveryFile || (o.attachedFiles && o.attachedFiles.length > 0))
-            ).length;
+                const normalizedUserEmail = currentUser.email.toLowerCase().trim();
+                const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
+                
+                // Filter orders for current user (with robust email matching)
+                const userOrders = allOrders.filter(order => {
+                    if (!order.customer || !order.customer.email) return false;
+                    return order.customer.email.toLowerCase().trim() === normalizedUserEmail;
+                });
 
-            // Update top row cards
-            document.getElementById('totalOrders').textContent = totalOrders;
-            document.getElementById('completedOrders').textContent = completedOrders;
-            document.getElementById('processingOrders').textContent = processingOrders;
-            document.getElementById('cancelledOrders').textContent = cancelledOrders;
-            document.getElementById('refundedOrders').textContent = refundedOrders;
+                const totalOrders = userOrders.length;
+                const completedOrders = userOrders.filter(o => o.status === 'completed').length;
+                const processingOrders = userOrders.filter(o => o.status === 'processing').length;
+                const cancelledOrders = userOrders.filter(o => o.status === 'cancelled').length;
+                const refundedOrders = userOrders.filter(o => o.status === 'refunded').length;
+                const downloads = userOrders.filter(o => 
+                    o.status === 'completed' && 
+                    o.deliveryHidden !== true &&
+                    (o.deliveryFile || (o.attachedFiles && o.attachedFiles.length > 0))
+                ).length;
+
+                console.log('Dashboard stats:', {
+                    totalOrders,
+                    completedOrders,
+                    processingOrders,
+                    cancelledOrders,
+                    refundedOrders,
+                    downloads
+                });
+
+                // Update top row cards
+                const totalOrdersEl = document.getElementById('totalOrders');
+                const completedOrdersEl = document.getElementById('completedOrders');
+                const processingOrdersEl = document.getElementById('processingOrders');
+                const cancelledOrdersEl = document.getElementById('cancelledOrders');
+                const refundedOrdersEl = document.getElementById('refundedOrders');
+
+                if (totalOrdersEl) totalOrdersEl.textContent = totalOrders;
+                if (completedOrdersEl) completedOrdersEl.textContent = completedOrders;
+                if (processingOrdersEl) processingOrdersEl.textContent = processingOrders;
+                if (cancelledOrdersEl) cancelledOrdersEl.textContent = cancelledOrders;
+                if (refundedOrdersEl) refundedOrdersEl.textContent = refundedOrders;
+
+                console.log('✅ Dashboard updated successfully');
+                
+            } catch (error) {
+                console.error('❌ Error loading dashboard:', error);
+            }
         }
 
         function loadDownloads() {
-            console.log('Loading downloads for user:', currentUser.email);
+            console.log('Loading downloads for user:', currentUser?.email);
             
-            const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-            console.log('Total orders in system:', allOrders.length);
-            
-            // Filter orders that belong to this user
-            const myOrders = allOrders.filter(order => order.customer.email === currentUser.email);
-            console.log('My orders:', myOrders.length);
-            
-            // Filter orders that have delivery files (completed status recommended but not required)
-            const userOrders = myOrders.filter(order => {
-                const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0);
-                const notHidden = order.deliveryHidden !== true;
-                const isCompleted = order.status.toLowerCase() === "completed";
+            try {
+                if (!currentUser || !currentUser.email) {
+                    console.error('❌ Current user not available');
+                    return;
+                }
+
+                const normalizedUserEmail = currentUser.email.toLowerCase().trim();
+                const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
+                console.log('Total orders in system:', allOrders.length);
                 
-                console.log(`Order ${order.orderId}:`, {
-                    status: order.status,
-                    hasDeliveryFile,
-                    notHidden,
-                    isCompleted,
-                    deliveryFile: order.deliveryFile,
-                    attachedFilesCount: order.attachedFiles ? order.attachedFiles.length : 0
+                // Filter orders that belong to this user
+                const myOrders = allOrders.filter(order => {
+                    if (!order.customer || !order.customer.email) return false;
+                    return order.customer.email.toLowerCase().trim() === normalizedUserEmail;
+                });
+                console.log('My orders:', myOrders.length);
+                
+                // Filter orders that have delivery files (completed status recommended but not required)
+                const userOrders = myOrders.filter(order => {
+                    const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0);
+                    const notHidden = order.deliveryHidden !== true;
+                    const isCompleted = order.status.toLowerCase() === "completed";
+                    
+                    console.log(`Order ${order.orderId}:`, {
+                        status: order.status,
+                        hasDeliveryFile,
+                        notHidden,
+                        isCompleted,
+                        deliveryFile: order.deliveryFile ? '✓' : '✗',
+                        attachedFilesCount: order.attachedFiles ? order.attachedFiles.length : 0
+                    });
+                    
+                    // Show if has delivery files and not hidden (prefer completed orders)
+                    return hasDeliveryFile && notHidden;
                 });
                 
-                // Show if has delivery files and not hidden (prefer completed orders)
-                return hasDeliveryFile && notHidden;
-            });
-            
-            console.log('Orders with delivery files:', userOrders.length);
+                console.log('Orders with delivery files:', userOrders.length);
 
-            const container = document.getElementById("downloadsContainer");
+                const container = document.getElementById("downloadsContainer");
 
-            if (userOrders.length === 0) {
-                safeSetInnerHTML(container, `<div class="empty-state">
-                    <div style="font-size: 64px; opacity: 0.3;">📥</div>
-                    <h3>No Downloads Available</h3>
-                    <p>Once your order is completed and the admin sends delivery files, they will appear here for download.</p>
-                </div>`, true);
-                return;
-            }
+                if (userOrders.length === 0) {
+                    safeSetInnerHTML(container, `<div class="empty-state">
+                        <div style="font-size: 64px; opacity: 0.3;">📥</div>
+                        <h3>No Downloads Available</h3>
+                        <p>Once your order is completed and the admin sends delivery files, they will appear here for download.</p>
+                    </div>`, true);
+                    return;
+                }
 
-            const downloadsHTML = userOrders.map(order => {
-                const productNames = order.items.map(item => item.name).join(', ');
-                const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
-                const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0);
+                const downloadsHTML = userOrders.map(order => {
+                    const productNames = order.items.map(item => item.name).join(', ');
+                    const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+                    const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0);
 
-                return `<div class="order-card" style="margin-bottom: 12px;">
-                    <div class="order-header">
-                        <div class="order-id">#${order.orderId}</div>
-                        <div class="order-date">${new Date(order.createdAt).toLocaleDateString()}</div>
-                    </div>
-                    <div style="flex: 1; font-size: 13px; color: #555;">
-                        <strong>Products:</strong> ${productNames} (${totalQuantity} items)
-                    </div>
-                    ${order.deliveryDate ? `
-                        <div style="font-size: 11px; color: #28a745; white-space: nowrap; margin-right: 10px;">
-                            ✅ Delivered: ${new Date(order.deliveryDate).toLocaleDateString()}
+                    return `<div class="order-card" style="margin-bottom: 12px;">
+                        <div class="order-header">
+                            <div class="order-id">#${order.orderId}</div>
+                            <div class="order-date">${new Date(order.createdAt).toLocaleDateString()}</div>
                         </div>
-                    ` : ''}
-                    <span class="status-badge status-${order.status}">${order.status}</span>
-                </div>
-                
-                ${order.deliveryFile ? `
-                <div style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                    <strong style="font-size: 13px; color: #333; display: block; margin-bottom: 6px;">📄 Delivery Information:</strong>
-                    <div style="font-size: 12px; color: #666; line-height: 1.6;">${order.deliveryFile.replace(/\n/g, '<br>')}</div>
-                </div>
-                ` : ''}
-                
-                ${order.attachedFiles && order.attachedFiles.length > 0 ? `
-                <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                    <strong style="font-size: 13px; color: #333; display: block; margin-bottom: 8px;">📎 Files (${order.attachedFiles.length}):</strong>
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
-                        ${order.attachedFiles.map(file => `
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
-                                <div style="flex: 1; min-width: 0;">
-                                    <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📄 ${file.name}</div>
-                                    <div style="font-size: 11px; color: #666;">${(file.size / 1024).toFixed(2)} KB</div>
-                                </div>
-                                <button style="padding: 5px 12px; font-size: 11px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; white-space: nowrap; margin-left: 10px;" 
-                                    onmouseover="this.style.background='#5568d3'" 
-                                    onmouseout="this.style.background='#667eea'" 
-                                    onclick="downloadAttachedFile('${order.orderId}', '${file.name}')">
-                                    📥 Download
-                                </button>
+                        <div style="flex: 1; font-size: 13px; color: #555;">
+                            <strong>Products:</strong> ${productNames} (${totalQuantity} items)
+                        </div>
+                        ${order.deliveryDate ? `
+                            <div style="font-size: 11px; color: #28a745; white-space: nowrap; margin-right: 10px;">
+                                ✅ Delivered: ${new Date(order.deliveryDate).toLocaleDateString()}
                             </div>
-                        `).join('')}
+                        ` : ''}
+                        <span class="status-badge status-${order.status}">${order.status}</span>
                     </div>
-                </div>
-                ` : ''}
-                
-                ${!order.deliveryFile && (!order.attachedFiles || order.attachedFiles.length === 0) ? `
-                <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 10px; margin-bottom: 12px;">
-                    <strong style="color: #856404; font-size: 12px;">⏳ Waiting for Delivery</strong>
-                </div>
-                ` : ''}`;
-            }).join('');
+                    
+                    ${order.deliveryFile ? `
+                    <div style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                        <strong style="font-size: 13px; color: #333; display: block; margin-bottom: 6px;">📄 Delivery Information:</strong>
+                        <div style="font-size: 12px; color: #666; line-height: 1.6;">${order.deliveryFile.replace(/\n/g, '<br>')}</div>
+                    </div>
+                    ` : ''}
+                    
+                    ${order.attachedFiles && order.attachedFiles.length > 0 ? `
+                    <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                        <strong style="font-size: 13px; color: #333; display: block; margin-bottom: 8px;">📎 Files (${order.attachedFiles.length}):</strong>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            ${order.attachedFiles.map(file => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📄 ${file.name}</div>
+                                        <div style="font-size: 11px; color: #666;">${(file.size / 1024).toFixed(2)} KB</div>
+                                    </div>
+                                    <button style="padding: 5px 12px; font-size: 11px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; white-space: nowrap; margin-left: 10px;" 
+                                        onmouseover="this.style.background='#5568d3'" 
+                                        onmouseout="this.style.background='#667eea'" 
+                                        onclick="downloadAttachedFile('${order.orderId}', '${file.name}')">
+                                        📥 Download
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    ${!order.deliveryFile && (!order.attachedFiles || order.attachedFiles.length === 0) ? `
+                    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+                        <strong style="color: #856404; font-size: 12px;">⏳ Waiting for Delivery</strong>
+                    </div>
+                    ` : ''}`;
+                }).join('');
 
-            // Use safe HTML rendering to prevent XSS
-            safeSetInnerHTML(container, downloadsHTML, true);
+                // Use safe HTML rendering to prevent XSS
+                safeSetInnerHTML(container, downloadsHTML, true);
+                console.log('✅ Downloads loaded successfully');
 
-            // Remove duplicate line that was causing issues
-            // container.innerHTML = downloadsHTML;
+            } catch (error) {
+                console.error('❌ Error loading downloads:', error);
+                const container = document.getElementById("downloadsContainer");
+                if (container) {
+                    safeSetInnerHTML(container, `<div class="empty-state" style="color: #dc3545;">
+                        <div style="font-size: 48px;">⚠️</div>
+                        <h3>Error Loading Downloads</h3>
+                        <p>${error.message}</p>
+                    </div>`, true);
+                }
+            }
         }
 
         function downloadAttachedFile(orderId, fileName) {
@@ -1513,33 +1568,56 @@
             console.log('📢 loadNotifications called for user:', currentUser?.email);
             
             try {
-                const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-                const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
+                if (!currentUser || !currentUser.email) {
+                    console.error('❌ Current user not available');
+                    return;
+                }
 
-                // Get admin notifications - filter by email (case-insensitive)
+                // Normalize current user email
+                const normalizedUserEmail = currentUser.email.toLowerCase().trim();
+
+                const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
+                const userOrders = allOrders.filter(order => 
+                    order.customer && 
+                    order.customer.email &&
+                    order.customer.email.toLowerCase().trim() === normalizedUserEmail
+                );
+
+                // Get ALL admin notifications - filter by email (case-insensitive)
                 const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
                 
                 // Debug: Show all admin notifications
                 console.log('📊 Total admin notifications in system:', adminNotifications.length);
+                console.log('🔍 Looking for notifications with email:', normalizedUserEmail);
+                
                 if (adminNotifications.length > 0) {
-                    console.log('Sample notifications:', adminNotifications.slice(0, 3).map(n => ({
+                    console.log('Sample notifications:', adminNotifications.slice(0, 5).map(n => ({
                         id: n.id,
                         email: n.email,
-                        title: n.title
+                        normalizedEmail: n.email ? n.email.toLowerCase().trim() : 'NO_EMAIL',
+                        title: n.title,
+                        message: n.message
                     })));
                 }
 
+                // Filter notifications for current user (with robust email matching)
                 const userAdminNotifs = adminNotifications.filter(n => {
-                    const match = n.email && n.email.toLowerCase() === (currentUser?.email || '').toLowerCase();
-                    if (!match && n.email) {
-                        console.log(`⚠️ Email mismatch: "${n.email}" !== "${currentUser?.email}"`);
+                    if (!n.email) {
+                        console.warn('⚠️ Notification missing email:', n);
+                        return false;
+                    }
+                    const normalizedNotifEmail = n.email.toLowerCase().trim();
+                    const match = normalizedNotifEmail === normalizedUserEmail;
+                    
+                    if (!match) {
+                        console.log(`⚠️ Email mismatch: "${normalizedNotifEmail}" !== "${normalizedUserEmail}"`);
                     }
                     return match;
                 });
 
-                console.log('Loading notifications for:', currentUser.email);
+                console.log('Loading notifications for:', normalizedUserEmail);
                 console.log('✅ Admin notifications found for this user:', userAdminNotifs.length);
-                console.log('✅ Order notifications found:', userOrders.length);
+                console.log('✅ User orders found:', userOrders.length);
 
                 // Generate order-based notifications with more detail
                 const orderNotifications = userOrders.map(order => {
@@ -1841,66 +1919,129 @@
 
 
         function loadOrders() {
-            const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-            const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
+            console.log('📋 loadOrders called for user:', currentUser?.email);
+            
+            try {
+                if (!currentUser || !currentUser.email) {
+                    console.error('❌ Current user not available');
+                    return;
+                }
 
-            const container = document.getElementById("ordersContainer");
+                const normalizedUserEmail = currentUser.email.toLowerCase().trim();
+                const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
+                
+                console.log('📊 Total orders in system:', allOrders.length);
+                
+                // Filter orders for current user (with robust email matching)
+                const userOrders = allOrders.filter(order => {
+                    if (!order.customer || !order.customer.email) {
+                        console.warn('⚠️ Order missing customer/email:', order);
+                        return false;
+                    }
+                    const normalizedOrderEmail = order.customer.email.toLowerCase().trim();
+                    const match = normalizedOrderEmail === normalizedUserEmail;
+                    
+                    if (!match) {
+                        console.log(`⚠️ Order email mismatch: "${normalizedOrderEmail}" !== "${normalizedUserEmail}"`);
+                    }
+                    return match;
+                });
 
-            if (userOrders.length === 0) {
-                safeSetInnerHTML(container, `<div class="empty-state">
-                    <div style="font-size: 64px; opacity: 0.3;">📦</div>
-                    <h3>No Orders Yet</h3>
-                    <p>Your orders will appear here.</p>
-                </div>`, true);
-                return;
+                console.log('✅ Orders found for this user:', userOrders.length);
+
+                const container = document.getElementById("ordersContainer");
+
+                if (userOrders.length === 0) {
+                    safeSetInnerHTML(container, `<div class="empty-state">
+                        <div style="font-size: 64px; opacity: 0.3;">📦</div>
+                        <h3>No Orders Yet</h3>
+                        <p>Your orders will appear here once you make a purchase.</p>
+                    </div>`, true);
+                    return;
+                }
+
+                // Sort orders by date (newest first)
+                userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                const ordersHTML = userOrders.map(order => {
+                    const productNames = order.items.map(item => `${item.name} (x${item.quantity})`).join(', ');
+                    const totalAmount = order.totals ? order.totals.tot : (order.total || 0);
+
+                    return `<div class="order-card">
+                        <div class="order-header">
+                            <div class="order-id">#${order.orderId}</div>
+                            <div class="order-date">${new Date(order.createdAt).toLocaleDateString()}</div>
+                        </div>
+                        <div style="flex: 1; font-size: 13px; color: #555;">
+                            <strong>Products:</strong> ${productNames}
+                        </div>
+                        <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
+                            <strong>Total:</strong> $${totalAmount.toFixed(2)}
+                        </div>
+                        <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
+                            <strong>Payment:</strong> ${order.paymentMethod === 'cod' ? 'COD' : (order.paymentMethod || 'N/A')}
+                        </div>
+                        <span class="status-badge status-${order.status}">${order.status}</span>
+                    </div>`;
+                }).join('');
+
+                safeSetInnerHTML(container, ordersHTML, true);
+                console.log('✅ Orders loaded and displayed:', userOrders.length);
+                
+            } catch (error) {
+                console.error('❌ Error loading orders:', error);
+                const container = document.getElementById("ordersContainer");
+                if (container) {
+                    safeSetInnerHTML(container, `<div class="empty-state" style="color: #dc3545;">
+                        <div style="font-size: 48px;">⚠️</div>
+                        <h3>Error Loading Orders</h3>
+                        <p>${error.message}</p>
+                    </div>`, true);
+                }
             }
-
-            // Sort orders by date (newest first)
-            userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-            const ordersHTML = userOrders.map(order => {
-                const productNames = order.items.map(item => `${item.name} (x${item.quantity})`).join(', ');
-
-                return `<div class="order-card">
-                    <div class="order-header">
-                        <div class="order-id">#${order.orderId}</div>
-                        <div class="order-date">${new Date(order.createdAt).toLocaleDateString()}</div>
-                    </div>
-                    <div style="flex: 1; font-size: 13px; color: #555;">
-                        <strong>Products:</strong> ${productNames}
-                    </div>
-                    <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
-                        <strong>Total:</strong> $${order.totals.tot.toFixed(2)}
-                    </div>
-                    <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
-                        <strong>Payment:</strong> ${order.paymentMethod === 'cod' ? 'COD' : order.paymentMethod}
-                    </div>
-                    <span class="status-badge status-${order.status}">${order.status}</span>
-                </div>`;
-            }).join('');
-
-            safeSetInnerHTML(container, ordersHTML, true);
         }
 
         function loadTracking() {
-            const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-            const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
+            console.log('🚚 loadTracking called for user:', currentUser?.email);
+            
+            try {
+                if (!currentUser || !currentUser.email) {
+                    console.error('❌ Current user not available');
+                    return;
+                }
 
-            const container = document.getElementById("trackingContainer");
+                const normalizedUserEmail = currentUser.email.toLowerCase().trim();
+                const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
+                
+                console.log('📊 Total orders in system:', allOrders.length);
 
-            if (userOrders.length === 0) {
-                safeSetInnerHTML(container, `<div class="empty-state">
-                    <div style="font-size: 64px; opacity: 0.3;">🚚</div>
-                    <h3>No Orders to Track</h3>
-                    <p>Your order tracking information will appear here once you place an order.</p>
-                </div>`, true);
-                return;
-            }
+                // Filter orders for current user (with robust email matching)
+                const userOrders = allOrders.filter(order => {
+                    if (!order.customer || !order.customer.email) {
+                        console.warn('⚠️ Order missing customer/email:', order);
+                        return false;
+                    }
+                    const normalizedOrderEmail = order.customer.email.toLowerCase().trim();
+                    return normalizedOrderEmail === normalizedUserEmail;
+                });
 
-            // Sort orders by date (newest first)
-            userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                console.log('✅ Orders found for tracking:', userOrders.length);
 
-            const trackingHTML = userOrders.map(order => {
+                const container = document.getElementById("trackingContainer");
+
+                if (userOrders.length === 0) {
+                    safeSetInnerHTML(container, `<div class="empty-state">
+                        <div style="font-size: 64px; opacity: 0.3;">🚚</div>
+                        <h3>No Orders to Track</h3>
+                        <p>Your order tracking information will appear here once you place an order.</p>
+                    </div>`, true);
+                    return;
+                }
+
+                // Sort orders by date (newest first)
+                userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                const trackingHTML = userOrders.map(order => {
                 // Define tracking stages with progressive activation based on order status
                 const orderStatus = order.status.toLowerCase();
                 
@@ -1987,7 +2128,7 @@
                         <strong>Products:</strong> ${productNames} (${totalQuantity} items)
                     </div>
                     <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
-                        <strong>Total:</strong> $${order.totals.tot.toFixed(2)}
+                        <strong>Total:</strong> $${(order.totals ? order.totals.tot : (order.total || 0)).toFixed(2)}
                     </div>
                     <span class="status-badge status-${order.status}">${order.status}</span>
                 </div>
@@ -2030,6 +2171,19 @@
             }).join('');
 
             safeSetInnerHTML(container, trackingHTML, true);
+            console.log('✅ Tracking loaded successfully:', userOrders.length);
+            
+            } catch (error) {
+                console.error('❌ Error loading tracking:', error);
+                const container = document.getElementById("trackingContainer");
+                if (container) {
+                    safeSetInnerHTML(container, `<div class="empty-state" style="color: #dc3545;">
+                        <div style="font-size: 48px;">⚠️</div>
+                        <h3>Error Loading Tracking</h3>
+                        <p>${error.message}</p>
+                    </div>`, true);
+                }
+            }
         }
 
         function loadAccountInfo() {
