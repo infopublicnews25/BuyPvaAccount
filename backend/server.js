@@ -624,7 +624,14 @@ app.delete('/api/admin/orders/:orderId', authenticateAdmin, (req, res) => {
 
     try {
         const orders = readAllOrders();
-        const idx = orders.findIndex(o => String(o.orderId) === String(orderId));
+        const needle = String(orderId);
+        const idx = orders.findIndex(o => {
+            if (!o) return false;
+            const candidates = [o.orderId, o.id, o.order_number, o.orderNumber, o.orderNo]
+                .filter(v => v !== undefined && v !== null)
+                .map(v => String(v));
+            return candidates.includes(needle);
+        });
         if (idx === -1) return res.status(404).json({ success: false, message: 'Order not found' });
 
         const removed = orders.splice(idx, 1)[0];
@@ -632,7 +639,7 @@ app.delete('/api/admin/orders/:orderId', authenticateAdmin, (req, res) => {
         if (!ok) return res.status(500).json({ success: false, message: 'Failed to persist deletion' });
 
         // Log admin action
-        logAdminAction('delete_order', { orderId, customerEmail: removed.customer?.email }, req.adminUser || 'admin');
+        logAdminAction('delete_order', { orderId, customerEmail: removed.customer?.email || removed.email }, req.adminUser || 'admin');
 
         console.log(`🗑️ Order deleted: ${orderId}`);
         return res.json({ success: true, message: 'Order deleted', order: removed, orders });
