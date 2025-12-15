@@ -1332,14 +1332,34 @@
                         return;
                     }
 
+                    // Get the old status before updating
+                    let oldStatus = 'pending';
+                    const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+                    const oldOrder = orders.find(o => o.orderId === orderId);
+                    if (oldOrder) {
+                        oldStatus = oldOrder.status;
+                    }
+
                     // Update local copy in localStorage if backend returned orders
                     if (data.orders && Array.isArray(data.orders)) {
-                        try { 
-                            localStorage.setItem('all_orders', JSON.stringify(data.orders));
+                        try {
+                            // Add status history to all orders that were updated
+                            const updatedOrders = data.orders.map(order => {
+                                if (order.orderId === orderId) {
+                                    if (!order.statusHistory) order.statusHistory = [];
+                                    order.statusHistory.push({
+                                        from: oldStatus,
+                                        to: newStatus,
+                                        timestamp: new Date().toISOString()
+                                    });
+                                }
+                                return order;
+                            });
+                            localStorage.setItem('all_orders', JSON.stringify(updatedOrders));
                             // Trigger storage event for other tabs/windows and current tab
                             window.dispatchEvent(new StorageEvent('storage', {
                                 key: 'all_orders',
-                                newValue: JSON.stringify(data.orders),
+                                newValue: JSON.stringify(updatedOrders),
                                 oldValue: null
                             }));
                         } catch (e) { /* ignore */ }
@@ -1347,7 +1367,15 @@
                         // Update single order in localStorage array
                         const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
                         const idx = orders.findIndex(o => o.orderId === data.order.orderId);
-                        if (idx !== -1) orders[idx] = data.order;
+                        if (idx !== -1) {
+                            if (!orders[idx].statusHistory) orders[idx].statusHistory = [];
+                            orders[idx].statusHistory.push({
+                                from: oldStatus,
+                                to: newStatus,
+                                timestamp: new Date().toISOString()
+                            });
+                            orders[idx] = data.order;
+                        }
                         try { 
                             localStorage.setItem('all_orders', JSON.stringify(orders));
                             // Trigger storage event for both current and other tabs
@@ -1360,7 +1388,7 @@
                     }
 
                     // Create automatic notification locally as before
-                    try { createOrderStatusNotification(data.order || { orderId, customer: { email: '' } }, newStatus, null); } catch (e) {}
+                    try { createOrderStatusNotification(data.order || { orderId, customer: { email: '' } }, newStatus, oldStatus); } catch (e) {}
 
                     loadOrders();
                     alert('Order status updated successfully!');
@@ -1604,8 +1632,18 @@
 
             localStorage.setItem('all_orders', JSON.stringify(orders));
             
+            // Dispatch event to notify other windows/tabs
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'all_orders',
+                newValue: JSON.stringify(orders),
+                oldValue: null
+            }));
+            
             // Create automatic notification for delivery
             createDeliveryNotification(orders[orderIndex], attachedFiles.length);
+            
+            // Dispatch notification event
+            window.dispatchEvent(new Event('notificationsUpdated'));
             
             alert('✅ Delivery file sent successfully!');
             closeSendDeliveryModal();
@@ -1676,6 +1714,16 @@
 
             // Save to localStorage
             localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+            
+            // Dispatch event to notify other windows/tabs
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'admin_notifications',
+                newValue: JSON.stringify(notifications),
+                oldValue: null
+            }));
+            
+            // Also dispatch custom event
+            window.dispatchEvent(new Event('notificationsUpdated'));
 
             alert(`✅ Notification sent successfully to ${email}!`);
             

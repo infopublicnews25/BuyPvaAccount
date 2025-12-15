@@ -1113,7 +1113,26 @@
                     loadTracking();
                     loadOrders();
                     loadNotifications();
+                    loadDashboard();
                 }
+                if (e.key === 'admin_notifications') {
+                    console.log('📢 Admin notifications changed, refreshing...');
+                    loadNotifications();
+                }
+            });
+
+            // Also listen for local storage events from same tab using custom events
+            window.addEventListener('ordersUpdated', () => {
+                console.log('📢 Orders updated event received');
+                loadTracking();
+                loadOrders();
+                loadNotifications();
+                loadDashboard();
+            });
+
+            window.addEventListener('notificationsUpdated', () => {
+                console.log('📢 Notifications updated event received');
+                loadNotifications();
             });
         });
 
@@ -1751,6 +1770,22 @@
                 const productNames = order.items.map(item => item.name).join(', ');
                 const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
+                // Get status history if available
+                const statusHistory = order.statusHistory || [];
+                const statusHistoryHTML = statusHistory.length > 0 ? `
+                    <div style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-top: 12px;">
+                        <strong style="font-size: 12px; color: #666; display: block; margin-bottom: 8px;">📋 Status History:</strong>
+                        <div style="font-size: 12px;">
+                            ${statusHistory.map(hist => `
+                                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #e0e0e0;">
+                                    <span style="color: #666;">${hist.from || 'Initial'} → <strong style="color: #333;">${hist.to}</strong></span>
+                                    <span style="color: #999;">${new Date(hist.timestamp).toLocaleString()}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : '';
+
                 return `<div class="order-card">
                     <div class="order-header">
                         <div class="order-id">#${order.orderId}</div>
@@ -1770,7 +1805,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
                         ${stages.map((stage, index) => `
                             <div style="flex: 1; text-align: center; position: relative; z-index: 2;">
-                                <div style="width: 40px; height: 40px; margin: 0 auto 6px; border-radius: 50%; background: ${stage.active ? '#667eea' : '#e0e0e0'}; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 2px solid ${stage.isCurrent ? '#28a745' : 'white'};">
+                                <div style="width: 40px; height: 40px; margin: 0 auto 6px; border-radius: 50%; background: ${stage.active ? '#667eea' : '#e0e0e0'}; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 2px solid ${stage.isCurrent ? '#28a745' : 'white'}; box-shadow: ${stage.isCurrent ? '0 0 0 4px rgba(40, 167, 69, 0.2)' : 'none'};">
                                     ${stage.icon}
                                 </div>
                                 <div style="font-size: 11px; font-weight: 600; color: ${stage.active ? '#333' : '#999'};">
@@ -1782,19 +1817,23 @@
                             ` : ''}
                         `).join('')}
                     </div>
+                    ${statusHistoryHTML}
                 </div>
                 ` : isCancelled ? `
                 <div style="background: #fee; border: 1px solid #dc3545; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
                     <strong style="color: #dc3545;">❌ Order Cancelled</strong>
                 </div>
+                ${statusHistoryHTML}
                 ` : isRefunded ? `
                 <div style="background: #f0f0f0; border: 1px solid #6c757d; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
                     <strong style="color: #6c757d;">💰 Order Refunded</strong>
                 </div>
+                ${statusHistoryHTML}
                 ` : `
                 <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
                     <strong style="color: #856404;">⏸️ Order On Hold</strong>
                 </div>
+                ${statusHistoryHTML}
                 `}`;
             }).join('');
 
