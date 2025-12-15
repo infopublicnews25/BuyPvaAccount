@@ -420,6 +420,91 @@ app.delete('/api/admin/users/:username', authenticateAdmin, (req, res) => {
     }
 });
 
+// ========== REGISTERED USERS (CUSTOMERS) MANAGEMENT (ADMIN ONLY) ==========
+
+app.get('/api/admin/registered-users', authenticateAdmin, (req, res) => {
+    try {
+        const users = readAllUsers();
+        return res.json({ success: true, users });
+    } catch (error) {
+        console.error('Error fetching registered users:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch registered users' });
+    }
+});
+
+app.put('/api/admin/registered-users/:identifier', authenticateAdmin, (req, res) => {
+    const identifierRaw = req.params.identifier;
+    const identifier = String(identifierRaw || '');
+
+    try {
+        const users = readAllUsers();
+        const needleLower = identifier.toLowerCase();
+        const idx = users.findIndex(u => {
+            if (!u) return false;
+            const email = String(u.email || '').toLowerCase();
+            const token = String(u.userToken || '');
+            const id = String(u.id || '');
+            return (email && email === needleLower) || (token && token === identifier) || (id && id === identifier);
+        });
+
+        if (idx === -1) return res.status(404).json({ success: false, message: 'User not found' });
+
+        const incoming = req.body || {};
+        const current = users[idx];
+
+        // Allow updating these fields only (preserve auth/token/password hashes)
+        const nextUser = {
+            ...current,
+            fullName: incoming.fullName !== undefined ? String(incoming.fullName) : current.fullName,
+            name: incoming.name !== undefined ? String(incoming.name) : current.name,
+            phone: incoming.phone !== undefined ? String(incoming.phone) : current.phone,
+            email: incoming.email !== undefined ? String(incoming.email) : current.email,
+            country: incoming.country !== undefined ? String(incoming.country) : current.country,
+            extra: incoming.extra !== undefined ? String(incoming.extra) : current.extra,
+            role: incoming.role !== undefined ? String(incoming.role) : current.role
+        };
+
+        users[idx] = nextUser;
+        const ok = writeAllUsers(users);
+        if (!ok) return res.status(500).json({ success: false, message: 'Failed to persist user update' });
+
+        logAdminAction('update_registered_user', { identifier, email: nextUser.email }, req.adminUser || 'admin');
+        return res.json({ success: true, user: nextUser, users });
+    } catch (error) {
+        console.error('Error updating registered user:', error);
+        return res.status(500).json({ success: false, message: 'Failed to update registered user' });
+    }
+});
+
+app.delete('/api/admin/registered-users/:identifier', authenticateAdmin, (req, res) => {
+    const identifierRaw = req.params.identifier;
+    const identifier = String(identifierRaw || '');
+
+    try {
+        const users = readAllUsers();
+        const needleLower = identifier.toLowerCase();
+        const idx = users.findIndex(u => {
+            if (!u) return false;
+            const email = String(u.email || '').toLowerCase();
+            const token = String(u.userToken || '');
+            const id = String(u.id || '');
+            return (email && email === needleLower) || (token && token === identifier) || (id && id === identifier);
+        });
+
+        if (idx === -1) return res.status(404).json({ success: false, message: 'User not found' });
+
+        const removed = users.splice(idx, 1)[0];
+        const ok = writeAllUsers(users);
+        if (!ok) return res.status(500).json({ success: false, message: 'Failed to persist deletion' });
+
+        logAdminAction('delete_registered_user', { identifier, email: removed?.email }, req.adminUser || 'admin');
+        return res.json({ success: true, message: 'User deleted', user: removed, users });
+    } catch (error) {
+        console.error('Error deleting registered user:', error);
+        return res.status(500).json({ success: false, message: 'Failed to delete registered user' });
+    }
+});
+
 // ========== ADMIN ORDERS ENDPOINTS ==========
 
 // Get all orders (admin only)

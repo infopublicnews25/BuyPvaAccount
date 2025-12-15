@@ -152,9 +152,37 @@
     // Authentication will be checked below before showing any content
 
     async function loadUsers() {
+      // If admin is logged in, prefer fetching from backend (authoritative & uncached)
+      try {
+        const token = localStorage.getItem('admin_auth_token') || localStorage.getItem('admin_auth');
+        if (token) {
+          const apiResp = await fetch(CONFIG.API + '/admin/registered-users', {
+            method: 'GET',
+            headers: {
+              'Authorization': 'Bearer ' + token,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (apiResp.ok) {
+            const apiData = await apiResp.json();
+            if (apiData && apiData.success && Array.isArray(apiData.users)) {
+              users = apiData.users;
+              try { localStorage.setItem('registered_users', JSON.stringify(users)); } catch(e) {}
+              console.log('Loaded users from backend API');
+              renderList();
+              showEmptyDetail();
+              return;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Backend users fetch failed, falling back to file/localStorage', e);
+      }
+
       // Try to fetch the file (only works when served over HTTP)
       try {
-        const resp = await fetch('registered_users.json');
+        const resp = await fetch('registered_users.json?v=' + Date.now());
         if (resp.ok) {
           users = await resp.json();
           localStorage.setItem('registered_users', JSON.stringify(users));
@@ -276,10 +304,10 @@
       try { localStorage.setItem('registered_users', JSON.stringify(users)); } catch(e){}
 
       // Try to save to backend (admin protected). If admin token present, send PUT
-      const token = localStorage.getItem('admin_auth');
+      const token = localStorage.getItem('admin_auth_token') || localStorage.getItem('admin_auth');
       const csrfToken = localStorage.getItem('admin_csrf_token');
       if (token) {
-        fetch(CONFIG.API + '/admin/users/' + encodeURIComponent(u.email), {
+        fetch(CONFIG.API + '/admin/registered-users/' + encodeURIComponent(u.email), {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json', 
@@ -314,17 +342,29 @@
       selectedIndex = -1;
       try { localStorage.setItem('registered_users', JSON.stringify(users)); } catch(e){}
       // Attempt server delete if token
-      const token = localStorage.getItem('admin_auth');
+      const token = localStorage.getItem('admin_auth_token') || localStorage.getItem('admin_auth');
       if (token) {
         const csrfToken = localStorage.getItem('admin_csrf_token');
-        fetch(CONFIG.API + '/admin/users/' + encodeURIComponent(u.email), { 
+        fetch(CONFIG.API + '/admin/registered-users/' + encodeURIComponent(u.email), { 
           method: 'DELETE', 
           headers: { 
             'Authorization':'Bearer '+token,
             'X-CSRF-Token': csrfToken
           } 
         })
-          .then(r=>r.json()).then(res=>{ if (res && res.success) alert('Deleted on server'); else alert('Deleted locally'); renderList(); showEmptyDetail(); }).catch(()=>{ alert('Deleted locally (server unreachable)'); renderList(); showEmptyDetail(); });
+          .then(r=>r.json()).then(res=>{
+            if (res && res.success) {
+              if (Array.isArray(res.users)) {
+                users = res.users;
+                try { localStorage.setItem('registered_users', JSON.stringify(users)); } catch(e) {}
+              }
+              alert('Deleted on server');
+            } else {
+              alert('Deleted locally');
+            }
+            renderList();
+            showEmptyDetail();
+          }).catch(()=>{ alert('Deleted locally (server unreachable)'); renderList(); showEmptyDetail(); });
       } else {
         alert('Deleted locally'); renderList(); showEmptyDetail();
       }
