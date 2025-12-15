@@ -741,7 +741,19 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
                 });
-                const data = await res.json();
+                const raw = await res.text();
+                let data;
+                try {
+                    data = raw ? JSON.parse(raw) : {};
+                } catch {
+                    data = { success: false, message: raw || `Request failed (${res.status})` };
+                }
+
+                if (res.status === 429 && !data.success) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.textContent = data.message || 'Too many login attempts. Please try again later.';
+                    return;
+                }
 
                 if (data.success) {
                     // Check access status before allowing login
