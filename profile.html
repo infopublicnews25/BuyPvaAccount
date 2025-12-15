@@ -942,7 +942,7 @@
                     <button class="sidebar-menu-item" onclick="showTab('dashboard')">
                         🏠 Dashboard
                     </button>
-                    <button class="sidebar-menu-item" onclick="showTab('notifications')" id="notificationsMenuBtn">
+                    <button class="sidebar-menu-item" onclick="showTab('notifications')">
                         🔔 Notifications
                         <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
                     </button>
@@ -1048,462 +1048,259 @@
     <script>
         let currentUser = null;
 
-        // Auto-sync function to normalize emails and link orders
-        function autoSyncEmailsAndOrders() {
-            try {
-                // Normalize all emails to lowercase for consistent matching
-                const allOrders = JSON.parse(localStorage.getItem('all_orders') || '[]');
-                let ordersUpdated = false;
-                allOrders.forEach(order => {
-                    if (order.customer?.email) {
-                        const normalized = order.customer.email.toLowerCase();
-                        if (order.customer.email !== normalized) {
-                            order.customer.email = normalized;
-                            ordersUpdated = true;
-                        }
-                    }
-                });
-                if (ordersUpdated) {
-                    localStorage.setItem('all_orders', JSON.stringify(allOrders));
-                    console.log('✅ Orders emails normalized');
-                }
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Use secure storage for authentication data
+            currentUser = secureStorage.getSensitive('client_auth') ||
+                         secureStorage.get('client_auth') ||
+                         JSON.parse(localStorage.getItem('client_auth') || 'null');
 
-                // Normalize notification emails
-                const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
-                let notifsUpdated = false;
-                adminNotifications.forEach(notif => {
-                    if (notif.email) {
-                        const normalized = notif.email.toLowerCase();
-                        if (notif.email !== normalized) {
-                            notif.email = normalized;
-                            notifsUpdated = true;
-                        }
-                    }
-                });
-                if (notifsUpdated) {
-                    localStorage.setItem('admin_notifications', JSON.stringify(adminNotifications));
-                    console.log('✅ Notifications emails normalized');
-                }
-
-                // Link orders to notifications
-                adminNotifications.forEach(notif => {
-                    if (notif.orderId && !notif.linkedOrder) {
-                        const order = allOrders.find(o => o.orderId === notif.orderId);
-                        if (order) {
-                            notif.linkedOrder = {
-                                orderId: order.orderId,
-                                status: order.status,
-                                total: order.total,
-                                createdAt: order.createdAt
-                            };
-                        }
-                    }
-                });
-                if (adminNotifications.some(n => n.linkedOrder)) {
-                    localStorage.setItem('admin_notifications', JSON.stringify(adminNotifications));
-                    console.log('✅ Orders linked to notifications');
-                }
-
-            } catch (error) {
-                console.error('⚠️ Auto-sync error:', error);
+            if (!currentUser) {
+                alert('Please login first');
+                window.location.href = 'login.html';
+                return;
             }
-        }
 
-        // Initialize on page load with error handling
-        function initializeProfile() {
-            try {
-                console.log('🚀 initializeProfile starting...');
-                
-                // Use secure storage for authentication data
-                currentUser = secureStorage.getSensitive('client_auth') ||
-                             secureStorage.get('client_auth') ||
-                             JSON.parse(localStorage.getItem('client_auth') || 'null');
+            // Sync with users array to get all registration data
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const registeredUser = users.find(u => u.email === currentUser.email);
+            if (registeredUser) {
+                // Merge registration data with current user session
+                currentUser = { ...registeredUser, ...currentUser };
+                // Update secure storage with complete data
+                secureStorage.setSensitive('client_auth', currentUser);
+            }
 
-                if (!currentUser) {
-                    console.error('❌ No user found, redirecting to login');
-                    alert('Please login first');
-                    window.location.href = 'login.html';
-                    return;
+            // Load all sections
+            loadLeftSidebar();  // Load sidebar first to display user info
+            loadDashboard();
+            loadNotifications();
+            loadOrders();
+            loadTracking();
+            loadDownloads();
+            loadAccountInfo();
+            
+            // Set initial active menu item (Dashboard)
+            const firstMenuItem = document.querySelector('.sidebar-menu-item');
+            if (firstMenuItem) {
+                firstMenuItem.classList.add('active');
+            }
+
+            // Auto-sync tracking with ordermanagement changes
+            // Refresh tracking every 3 seconds to catch any order status updates
+            setInterval(() => {
+                if (document.querySelector('#tracking.active')) {
+                    loadTracking();
                 }
+            }, 3000);
 
-                console.log('✅ User authenticated:', currentUser.email);
-
-                // Normalize current user email
-                if (currentUser.email) {
-                    currentUser.email = currentUser.email.toLowerCase();
+            // Also refresh orders every 5 seconds
+            setInterval(() => {
+                if (document.querySelector('#orders.active')) {
+                    loadOrders();
                 }
+            }, 5000);
 
-                // AUTO-SYNC: Normalize all emails and link orders
-                autoSyncEmailsAndOrders();
+            // Also refresh notifications every 4 seconds
+            setInterval(() => {
+                loadNotifications();
+            }, 4000);
 
-                // Sync with users array to get all registration data
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
-                const registeredUser = users.find(u => u.email === currentUser.email);
-                if (registeredUser) {
-                    // Merge registration data with current user session
-                    currentUser = { ...registeredUser, ...currentUser };
-                    // Update secure storage with complete data
-                    secureStorage.setSensitive('client_auth', currentUser);
-                    console.log('✅ User data synced from registration');
-                }
-
-                // Load all sections with error handling
-                console.log('🔄 Loading all sections...');
-                
-                setTimeout(() => loadLeftSidebar(), 0);  // Load sidebar first to display user info
-                setTimeout(() => loadDashboard(), 50);
-                setTimeout(() => loadNotifications(), 100);  // Load notifications early
-                setTimeout(() => loadOrders(), 150);
-                setTimeout(() => loadTracking(), 200);
-                setTimeout(() => loadDownloads(), 250);
-                setTimeout(() => loadAccountInfo(), 300);
-                
-                console.log('✅ All sections queued for loading');
-                
-                // Set initial active menu item (Dashboard) after slight delay
-                setTimeout(() => {
-                    const dashboardBtn = document.querySelector('[onclick*="showTab(\'dashboard\')"]');
-                    if (dashboardBtn) {
-                        dashboardBtn.classList.add('active');
-                        const dashboardTab = document.getElementById('dashboard');
-                        if (dashboardTab) {
-                            dashboardTab.classList.add('active');
-                        }
-                        console.log('✅ Dashboard tab set as active');
-                    } else {
-                        console.warn('⚠️ Dashboard button not found');
-                    }
-                }, 100);
-
-                // Auto-sync tracking with ordermanagement changes
-                // Refresh tracking every 3 seconds to catch any order status updates
-                setInterval(() => {
-                    if (document.querySelector('#tracking.active')) {
-                        loadTracking();
-                    }
-                }, 3000);
-
-                // Also refresh orders every 5 seconds
-                setInterval(() => {
-                    if (document.querySelector('#orders.active')) {
-                        loadOrders();
-                    }
-                }, 5000);
-
-                // Also refresh notifications every 4 seconds (ALWAYS, not just when tab is active)
-                setInterval(() => {
-                    try {
-                        loadNotifications();
-                    } catch (e) {
-                        console.error('Error auto-refreshing notifications:', e);
-                    }
-                }, 4000);
-
-                // Listen for storage changes from other tabs/windows (admin changes)
-                window.addEventListener('storage', (e) => {
-                    console.log('📦 Storage event detected:', e.key);
-                    if (e.key === 'all_orders') {
-                        console.log('📢 Order status changed detected from admin, updating all sections...');
-                        loadTracking();
-                        loadOrders();
-                        loadNotifications();
-                        loadDashboard();
-                    }
-                    if (e.key === 'admin_notifications') {
-                        console.log('📢 Admin notifications changed, refreshing...');
-                        loadNotifications();
-                    }
-                });
-
-                // Also listen for local storage events from same tab using custom events
-                window.addEventListener('ordersUpdated', () => {
-                    console.log('📢 Orders updated event received');
+            // Listen for storage changes from other tabs/windows (admin changes)
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'all_orders') {
+                    console.log('📢 Order status changed detected from admin, updating all sections...');
                     loadTracking();
                     loadOrders();
                     loadNotifications();
                     loadDashboard();
-                });
-
-                window.addEventListener('notificationsUpdated', () => {
-                    console.log('📢 Notifications updated event received');
+                }
+                if (e.key === 'admin_notifications') {
+                    console.log('📢 Admin notifications changed, refreshing...');
                     loadNotifications();
-                });
+                }
+            });
 
-                console.log('✅ Profile initialization complete');
-                
-            } catch (error) {
-                console.error('❌ Error during profile initialization:', error);
-                alert('Error loading profile. Please refresh the page.');
-            }
-        }
+            // Also listen for local storage events from same tab using custom events
+            window.addEventListener('ordersUpdated', () => {
+                console.log('📢 Orders updated event received');
+                loadTracking();
+                loadOrders();
+                loadNotifications();
+                loadDashboard();
+            });
 
-        // Multiple ways to trigger initialization
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeProfile);
-        } else {
-            // Page already loaded
-            initializeProfile();
-        }
-
-        // Also trigger on window load as fallback
-        window.addEventListener('load', () => {
-            if (!currentUser) {
-                console.log('🔄 Page fully loaded, triggering initialization...');
-                initializeProfile();
-            }
+            window.addEventListener('notificationsUpdated', () => {
+                console.log('📢 Notifications updated event received');
+                loadNotifications();
+            });
         });
 
         function showTab(tabName) {
-            console.log('🔄 showTab called with:', tabName);
-            
-            try {
-                // Hide all tab contents and remove active class
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.classList.remove('active');
-                });
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
 
-                // Remove active class from all sidebar menu items
-                document.querySelectorAll('.sidebar-menu-item').forEach(btn => {
-                    btn.classList.remove('active');
-                });
+            // Remove active class from all sidebar menu items
+            document.querySelectorAll('.sidebar-menu-item').forEach(btn => {
+                btn.classList.remove('active');
+            });
 
-                // Show selected tab content by ID
-                const tabContent = document.getElementById(tabName);
-                if (tabContent) {
-                    tabContent.classList.add('active');
-                    console.log('✅ Tab activated:', tabName);
-                } else {
-                    console.error('❌ Tab not found:', tabName);
-                    return false;
-                }
+            // Show selected tab content
+            const tabContent = document.getElementById(tabName);
+            if (tabContent) {
+                tabContent.classList.add('active');
+            }
 
-                // Mark the clicked button as active
-                // Find button with onclick containing this tabName
-                const buttons = document.querySelectorAll('.sidebar-menu-item');
-                let found = false;
-                
-                for (let btn of buttons) {
-                    const onclick = btn.getAttribute('onclick');
-                    if (onclick && onclick.includes(`showTab('${tabName}')`)) {
-                        btn.classList.add('active');
-                        console.log('✅ Menu button activated:', btn.textContent.trim());
-                        found = true;
-                        break;
-                    }
-                }
-                
-                if (!found) {
-                    console.warn('⚠️ Menu button not found for tab:', tabName);
-                }
+            // Add active class to clicked sidebar menu item
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
 
-                // Reload specific content when switching tabs
-                console.log('🔄 Loading content for tab:', tabName);
-                
-                if (tabName === 'account') {
-                    loadAccountInfo();
-                } else if (tabName === 'dashboard') {
-                    loadDashboard();
-                } else if (tabName === 'notifications') {
-                    loadNotifications();
-                } else if (tabName === 'orders') {
-                    loadOrders();
-                } else if (tabName === 'tracking') {
-                    loadTracking();
-                } else if (tabName === 'downloads') {
-                    loadDownloads();
-                }
-                
-                console.log('✅ Tab content loaded:', tabName);
-                return true;
-                
-            } catch (error) {
-                console.error('❌ Error in showTab:', error);
-                return false;
+            // Reload specific content when switching tabs
+            if (tabName === 'account') {
+                loadAccountInfo(); // Refresh user information
+            } else if (tabName === 'dashboard') {
+                loadDashboard(); // Refresh dashboard stats
+            } else if (tabName === 'notifications') {
+                loadNotifications(); // Refresh notifications
+            } else if (tabName === 'orders') {
+                loadOrders(); // Refresh order history
+            } else if (tabName === 'tracking') {
+                loadTracking(); // Refresh tracking info
+            } else if (tabName === 'downloads') {
+                loadDownloads(); // Refresh downloads
             }
         }
 
         function loadDashboard() {
-            console.log('📊 loadDashboard called for user:', currentUser?.email);
-            
-            try {
-                if (!currentUser || !currentUser.email) {
-                    console.error('❌ Current user not available');
-                    return;
-                }
+            const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
+            const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
 
-                const normalizedUserEmail = currentUser.email.toLowerCase().trim();
-                const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-                
-                // Filter orders for current user (with robust email matching)
-                const userOrders = allOrders.filter(order => {
-                    if (!order.customer || !order.customer.email) return false;
-                    return order.customer.email.toLowerCase().trim() === normalizedUserEmail;
-                });
+            const totalOrders = userOrders.length;
+            const completedOrders = userOrders.filter(o => o.status === 'completed').length;
+            const processingOrders = userOrders.filter(o => o.status === 'processing').length;
+            const cancelledOrders = userOrders.filter(o => o.status === 'cancelled').length;
+            const refundedOrders = userOrders.filter(o => o.status === 'refunded').length;
+            const downloads = userOrders.filter(o => 
+                o.status === 'completed' && 
+                o.deliveryHidden !== true &&
+                (o.deliveryFile || (o.attachedFiles && o.attachedFiles.length > 0))
+            ).length;
 
-                const totalOrders = userOrders.length;
-                const completedOrders = userOrders.filter(o => o.status === 'completed').length;
-                const processingOrders = userOrders.filter(o => o.status === 'processing').length;
-                const cancelledOrders = userOrders.filter(o => o.status === 'cancelled').length;
-                const refundedOrders = userOrders.filter(o => o.status === 'refunded').length;
-                const downloads = userOrders.filter(o => 
-                    o.status === 'completed' && 
-                    o.deliveryHidden !== true &&
-                    (o.deliveryFile || (o.attachedFiles && o.attachedFiles.length > 0))
-                ).length;
-
-                console.log('Dashboard stats:', {
-                    totalOrders,
-                    completedOrders,
-                    processingOrders,
-                    cancelledOrders,
-                    refundedOrders,
-                    downloads
-                });
-
-                // Update top row cards
-                const totalOrdersEl = document.getElementById('totalOrders');
-                const completedOrdersEl = document.getElementById('completedOrders');
-                const processingOrdersEl = document.getElementById('processingOrders');
-                const cancelledOrdersEl = document.getElementById('cancelledOrders');
-                const refundedOrdersEl = document.getElementById('refundedOrders');
-
-                if (totalOrdersEl) totalOrdersEl.textContent = totalOrders;
-                if (completedOrdersEl) completedOrdersEl.textContent = completedOrders;
-                if (processingOrdersEl) processingOrdersEl.textContent = processingOrders;
-                if (cancelledOrdersEl) cancelledOrdersEl.textContent = cancelledOrders;
-                if (refundedOrdersEl) refundedOrdersEl.textContent = refundedOrders;
-
-                console.log('✅ Dashboard updated successfully');
-                
-            } catch (error) {
-                console.error('❌ Error loading dashboard:', error);
-            }
+            // Update top row cards
+            document.getElementById('totalOrders').textContent = totalOrders;
+            document.getElementById('completedOrders').textContent = completedOrders;
+            document.getElementById('processingOrders').textContent = processingOrders;
+            document.getElementById('cancelledOrders').textContent = cancelledOrders;
+            document.getElementById('refundedOrders').textContent = refundedOrders;
         }
 
         function loadDownloads() {
-            console.log('Loading downloads for user:', currentUser?.email);
+            console.log('Loading downloads for user:', currentUser.email);
             
-            try {
-                if (!currentUser || !currentUser.email) {
-                    console.error('❌ Current user not available');
-                    return;
-                }
-
-                const normalizedUserEmail = currentUser.email.toLowerCase().trim();
-                const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-                console.log('Total orders in system:', allOrders.length);
+            const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
+            console.log('Total orders in system:', allOrders.length);
+            
+            // Filter orders that belong to this user
+            const myOrders = allOrders.filter(order => order.customer.email === currentUser.email);
+            console.log('My orders:', myOrders.length);
+            
+            // Filter orders that have delivery files (completed status recommended but not required)
+            const userOrders = myOrders.filter(order => {
+                const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0);
+                const notHidden = order.deliveryHidden !== true;
+                const isCompleted = order.status.toLowerCase() === "completed";
                 
-                // Filter orders that belong to this user
-                const myOrders = allOrders.filter(order => {
-                    if (!order.customer || !order.customer.email) return false;
-                    return order.customer.email.toLowerCase().trim() === normalizedUserEmail;
-                });
-                console.log('My orders:', myOrders.length);
-                
-                // Filter orders that have delivery files (completed status recommended but not required)
-                const userOrders = myOrders.filter(order => {
-                    const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0);
-                    const notHidden = order.deliveryHidden !== true;
-                    const isCompleted = order.status.toLowerCase() === "completed";
-                    
-                    console.log(`Order ${order.orderId}:`, {
-                        status: order.status,
-                        hasDeliveryFile,
-                        notHidden,
-                        isCompleted,
-                        deliveryFile: order.deliveryFile ? '✓' : '✗',
-                        attachedFilesCount: order.attachedFiles ? order.attachedFiles.length : 0
-                    });
-                    
-                    // Show if has delivery files and not hidden (prefer completed orders)
-                    return hasDeliveryFile && notHidden;
+                console.log(`Order ${order.orderId}:`, {
+                    status: order.status,
+                    hasDeliveryFile,
+                    notHidden,
+                    isCompleted,
+                    deliveryFile: order.deliveryFile,
+                    attachedFilesCount: order.attachedFiles ? order.attachedFiles.length : 0
                 });
                 
-                console.log('Orders with delivery files:', userOrders.length);
+                // Show if has delivery files and not hidden (prefer completed orders)
+                return hasDeliveryFile && notHidden;
+            });
+            
+            console.log('Orders with delivery files:', userOrders.length);
 
-                const container = document.getElementById("downloadsContainer");
+            const container = document.getElementById("downloadsContainer");
 
-                if (userOrders.length === 0) {
-                    safeSetInnerHTML(container, `<div class="empty-state">
-                        <div style="font-size: 64px; opacity: 0.3;">📥</div>
-                        <h3>No Downloads Available</h3>
-                        <p>Once your order is completed and the admin sends delivery files, they will appear here for download.</p>
-                    </div>`, true);
-                    return;
-                }
-
-                const downloadsHTML = userOrders.map(order => {
-                    const productNames = order.items.map(item => item.name).join(', ');
-                    const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
-                    const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0);
-
-                    return `<div class="order-card" style="margin-bottom: 12px;">
-                        <div class="order-header">
-                            <div class="order-id">#${order.orderId}</div>
-                            <div class="order-date">${new Date(order.createdAt).toLocaleDateString()}</div>
-                        </div>
-                        <div style="flex: 1; font-size: 13px; color: #555;">
-                            <strong>Products:</strong> ${productNames} (${totalQuantity} items)
-                        </div>
-                        ${order.deliveryDate ? `
-                            <div style="font-size: 11px; color: #28a745; white-space: nowrap; margin-right: 10px;">
-                                ✅ Delivered: ${new Date(order.deliveryDate).toLocaleDateString()}
-                            </div>
-                        ` : ''}
-                        <span class="status-badge status-${order.status}">${order.status}</span>
-                    </div>
-                    
-                    ${order.deliveryFile ? `
-                    <div style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                        <strong style="font-size: 13px; color: #333; display: block; margin-bottom: 6px;">📄 Delivery Information:</strong>
-                        <div style="font-size: 12px; color: #666; line-height: 1.6;">${order.deliveryFile.replace(/\n/g, '<br>')}</div>
-                    </div>
-                    ` : ''}
-                    
-                    ${order.attachedFiles && order.attachedFiles.length > 0 ? `
-                    <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                        <strong style="font-size: 13px; color: #333; display: block; margin-bottom: 8px;">📎 Files (${order.attachedFiles.length}):</strong>
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
-                            ${order.attachedFiles.map(file => `
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
-                                    <div style="flex: 1; min-width: 0;">
-                                        <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📄 ${file.name}</div>
-                                        <div style="font-size: 11px; color: #666;">${(file.size / 1024).toFixed(2)} KB</div>
-                                    </div>
-                                    <button style="padding: 5px 12px; font-size: 11px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; white-space: nowrap; margin-left: 10px;" 
-                                        onmouseover="this.style.background='#5568d3'" 
-                                        onmouseout="this.style.background='#667eea'" 
-                                        onclick="downloadAttachedFile('${order.orderId}', '${file.name}')">
-                                        📥 Download
-                                    </button>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-                    
-                    ${!order.deliveryFile && (!order.attachedFiles || order.attachedFiles.length === 0) ? `
-                    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 10px; margin-bottom: 12px;">
-                        <strong style="color: #856404; font-size: 12px;">⏳ Waiting for Delivery</strong>
-                    </div>
-                    ` : ''}`;
-                }).join('');
-
-                // Use safe HTML rendering to prevent XSS
-                safeSetInnerHTML(container, downloadsHTML, true);
-                console.log('✅ Downloads loaded successfully');
-
-            } catch (error) {
-                console.error('❌ Error loading downloads:', error);
-                const container = document.getElementById("downloadsContainer");
-                if (container) {
-                    safeSetInnerHTML(container, `<div class="empty-state" style="color: #dc3545;">
-                        <div style="font-size: 48px;">⚠️</div>
-                        <h3>Error Loading Downloads</h3>
-                        <p>${error.message}</p>
-                    </div>`, true);
-                }
+            if (userOrders.length === 0) {
+                safeSetInnerHTML(container, `<div class="empty-state">
+                    <div style="font-size: 64px; opacity: 0.3;">📥</div>
+                    <h3>No Downloads Available</h3>
+                    <p>Once your order is completed and the admin sends delivery files, they will appear here for download.</p>
+                </div>`, true);
+                return;
             }
+
+            const downloadsHTML = userOrders.map(order => {
+                const productNames = order.items.map(item => item.name).join(', ');
+                const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+                const hasDeliveryFile = order.deliveryFile || (order.attachedFiles && order.attachedFiles.length > 0);
+
+                return `<div class="order-card" style="margin-bottom: 12px;">
+                    <div class="order-header">
+                        <div class="order-id">#${order.orderId}</div>
+                        <div class="order-date">${new Date(order.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <div style="flex: 1; font-size: 13px; color: #555;">
+                        <strong>Products:</strong> ${productNames} (${totalQuantity} items)
+                    </div>
+                    ${order.deliveryDate ? `
+                        <div style="font-size: 11px; color: #28a745; white-space: nowrap; margin-right: 10px;">
+                            ✅ Delivered: ${new Date(order.deliveryDate).toLocaleDateString()}
+                        </div>
+                    ` : ''}
+                    <span class="status-badge status-${order.status}">${order.status}</span>
+                </div>
+                
+                ${order.deliveryFile ? `
+                <div style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                    <strong style="font-size: 13px; color: #333; display: block; margin-bottom: 6px;">📄 Delivery Information:</strong>
+                    <div style="font-size: 12px; color: #666; line-height: 1.6;">${order.deliveryFile.replace(/\n/g, '<br>')}</div>
+                </div>
+                ` : ''}
+                
+                ${order.attachedFiles && order.attachedFiles.length > 0 ? `
+                <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                    <strong style="font-size: 13px; color: #333; display: block; margin-bottom: 8px;">📎 Files (${order.attachedFiles.length}):</strong>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        ${order.attachedFiles.map(file => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📄 ${file.name}</div>
+                                    <div style="font-size: 11px; color: #666;">${(file.size / 1024).toFixed(2)} KB</div>
+                                </div>
+                                <button style="padding: 5px 12px; font-size: 11px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; white-space: nowrap; margin-left: 10px;" 
+                                    onmouseover="this.style.background='#5568d3'" 
+                                    onmouseout="this.style.background='#667eea'" 
+                                    onclick="downloadAttachedFile('${order.orderId}', '${file.name}')">
+                                    📥 Download
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${!order.deliveryFile && (!order.attachedFiles || order.attachedFiles.length === 0) ? `
+                <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+                    <strong style="color: #856404; font-size: 12px;">⏳ Waiting for Delivery</strong>
+                </div>
+                ` : ''}`;
+            }).join('');
+
+            // Use safe HTML rendering to prevent XSS
+            safeSetInnerHTML(container, downloadsHTML, true);
+
+            // Remove duplicate line that was causing issues
+            // container.innerHTML = downloadsHTML;
         }
 
         function downloadAttachedFile(orderId, fileName) {
@@ -1565,230 +1362,163 @@
         }
 
         function loadNotifications() {
-            console.log('📢 loadNotifications called for user:', currentUser?.email);
+            const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
+            const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
+
+            // Get admin notifications - filter by email (not customerEmail)
+            const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+            const userAdminNotifs = adminNotifications.filter(n => 
+                n.email && n.email.toLowerCase() === currentUser.email.toLowerCase()
+            );
+
+            console.log('Loading notifications for:', currentUser.email);
+            console.log('Admin notifications found:', userAdminNotifs.length);
+            console.log('Order notifications found:', userOrders.length);
+
+            // Generate order-based notifications with more detail
+            const orderNotifications = userOrders.map(order => {
+                let icon = '📦';
+                let title = 'Order Update';
+                let message = '';
+
+                switch(order.status) {
+                    case 'completed':
+                        icon = '✅';
+                        title = 'Order Completed';
+                        message = `Your order #${order.orderId} has been completed successfully!`;
+                        break;
+                    case 'processing':
+                        icon = '⚙️';
+                        title = 'Order Processing';
+                        message = `Your order #${order.orderId} is being processed.`;
+                        break;
+                    case 'confirmed':
+                        icon = '✔️';
+                        title = 'Order Confirmed';
+                        message = `Your order #${order.orderId} has been confirmed.`;
+                        break;
+                    case 'cancelled':
+                        icon = '❌';
+                        title = 'Order Cancelled';
+                        message = `Your order #${order.orderId} has been cancelled.`;
+                        break;
+                    case 'refunded':
+                        icon = '💰';
+                        title = 'Order Refunded';
+                        message = `Your order #${order.orderId} has been refunded.`;
+                        break;
+                    case 'hold':
+                        icon = '⏸️';
+                        title = 'Order On Hold';
+                        message = `Your order #${order.orderId} is currently on hold.`;
+                        break;
+                    default:
+                        icon = '🆕';
+                        title = 'New Order';
+                        message = `Your order #${order.orderId} has been placed.`;
+                }
+
+                return {
+                    id: `order-${order.orderId}`,
+                    icon: icon,
+                    title: title,
+                    message: message,
+                    date: order.createdAt,
+                    type: 'order',
+                    orderId: order.orderId
+                };
+            });
+
+            // Combine all notifications
+            const allNotifications = [
+                ...userAdminNotifs.map(n => ({
+                    id: n.id || 'admin-' + Date.now(),
+                    icon: n.icon || '📢',
+                    title: n.title || 'Admin Message',
+                    message: n.message || 'You have a new message from admin.',
+                    date: n.sentDate || n.timestamp || new Date().toISOString(),
+                    type: 'admin',
+                    read: n.read || false
+                })),
+                ...orderNotifications
+            ];
+
+            // Get deleted notifications for this user
+            const deletedNotifications = JSON.parse(localStorage.getItem(`deleted_notifications_${currentUser.email}`) || "[]");
             
-            try {
-                if (!currentUser || !currentUser.email) {
-                    console.error('❌ Current user not available');
-                    return;
-                }
+            // Filter out deleted notifications
+            const visibleNotifications = allNotifications.filter(n => !deletedNotifications.includes(n.id));
 
-                // Normalize current user email
-                const normalizedUserEmail = currentUser.email.toLowerCase().trim();
+            // Sort by date (newest first)
+            visibleNotifications.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-                const userOrders = allOrders.filter(order => 
-                    order.customer && 
-                    order.customer.email &&
-                    order.customer.email.toLowerCase().trim() === normalizedUserEmail
-                );
+            // Get read notifications
+            const readNotifications = JSON.parse(localStorage.getItem(`read_notifications_${currentUser.email}`) || "[]");
 
-                // Get ALL admin notifications - filter by email (case-insensitive)
-                const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
-                
-                // Debug: Show all admin notifications
-                console.log('📊 Total admin notifications in system:', adminNotifications.length);
-                console.log('🔍 Looking for notifications with email:', normalizedUserEmail);
-                
-                if (adminNotifications.length > 0) {
-                    console.log('Sample notifications:', adminNotifications.slice(0, 5).map(n => ({
-                        id: n.id,
-                        email: n.email,
-                        normalizedEmail: n.email ? n.email.toLowerCase().trim() : 'NO_EMAIL',
-                        title: n.title,
-                        message: n.message
-                    })));
-                }
+            const container = document.getElementById("notificationsContainer");
 
-                // Filter notifications for current user (with robust email matching)
-                const userAdminNotifs = adminNotifications.filter(n => {
-                    if (!n.email) {
-                        console.warn('⚠️ Notification missing email:', n);
-                        return false;
-                    }
-                    const normalizedNotifEmail = n.email.toLowerCase().trim();
-                    const match = normalizedNotifEmail === normalizedUserEmail;
-                    
-                    if (!match) {
-                        console.log(`⚠️ Email mismatch: "${normalizedNotifEmail}" !== "${normalizedUserEmail}"`);
-                    }
-                    return match;
-                });
-
-                console.log('Loading notifications for:', normalizedUserEmail);
-                console.log('✅ Admin notifications found for this user:', userAdminNotifs.length);
-                console.log('✅ User orders found:', userOrders.length);
-
-                // Generate order-based notifications with more detail
-                const orderNotifications = userOrders.map(order => {
-                    let icon = '📦';
-                    let title = 'Order Update';
-                    let message = '';
-
-                    switch(order.status) {
-                        case 'completed':
-                            icon = '✅';
-                            title = 'Order Completed';
-                            message = `Your order #${order.orderId} has been completed successfully!`;
-                            break;
-                        case 'processing':
-                            icon = '⚙️';
-                            title = 'Order Processing';
-                            message = `Your order #${order.orderId} is being processed.`;
-                            break;
-                        case 'confirmed':
-                            icon = '✔️';
-                            title = 'Order Confirmed';
-                            message = `Your order #${order.orderId} has been confirmed.`;
-                            break;
-                        case 'cancelled':
-                            icon = '❌';
-                            title = 'Order Cancelled';
-                            message = `Your order #${order.orderId} has been cancelled.`;
-                            break;
-                        case 'refunded':
-                            icon = '💰';
-                            title = 'Order Refunded';
-                            message = `Your order #${order.orderId} has been refunded.`;
-                            break;
-                        case 'hold':
-                            icon = '⏸️';
-                            title = 'Order On Hold';
-                            message = `Your order #${order.orderId} is currently on hold.`;
-                            break;
-                        default:
-                            icon = '🆕';
-                            title = 'New Order';
-                            message = `Your order #${order.orderId} has been placed.`;
-                    }
-
-                    return {
-                        id: `order-${order.orderId}`,
-                        icon: icon,
-                        title: title,
-                        message: message,
-                        date: order.createdAt,
-                        type: 'order',
-                        orderId: order.orderId
-                    };
-                });
-
-                // Combine all notifications
-                const allNotifications = [
-                    ...userAdminNotifs.map(n => {
-                        // Include linked order info if available
-                        const linkedOrder = n.linkedOrder || (n.orderId ? 
-                            allOrders.find(o => o.orderId === n.orderId) : null);
-                        
-                        return {
-                            id: n.id || 'admin-' + Date.now(),
-                            icon: n.icon || '📢',
-                            title: n.title || 'Admin Message',
-                            message: n.message || 'You have a new message from admin.',
-                            date: n.sentDate || n.timestamp || new Date().toISOString(),
-                            type: 'admin',
-                            read: n.read || false,
-                            orderId: n.orderId,
-                            linkedOrder: linkedOrder // Add linked order details
-                        };
-                    }),
-                    ...orderNotifications
-                ];
-
-                // Get deleted notifications for this user
-                const deletedNotifications = JSON.parse(localStorage.getItem(`deleted_notifications_${currentUser.email}`) || "[]");
-                
-                // Filter out deleted notifications
-                const visibleNotifications = allNotifications.filter(n => !deletedNotifications.includes(n.id));
-
-                // Sort by date (newest first)
-                visibleNotifications.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                // Get read notifications
-                const readNotifications = JSON.parse(localStorage.getItem(`read_notifications_${currentUser.email}`) || "[]");
-
-                const container = document.getElementById("notificationsContainer");
-                
-                if (!container) {
-                    console.error('❌ notificationsContainer not found!');
-                    return;
-                }
-
-                if (visibleNotifications.length === 0) {
-                    safeSetInnerHTML(container, `<div class="empty-state">
-                        <div style="font-size: 64px; opacity: 0.3;">🔔</div>
-                        <h3>No Notifications</h3>
-                        <p>You have no notifications at the moment.</p>
-                    </div>`, true);
-                    const badge = document.getElementById('notificationBadge');
-                    if (badge) badge.style.display = 'none';
-                    console.log('✅ No notifications to display');
-                    return;
-                }
-
-                // Count unread notifications
-                const unreadCount = visibleNotifications.filter(n => !readNotifications.includes(n.id)).length;
+            if (visibleNotifications.length === 0) {
+                safeSetInnerHTML(container, `<div class="empty-state">
+                    <div style="font-size: 64px; opacity: 0.3;">🔔</div>
+                    <h3>No Notifications</h3>
+                    <p>You have no notifications at the moment.</p>
+                </div>`, true);
                 const badge = document.getElementById('notificationBadge');
-                if (badge) {
-                    if (unreadCount > 0) {
-                        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-                        badge.style.display = 'block';
-                    } else {
-                        badge.style.display = 'none';
-                    }
-                }
+                if (badge) badge.style.display = 'none';
+                return;
+            }
 
-                const notificationsHTML = visibleNotifications.map(notif => {
-                    const isRead = readNotifications.includes(notif.id);
-                    let badgeClass = 'badge-system';
-                    let badgeText = 'System';
-                    
-                    if (notif.type === 'admin') {
-                        badgeClass = 'badge-admin';
-                        badgeText = 'Admin Message';
-                    } else if (notif.type === 'order') {
-                        badgeClass = 'badge-order';
-                        badgeText = 'Order Update';
-                    }
-
-                    return `<div class="notification-item ${isRead ? 'read' : 'unread'}" onclick="markAsRead(this, '${notif.id}')">
-                        <button class="notification-delete-btn" onclick="event.stopPropagation(); deleteNotification('${notif.id}', '${notif.type}')" title="Delete notification">×</button>
-                        <div class="notification-header">
-                            <span class="notification-icon">${notif.icon}</span>
-                            <div class="notification-content">
-                                <div class="notification-title">
-                                    ${notif.title}
-                                    ${!isRead ? '<span class="notification-unread-badge">NEW</span>' : ''}
-                                    <span class="notification-type-badge ${badgeClass}">${badgeText}</span>
-                                    ${notif.orderId ? `
-                                    <button class="notif-action-btn primary" onclick="event.stopPropagation(); showTab('tracking')">
-                                        📦 Track Order
-                                    </button>
-                                    <button class="notif-action-btn secondary" onclick="event.stopPropagation(); showTab('orders')">
-                                        📋 View Orders
-                                    </button>
-                                    ` : ''}
-                                    <span class="notification-time">${getTimeAgo(notif.date)}</span>
-                                </div>
-                                <div class="notification-message">${notif.message}</div>
-                            </div>
-                        </div>
-                    </div>`;
-                }).join('');
-
-                safeSetInnerHTML(container, notificationsHTML, true);
-                console.log('✅ Notifications loaded successfully:', visibleNotifications.length);
-            } catch (error) {
-                console.error('❌ Error loading notifications:', error);
-                const container = document.getElementById("notificationsContainer");
-                if (container) {
-                    safeSetInnerHTML(container, `<div class="empty-state" style="color: #dc3545;">
-                        <div style="font-size: 48px;">⚠️</div>
-                        <h3>Error Loading Notifications</h3>
-                        <p>${error.message}</p>
-                    </div>`, true);
+            // Count unread notifications
+            const unreadCount = visibleNotifications.filter(n => !readNotifications.includes(n.id)).length;
+            const badge = document.getElementById('notificationBadge');
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
                 }
             }
+
+            const notificationsHTML = visibleNotifications.map(notif => {
+                const isRead = readNotifications.includes(notif.id);
+                let badgeClass = 'badge-system';
+                let badgeText = 'System';
+                
+                if (notif.type === 'admin') {
+                    badgeClass = 'badge-admin';
+                    badgeText = 'Admin Message';
+                } else if (notif.type === 'order') {
+                    badgeClass = 'badge-order';
+                    badgeText = 'Order Update';
+                }
+
+                return `<div class="notification-item ${isRead ? 'read' : 'unread'}" onclick="markAsRead(this, '${notif.id}')">
+                    <button class="notification-delete-btn" onclick="event.stopPropagation(); deleteNotification('${notif.id}', '${notif.type}')" title="Delete notification">×</button>
+                    <div class="notification-header">
+                        <span class="notification-icon">${notif.icon}</span>
+                        <div class="notification-content">
+                            <div class="notification-title">
+                                ${notif.title}
+                                ${!isRead ? '<span class="notification-unread-badge">NEW</span>' : ''}
+                                <span class="notification-type-badge ${badgeClass}">${badgeText}</span>
+                                ${notif.orderId ? `
+                                <button class="notif-action-btn primary" onclick="event.stopPropagation(); showTab('tracking')">
+                                    📦 Track Order
+                                </button>
+                                <button class="notif-action-btn secondary" onclick="event.stopPropagation(); showTab('orders')">
+                                    📋 View Orders
+                                </button>
+                                ` : ''}
+                                <span class="notification-time">${getTimeAgo(notif.date)}</span>
+                            </div>
+                            <div class="notification-message">${notif.message}</div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            safeSetInnerHTML(container, notificationsHTML, true);
         }
 
         function getTimeAgo(timestamp) {
@@ -1919,129 +1649,66 @@
 
 
         function loadOrders() {
-            console.log('📋 loadOrders called for user:', currentUser?.email);
-            
-            try {
-                if (!currentUser || !currentUser.email) {
-                    console.error('❌ Current user not available');
-                    return;
-                }
+            const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
+            const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
 
-                const normalizedUserEmail = currentUser.email.toLowerCase().trim();
-                const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-                
-                console.log('📊 Total orders in system:', allOrders.length);
-                
-                // Filter orders for current user (with robust email matching)
-                const userOrders = allOrders.filter(order => {
-                    if (!order.customer || !order.customer.email) {
-                        console.warn('⚠️ Order missing customer/email:', order);
-                        return false;
-                    }
-                    const normalizedOrderEmail = order.customer.email.toLowerCase().trim();
-                    const match = normalizedOrderEmail === normalizedUserEmail;
-                    
-                    if (!match) {
-                        console.log(`⚠️ Order email mismatch: "${normalizedOrderEmail}" !== "${normalizedUserEmail}"`);
-                    }
-                    return match;
-                });
+            const container = document.getElementById("ordersContainer");
 
-                console.log('✅ Orders found for this user:', userOrders.length);
-
-                const container = document.getElementById("ordersContainer");
-
-                if (userOrders.length === 0) {
-                    safeSetInnerHTML(container, `<div class="empty-state">
-                        <div style="font-size: 64px; opacity: 0.3;">📦</div>
-                        <h3>No Orders Yet</h3>
-                        <p>Your orders will appear here once you make a purchase.</p>
-                    </div>`, true);
-                    return;
-                }
-
-                // Sort orders by date (newest first)
-                userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-                const ordersHTML = userOrders.map(order => {
-                    const productNames = order.items.map(item => `${item.name} (x${item.quantity})`).join(', ');
-                    const totalAmount = order.totals ? order.totals.tot : (order.total || 0);
-
-                    return `<div class="order-card">
-                        <div class="order-header">
-                            <div class="order-id">#${order.orderId}</div>
-                            <div class="order-date">${new Date(order.createdAt).toLocaleDateString()}</div>
-                        </div>
-                        <div style="flex: 1; font-size: 13px; color: #555;">
-                            <strong>Products:</strong> ${productNames}
-                        </div>
-                        <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
-                            <strong>Total:</strong> $${totalAmount.toFixed(2)}
-                        </div>
-                        <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
-                            <strong>Payment:</strong> ${order.paymentMethod === 'cod' ? 'COD' : (order.paymentMethod || 'N/A')}
-                        </div>
-                        <span class="status-badge status-${order.status}">${order.status}</span>
-                    </div>`;
-                }).join('');
-
-                safeSetInnerHTML(container, ordersHTML, true);
-                console.log('✅ Orders loaded and displayed:', userOrders.length);
-                
-            } catch (error) {
-                console.error('❌ Error loading orders:', error);
-                const container = document.getElementById("ordersContainer");
-                if (container) {
-                    safeSetInnerHTML(container, `<div class="empty-state" style="color: #dc3545;">
-                        <div style="font-size: 48px;">⚠️</div>
-                        <h3>Error Loading Orders</h3>
-                        <p>${error.message}</p>
-                    </div>`, true);
-                }
+            if (userOrders.length === 0) {
+                safeSetInnerHTML(container, `<div class="empty-state">
+                    <div style="font-size: 64px; opacity: 0.3;">📦</div>
+                    <h3>No Orders Yet</h3>
+                    <p>Your orders will appear here.</p>
+                </div>`, true);
+                return;
             }
+
+            // Sort orders by date (newest first)
+            userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            const ordersHTML = userOrders.map(order => {
+                const productNames = order.items.map(item => `${item.name} (x${item.quantity})`).join(', ');
+
+                return `<div class="order-card">
+                    <div class="order-header">
+                        <div class="order-id">#${order.orderId}</div>
+                        <div class="order-date">${new Date(order.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <div style="flex: 1; font-size: 13px; color: #555;">
+                        <strong>Products:</strong> ${productNames}
+                    </div>
+                    <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
+                        <strong>Total:</strong> $${order.totals.tot.toFixed(2)}
+                    </div>
+                    <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
+                        <strong>Payment:</strong> ${order.paymentMethod === 'cod' ? 'COD' : order.paymentMethod}
+                    </div>
+                    <span class="status-badge status-${order.status}">${order.status}</span>
+                </div>`;
+            }).join('');
+
+            safeSetInnerHTML(container, ordersHTML, true);
         }
 
         function loadTracking() {
-            console.log('🚚 loadTracking called for user:', currentUser?.email);
-            
-            try {
-                if (!currentUser || !currentUser.email) {
-                    console.error('❌ Current user not available');
-                    return;
-                }
+            const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
+            const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
 
-                const normalizedUserEmail = currentUser.email.toLowerCase().trim();
-                const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
-                
-                console.log('📊 Total orders in system:', allOrders.length);
+            const container = document.getElementById("trackingContainer");
 
-                // Filter orders for current user (with robust email matching)
-                const userOrders = allOrders.filter(order => {
-                    if (!order.customer || !order.customer.email) {
-                        console.warn('⚠️ Order missing customer/email:', order);
-                        return false;
-                    }
-                    const normalizedOrderEmail = order.customer.email.toLowerCase().trim();
-                    return normalizedOrderEmail === normalizedUserEmail;
-                });
+            if (userOrders.length === 0) {
+                safeSetInnerHTML(container, `<div class="empty-state">
+                    <div style="font-size: 64px; opacity: 0.3;">🚚</div>
+                    <h3>No Orders to Track</h3>
+                    <p>Your order tracking information will appear here once you place an order.</p>
+                </div>`, true);
+                return;
+            }
 
-                console.log('✅ Orders found for tracking:', userOrders.length);
+            // Sort orders by date (newest first)
+            userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-                const container = document.getElementById("trackingContainer");
-
-                if (userOrders.length === 0) {
-                    safeSetInnerHTML(container, `<div class="empty-state">
-                        <div style="font-size: 64px; opacity: 0.3;">🚚</div>
-                        <h3>No Orders to Track</h3>
-                        <p>Your order tracking information will appear here once you place an order.</p>
-                    </div>`, true);
-                    return;
-                }
-
-                // Sort orders by date (newest first)
-                userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-                const trackingHTML = userOrders.map(order => {
+            const trackingHTML = userOrders.map(order => {
                 // Define tracking stages with progressive activation based on order status
                 const orderStatus = order.status.toLowerCase();
                 
@@ -2128,7 +1795,7 @@
                         <strong>Products:</strong> ${productNames} (${totalQuantity} items)
                     </div>
                     <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
-                        <strong>Total:</strong> $${(order.totals ? order.totals.tot : (order.total || 0)).toFixed(2)}
+                        <strong>Total:</strong> $${order.totals.tot.toFixed(2)}
                     </div>
                     <span class="status-badge status-${order.status}">${order.status}</span>
                 </div>
@@ -2171,19 +1838,6 @@
             }).join('');
 
             safeSetInnerHTML(container, trackingHTML, true);
-            console.log('✅ Tracking loaded successfully:', userOrders.length);
-            
-            } catch (error) {
-                console.error('❌ Error loading tracking:', error);
-                const container = document.getElementById("trackingContainer");
-                if (container) {
-                    safeSetInnerHTML(container, `<div class="empty-state" style="color: #dc3545;">
-                        <div style="font-size: 48px;">⚠️</div>
-                        <h3>Error Loading Tracking</h3>
-                        <p>${error.message}</p>
-                    </div>`, true);
-                }
-            }
         }
 
         function loadAccountInfo() {

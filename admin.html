@@ -537,24 +537,6 @@
                     <h2>Settings</h2>
                 </div>
 
-                <!-- Test Notification Section -->
-                <div style="margin-bottom: 30px; padding: 24px; background: #e8f4f8; border-radius: 12px; border-left: 4px solid #2563eb;">
-                    <h3 style="margin-bottom: 16px;">🔔 Send Test Notification</h3>
-                    <p style="margin-bottom: 16px; color: #555;">Send a test notification to verify the notification system is working.</p>
-                    
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label>Customer Email</label>
-                        <input type="email" id="notificationEmail" placeholder="Enter customer email address" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%; max-width: 400px;">
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label>Message</label>
-                        <textarea id="notificationMessage" placeholder="Enter notification message" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%; max-width: 500px; height: 80px; font-family: inherit;"></textarea>
-                    </div>
-                    
-                    <button type="button" class="btn btn-info" onclick="sendTestNotification()" style="background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">Send Notification</button>
-                </div>
-
                 <!-- 2FA Settings -->
                 <div style="margin-bottom: 30px; padding: 24px; background: #f7fafc; border-radius: 12px;">
                     <h3 style="margin-bottom: 16px;">🔐 Two-Factor Authentication (2FA)</h3>
@@ -728,62 +710,6 @@
                 badge.style.display = 'none';
             }
         }
-
-        // Send test notification function
-        function sendTestNotification() {
-            const email = document.getElementById('notificationEmail').value.trim();
-            const message = document.getElementById('notificationMessage').value.trim();
-
-            if (!email) {
-                alert('❌ Please enter customer email address');
-                return;
-            }
-
-            if (!message) {
-                alert('❌ Please enter notification message');
-                return;
-            }
-
-            try {
-                // Create notification object
-                const notification = {
-                    id: 'TEST-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-                    email: email,
-                    icon: '📢',
-                    title: 'Test Notification',
-                    message: message,
-                    sentDate: new Date().toISOString(),
-                    timestamp: new Date().toISOString(),
-                    read: false,
-                    isTest: true
-                };
-
-                // Get existing notifications
-                const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
-                
-                // Add the new notification
-                notifications.push(notification);
-                localStorage.setItem('admin_notifications', JSON.stringify(notifications));
-
-                // Dispatch event to notify profile.html to refresh notifications
-                window.dispatchEvent(new CustomEvent('notificationsUpdated', {
-                    detail: { notification: notification }
-                }));
-
-                // Show success message
-                alert(`✅ Notification sent successfully!\n\n📧 To: ${email}\n📝 Message: ${message}`);
-
-                // Clear the form
-                document.getElementById('notificationEmail').value = '';
-                document.getElementById('notificationMessage').value = '';
-
-                console.log('✅ Test Notification sent:', notification);
-            } catch (error) {
-                console.error('❌ Error sending notification:', error);
-                alert('❌ Error sending notification: ' + error.message);
-            }
-        }
-
 
         window.onload = () => {
             const token = localStorage.getItem(AUTH_KEY);
