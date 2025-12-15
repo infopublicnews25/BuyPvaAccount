@@ -141,21 +141,24 @@ async function createUser(userData) {
 function getAllUsers() {
     try {
         let users = [];
-
-        // Get regular users
         if (fs.existsSync(USERS_FILE)) {
             users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
         }
 
-        // Add admin user
+        // Do NOT include the built-in admin credentials user in the list.
+        // That account is managed via admin-credentials.json and should not appear
+        // in the admin user management table.
         if (fs.existsSync(CREDENTIALS_FILE)) {
             const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf8'));
-            users.unshift({
-                username: credentials.username,
-                email: 'admin@buypvaaccount.com', // Default admin email
-                role: 'admin',
-                status: 'active',
-                lastLogin: credentials.lastLogin || null
+            const credUsername = String(credentials?.username || '').toLowerCase();
+            users = users.filter(u => {
+                const uName = String(u?.username || '').toLowerCase();
+                const uEmail = String(u?.email || '').toLowerCase();
+                const looksLikeCredShadow =
+                    uName && credUsername && uName === credUsername &&
+                    (uEmail === 'admin@buypvaaccount.com' || !uEmail) &&
+                    !u?.passwordHash;
+                return !looksLikeCredShadow;
             });
         }
 
@@ -168,8 +171,16 @@ function getAllUsers() {
 
 async function updateUser(username, userData) {
     try {
-        const users = getAllUsers();
-        const userIndex = users.findIndex(u => u.username === username);
+        // Never update the built-in credentials account via this endpoint.
+        if (fs.existsSync(CREDENTIALS_FILE)) {
+            const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf8'));
+            if (credentials && String(credentials.username) === String(username)) {
+                return { success: false, message: 'Default admin account must be updated via admin credentials' };
+            }
+        }
+
+        const users = fs.existsSync(USERS_FILE) ? JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')) : [];
+        const userIndex = users.findIndex(u => u && u.username === username);
 
         if (userIndex === -1) {
             return { success: false, message: 'User not found' };
@@ -205,8 +216,16 @@ async function updateUser(username, userData) {
 
 function deleteUser(username) {
     try {
-        const users = getAllUsers();
-        const filteredUsers = users.filter(u => u.username !== username);
+        // Never delete the built-in credentials account via this endpoint.
+        if (fs.existsSync(CREDENTIALS_FILE)) {
+            const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf8'));
+            if (credentials && String(credentials.username) === String(username)) {
+                return { success: false, message: 'Default admin account cannot be deleted' };
+            }
+        }
+
+        const users = fs.existsSync(USERS_FILE) ? JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')) : [];
+        const filteredUsers = users.filter(u => u && u.username !== username);
 
         if (filteredUsers.length === users.length) {
             return { success: false, message: 'User not found' };
