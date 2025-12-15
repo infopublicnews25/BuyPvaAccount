@@ -672,6 +672,7 @@
         const REQUESTS_KEY = 'account_requests';
         const DEFAULT_CATEGORIES = ['Gmail', 'Facebook', 'Instagram', 'Twitter', 'LinkedIn', 'YouTube', 'TikTok', 'Telegram', 'WhatsApp', 'Other'];
         let lastProductsHash = ''; // For tracking dashboard inventory changes
+        let cachedCategories = [];
 
         // Session timeout settings
         const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
@@ -1304,42 +1305,121 @@
         }
 
         // ========== CATEGORIES ==========
-        function loadCategories() {
-            const cats = JSON.parse(localStorage.getItem(CATEGORIES_KEY) || JSON.stringify(DEFAULT_CATEGORIES));
-            document.getElementById('categoriesList').innerHTML = cats.map(c => `
-        <span class="category-tag">${c} <button onclick="deleteCategory('${c}')">&times;</button></span>
-    `).join('');
+        async function fetchCategoriesFromServer() {
+            try {
+                const res = await fetch(`${API}/categories`, { cache: 'no-store' });
+                const data = await res.json();
+                if (data && data.success && Array.isArray(data.categories)) {
+                    return data.categories;
+                }
+            } catch (e) {
+                console.warn('Failed to fetch categories from server, using fallback.', e);
+            }
+
+            // Fallback (legacy): localStorage categories or defaults
+            try {
+                return JSON.parse(localStorage.getItem(CATEGORIES_KEY) || JSON.stringify(DEFAULT_CATEGORIES));
+            } catch {
+                return [...DEFAULT_CATEGORIES];
+            }
         }
 
-        function populateCategoryDropdown(selectedCategory = '') {
-            const cats = JSON.parse(localStorage.getItem(CATEGORIES_KEY) || JSON.stringify(DEFAULT_CATEGORIES));
+        async function loadCategories() {
+            const cats = await fetchCategoriesFromServer();
+            cachedCategories = Array.isArray(cats) ? cats : [];
+
+            document.getElementById('categoriesList').innerHTML = cachedCategories.map(c => {
+                const safeLabel = String(c);
+                return `\n        <span class="category-tag">${safeLabel} <button onclick='deleteCategory(${JSON.stringify(String(c))})'>&times;</button></span>`;
+            }).join('');
+
+            populateCategoryDropdown();
+        }
+
+        async function populateCategoryDropdown(selectedCategory = '') {
+            if (!Array.isArray(cachedCategories) || cachedCategories.length === 0) {
+                cachedCategories = await fetchCategoriesFromServer();
+            }
+
             const select = document.getElementById('productCategory');
+            const selectedLower = String(selectedCategory || '').toLowerCase();
+
             select.innerHTML = '<option value="">Select Category</option>' +
-                cats.map(c => `<option value="${c}" ${c === selectedCategory ? 'selected' : ''}>${c}</option>`).join('');
+                cachedCategories.map(c => {
+                    const value = String(c);
+                    const isSelected = value.toLowerCase() === selectedLower;
+                    return `<option value="${value}" ${isSelected ? 'selected' : ''}>${value}</option>`;
+                }).join('');
         }
 
-        function addCategory(e) {
+        async function addCategory(e) {
             e.preventDefault();
             const name = document.getElementById('newCategory').value.trim();
             if (!name) return alert('Please enter a category name');
 
-            const cats = JSON.parse(localStorage.getItem(CATEGORIES_KEY) || JSON.stringify(DEFAULT_CATEGORIES));
-            if (cats.includes(name)) return alert('Category already exists!');
+            try {
+                const res = await fetch(`${API}/categories`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name })
+                });
 
-            cats.push(name);
-            localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats));
-            document.getElementById('newCategory').value = '';
-            loadCategories();
-            alert('Category added successfully!');
+                const raw = await res.text();
+                let data;
+                try {
+                    data = raw ? JSON.parse(raw) : {};
+                } catch {
+                    data = { success: false, message: raw || `Request failed (${res.status})` };
+                }
+
+                if (!res.ok || !data.success) {
+                    return alert(data.message || 'Failed to add category');
+                }
+
+                document.getElementById('newCategory').value = '';
+                await loadCategories();
+                alert('Category added successfully!');
+            } catch (err) {
+                console.error('Error adding category:', err);
+                alert('Failed to add category');
+            }
         }
 
-        function deleteCategory(name) {
+        async function deleteCategory(name) {
             if (!confirm(`Delete category "${name}"?`)) return;
-            const cats = JSON.parse(localStorage.getItem(CATEGORIES_KEY) || JSON.stringify(DEFAULT_CATEGORIES));
-            if (cats.length <= 1) return alert('Cannot delete the last category!');
 
-            localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats.filter(c => c !== name)));
-            loadCategories();
+            try {
+                const current = Array.isArray(cachedCategories) ? cachedCategories : await fetchCategoriesFromServer();
+                if (current.length <= 1) return alert('Cannot delete the last category!');
+
+                const res = await fetch(`${API}/categories/${encodeURIComponent(name)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`
+                    }
+                });
+
+                const raw = await res.text();
+                let data;
+                try {
+                    data = raw ? JSON.parse(raw) : {};
+                } catch {
+                    data = { success: false, message: raw || `Request failed (${res.status})` };
+                }
+
+                if (!res.ok || !data.success) {
+                    return alert(data.message || 'Failed to delete category');
+                }
+
+                await loadCategories();
+                alert('Category deleted successfully!');
+            } catch (err) {
+                console.error('Error deleting category:', err);
+                alert('Failed to delete category');
+            }
         }
 
         // ========== 2FA FUNCTIONS ==========
