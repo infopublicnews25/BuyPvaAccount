@@ -9,7 +9,7 @@
     body{font-family:Segoe UI,Roboto,Arial;background:#f7f7fb;margin:0;color:#111}
     .wrap{max-width:1100px;margin:24px auto;padding:12px}
     .panel{display:flex;gap:16px}
-    .list{width:360px;background:#fff;border-radius:10px;padding:12px;border:1px solid #e6e9ee;min-height:440px}
+    .list{width:360px;background:#fff;border-radius:10px;padding:12px;border:1px solid #e6e9ee;min-height:440px;max-height:560px;display:flex;flex-direction:column}
     .details{flex:1;background:#fff;border-radius:10px;padding:16px;border:1px solid #e6e9ee;min-height:440px}
     .user-row{padding:10px;border-radius:8px;border:1px solid transparent;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
     .user-row:hover{background:#f3f4f6}
@@ -55,6 +55,9 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    /* Keep user list from growing endlessly: show ~9 items then scroll */
+    #usersList{overflow-y:auto;max-height:504px;padding-right:4px}
   </style>
 </head>
 <body>
