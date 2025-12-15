@@ -442,19 +442,6 @@
             font-size: 14px;
         }
 
-        .order-action-btn {
-            transition: all 0.3s ease;
-        }
-
-        .order-action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .order-action-btn:active {
-            transform: translateY(0);
-        }
-
         .status-badge {
             padding: 5px 15px;
             border-radius: 20px;
@@ -1100,20 +1087,24 @@
             }
 
             // Auto-sync tracking with ordermanagement changes
-            // Refresh tracking CONSTANTLY to catch any order status updates
+            // Refresh tracking every 3 seconds to catch any order status updates
             setInterval(() => {
-                loadTracking();  // Always refresh, not just when active
-            }, 1500);  // Refresh every 1.5 seconds for faster updates
+                if (document.querySelector('#tracking.active')) {
+                    loadTracking();
+                }
+            }, 3000);
 
-            // Also refresh orders constantly
+            // Also refresh orders every 5 seconds
             setInterval(() => {
-                loadOrders();  // Always refresh, not just when active
-            }, 2000);  // Refresh every 2 seconds
+                if (document.querySelector('#orders.active')) {
+                    loadOrders();
+                }
+            }, 5000);
 
-            // Also refresh notifications constantly
+            // Also refresh notifications every 4 seconds
             setInterval(() => {
                 loadNotifications();
-            }, 2000);  // Refresh every 2 seconds
+            }, 4000);
 
             // Listen for storage changes from other tabs/windows (admin changes)
             window.addEventListener('storage', (e) => {
@@ -1141,12 +1132,6 @@
 
             window.addEventListener('notificationsUpdated', () => {
                 console.log('📢 Notifications updated event received');
-                loadNotifications();
-            });
-            
-            // Listen for admin_notifications updates from ordermanagement.html
-            window.addEventListener('admin_notifications_updated', (e) => {
-                console.log('🔔 Admin notification update event received:', e.detail);
                 loadNotifications();
             });
         });
@@ -1377,44 +1362,86 @@
         }
 
         function loadNotifications() {
-            // Force refresh from localStorage - ensure we have latest data
-            // This fixes issues where tabs have different localStorage states
-            let adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
-            
-            // If admin_notifications is empty and it shouldn't be, try to fetch from other sources
-            console.log('🔍 Initial admin_notifications check - Count:', adminNotifications.length);
-            
-            const userEmail = currentUser.email.toLowerCase();
-            
-            // Debug: Show what's in admin_notifications
-            console.log('🔍 DEBUG - All admin notifications in localStorage:', adminNotifications);
-            console.log('🔍 DEBUG - Current user email:', userEmail);
-            console.log('🔍 DEBUG - Raw localStorage value:', localStorage.getItem('admin_notifications'));
-            
-            // Filter admin notifications by user's email
+            const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
+            const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
+
+            // Get admin notifications - filter by email (not customerEmail)
+            const adminNotifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
             const userAdminNotifs = adminNotifications.filter(n => 
-                n.email && n.email.toLowerCase() === userEmail
+                n.email && n.email.toLowerCase() === currentUser.email.toLowerCase()
             );
 
             console.log('Loading notifications for:', currentUser.email);
             console.log('Admin notifications found:', userAdminNotifs.length);
-            console.log('Admin notifications list:', userAdminNotifs);
+            console.log('Order notifications found:', userOrders.length);
 
-            // Convert admin notifications to display format
-            // This includes:
-            // 1. Automatic status change notifications (from ordermanagement.html)
-            // 2. Delivery notifications (from ordermanagement.html)
-            // 3. Manual admin notifications (from admin)
-            const allNotifications = userAdminNotifs.map(n => ({
-                id: n.id || 'admin-' + Date.now(),
-                icon: n.icon || '📢',
-                title: n.title || 'Admin Message',
-                message: n.message || 'You have a new message from admin.',
-                date: n.sentDate || n.timestamp || new Date().toISOString(),
-                type: 'admin',
-                read: n.read || false,
-                orderId: n.orderId || null
-            }));
+            // Generate order-based notifications with more detail
+            const orderNotifications = userOrders.map(order => {
+                let icon = '📦';
+                let title = 'Order Update';
+                let message = '';
+
+                switch(order.status) {
+                    case 'completed':
+                        icon = '✅';
+                        title = 'Order Completed';
+                        message = `Your order #${order.orderId} has been completed successfully!`;
+                        break;
+                    case 'processing':
+                        icon = '⚙️';
+                        title = 'Order Processing';
+                        message = `Your order #${order.orderId} is being processed.`;
+                        break;
+                    case 'confirmed':
+                        icon = '✔️';
+                        title = 'Order Confirmed';
+                        message = `Your order #${order.orderId} has been confirmed.`;
+                        break;
+                    case 'cancelled':
+                        icon = '❌';
+                        title = 'Order Cancelled';
+                        message = `Your order #${order.orderId} has been cancelled.`;
+                        break;
+                    case 'refunded':
+                        icon = '💰';
+                        title = 'Order Refunded';
+                        message = `Your order #${order.orderId} has been refunded.`;
+                        break;
+                    case 'hold':
+                        icon = '⏸️';
+                        title = 'Order On Hold';
+                        message = `Your order #${order.orderId} is currently on hold.`;
+                        break;
+                    default:
+                        icon = '🆕';
+                        title = 'New Order';
+                        message = `Your order #${order.orderId} has been placed.`;
+                }
+
+                return {
+                    id: `order-${order.orderId}`,
+                    icon: icon,
+                    title: title,
+                    message: message,
+                    date: order.createdAt,
+                    type: 'order',
+                    orderId: order.orderId
+                };
+            });
+
+            // Combine all notifications
+            const allNotifications = [
+                ...userAdminNotifs.map(n => ({
+                    id: n.id || 'admin-' + Date.now(),
+                    icon: n.icon || '📢',
+                    title: n.title || 'Admin Message',
+                    message: n.message || 'You have a new message from admin.',
+                    date: n.sentDate || n.timestamp || new Date().toISOString(),
+                    type: 'admin',
+                    read: n.read || false
+                })),
+                ...orderNotifications
+            ];
 
             // Get deleted notifications for this user
             const deletedNotifications = JSON.parse(localStorage.getItem(`deleted_notifications_${currentUser.email}`) || "[]");
@@ -1434,7 +1461,7 @@
                 safeSetInnerHTML(container, `<div class="empty-state">
                     <div style="font-size: 64px; opacity: 0.3;">🔔</div>
                     <h3>No Notifications</h3>
-                    <p>You will receive notifications here when orders are placed and status changes occur.</p>
+                    <p>You have no notifications at the moment.</p>
                 </div>`, true);
                 const badge = document.getElementById('notificationBadge');
                 if (badge) badge.style.display = 'none';
@@ -1455,22 +1482,15 @@
 
             const notificationsHTML = visibleNotifications.map(notif => {
                 const isRead = readNotifications.includes(notif.id);
-                let badgeClass = 'badge-admin';
-                let badgeText = 'Status Update';
+                let badgeClass = 'badge-system';
+                let badgeText = 'System';
                 
-                // Determine badge type
                 if (notif.type === 'admin') {
-                    // Check if it's a status change or delivery or manual
-                    if (notif.title && notif.title.includes('Status')) {
-                        badgeClass = 'badge-order';
-                        badgeText = 'Order Update';
-                    } else if (notif.title && notif.title.includes('Delivered')) {
-                        badgeClass = 'badge-order';
-                        badgeText = 'Delivery';
-                    } else {
-                        badgeClass = 'badge-admin';
-                        badgeText = 'Admin Message';
-                    }
+                    badgeClass = 'badge-admin';
+                    badgeText = 'Admin Message';
+                } else if (notif.type === 'order') {
+                    badgeClass = 'badge-order';
+                    badgeText = 'Order Update';
                 }
 
                 return `<div class="notification-item ${isRead ? 'read' : 'unread'}" onclick="markAsRead(this, '${notif.id}')">
@@ -1648,122 +1668,31 @@
 
             const ordersHTML = userOrders.map(order => {
                 const productNames = order.items.map(item => `${item.name} (x${item.quantity})`).join(', ');
-                
-                // Generate action buttons based on order status
-                let actionButtons = '';
-                const status = order.status.toLowerCase();
-                
-                if (status === 'pending') {
-                    actionButtons = `
-                        <button class="order-action-btn track-btn" onclick="event.stopPropagation(); showTab('tracking')" style="background: #667eea; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px; font-size: 12px; transition: all 0.3s;">
-                            📦 Track Order
-                        </button>
-                        <button class="order-action-btn cancel-btn" onclick="if(confirm('Cancel this order?')) cancelOrderRequest('${order.orderId}')" style="background: #f56565; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.3s;">
-                            ✕ Cancel
-                        </button>
-                    `;
-                } else if (status === 'confirmed') {
-                    actionButtons = `
-                        <button class="order-action-btn track-btn" onclick="event.stopPropagation(); showTab('tracking')" style="background: #667eea; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px; font-size: 12px; transition: all 0.3s;">
-                            📦 Track Order
-                        </button>
-                    `;
-                } else if (status === 'processing') {
-                    actionButtons = `
-                        <button class="order-action-btn track-btn" onclick="event.stopPropagation(); showTab('tracking')" style="background: #667eea; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px; font-size: 12px; transition: all 0.3s;">
-                            📦 Track Order
-                        </button>
-                    `;
-                } else if (status === 'completed') {
-                    actionButtons = `
-                        <button class="order-action-btn track-btn" onclick="event.stopPropagation(); showTab('tracking')" style="background: #667eea; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px; font-size: 12px; transition: all 0.3s;">
-                            📦 Track Order
-                        </button>
-                        <button class="order-action-btn download-btn" onclick="event.stopPropagation(); showTab('downloads')" style="background: #48bb78; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.3s;">
-                            📥 Downloads
-                        </button>
-                    `;
-                } else if (status === 'cancelled') {
-                    actionButtons = `
-                        <span style="color: #f56565; font-weight: 600; font-size: 12px;">Order Cancelled</span>
-                    `;
-                } else if (status === 'refunded') {
-                    actionButtons = `
-                        <span style="color: #ff9800; font-weight: 600; font-size: 12px;">Refund Processed</span>
-                    `;
-                } else if (status === 'hold') {
-                    actionButtons = `
-                        <span style="color: #ed8936; font-weight: 600; font-size: 12px;">Order On Hold</span>
-                    `;
-                }
 
-                return `<div class="order-card" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px;">
-                    <div style="flex: 1;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <div class="order-id" style="font-weight: 700; color: #2563eb; font-size: 14px;">#${order.orderId}</div>
-                            <div class="order-date" style="font-size: 12px; color: #666;">${new Date(order.createdAt).toLocaleDateString()}</div>
-                        </div>
-                        <div style="flex: 1; font-size: 13px; color: #555; margin-bottom: 8px;">
-                            <strong>Products:</strong> ${productNames}
-                        </div>
-                        <div style="display: flex; gap: 20px; font-size: 13px; color: #555; margin-bottom: 10px;">
-                            <div><strong>Total:</strong> $${order.totals.tot.toFixed(2)}</div>
-                            <div><strong>Payment:</strong> ${order.paymentMethod === 'cod' ? 'COD' : order.paymentMethod}</div>
-                        </div>
-                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                            <span class="status-badge status-${order.status}" style="padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600;">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
-                            ${actionButtons}
-                        </div>
+                return `<div class="order-card">
+                    <div class="order-header">
+                        <div class="order-id">#${order.orderId}</div>
+                        <div class="order-date">${new Date(order.createdAt).toLocaleDateString()}</div>
                     </div>
+                    <div style="flex: 1; font-size: 13px; color: #555;">
+                        <strong>Products:</strong> ${productNames}
+                    </div>
+                    <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
+                        <strong>Total:</strong> $${order.totals.tot.toFixed(2)}
+                    </div>
+                    <div style="font-size: 13px; color: #555; white-space: nowrap; margin-right: 10px;">
+                        <strong>Payment:</strong> ${order.paymentMethod === 'cod' ? 'COD' : order.paymentMethod}
+                    </div>
+                    <span class="status-badge status-${order.status}">${order.status}</span>
                 </div>`;
             }).join('');
 
             safeSetInnerHTML(container, ordersHTML, true);
         }
-        
-        // Function to request order cancellation
-        function cancelOrderRequest(orderId) {
-            const allOrders = JSON.parse(localStorage.getItem('all_orders') || '[]');
-            const order = allOrders.find(o => o.orderId === orderId);
-            
-            if (order && order.status === 'pending') {
-                order.status = 'cancelled';
-                localStorage.setItem('all_orders', JSON.stringify(allOrders));
-                
-                // Create notification for admin
-                const notification = {
-                    id: 'CANCEL-' + Date.now(),
-                    email: order.customer.email,
-                    icon: '❌',
-                    title: 'Order Cancelled by Customer',
-                    message: `Customer has cancelled order #${orderId}`,
-                    sentDate: new Date().toISOString(),
-                    orderId: orderId,
-                    type: 'cancellation'
-                };
-                
-                const adminNotifs = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
-                adminNotifs.push(notification);
-                localStorage.setItem('admin_notifications', JSON.stringify(adminNotifs));
-                
-                // Dispatch event to sync with admin
-                window.dispatchEvent(new CustomEvent('ordersUpdated'));
-                
-                alert('Order cancelled successfully');
-                loadOrders();
-            } else {
-                alert('This order cannot be cancelled. Only pending orders can be cancelled.');
-            }
-        }
 
         function loadTracking() {
             const allOrders = JSON.parse(localStorage.getItem("all_orders") || "[]");
             const userOrders = allOrders.filter(order => order.customer.email === currentUser.email);
-            
-            // Debug log to track updates
-            if (userOrders.length > 0) {
-                console.log('📊 Tracking updated:', userOrders.map(o => ({ id: o.orderId, status: o.status, lastUpdate: new Date().toLocaleTimeString() })));
-            }
 
             const container = document.getElementById("trackingContainer");
 

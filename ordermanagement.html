@@ -1387,24 +1387,8 @@
                         } catch (e) {}
                     }
 
-                    // Create automatic notification locally with proper order data
-                    // If data.order is not returned, get it from updated orders array
-                    let orderForNotif = data.order;
-                    if (!orderForNotif) {
-                        // Get order from localStorage with updated data
-                        const allOrders = JSON.parse(localStorage.getItem('all_orders') || '[]');
-                        orderForNotif = allOrders.find(o => o.orderId === orderId);
-                    }
-                    
-                    if (orderForNotif && orderForNotif.customer && orderForNotif.customer.email) {
-                        try { 
-                            createOrderStatusNotification(orderForNotif, newStatus, oldStatus); 
-                        } catch (e) {
-                            console.error('Error creating notification:', e);
-                        }
-                    } else {
-                        console.warn('Cannot create notification - missing order customer email', { orderId, orderForNotif });
-                    }
+                    // Create automatic notification locally as before
+                    try { createOrderStatusNotification(data.order || { orderId, customer: { email: '' } }, newStatus, oldStatus); } catch (e) {}
 
                     loadOrders();
                     alert('Order status updated successfully!');
@@ -1418,11 +1402,6 @@
         // Function to create automatic notification when order status changes
         function createOrderStatusNotification(order, newStatus, oldStatus) {
             const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
-            
-            // Debug: verify order has email
-            console.log('🔔 Creating notification - Order:', order);
-            console.log('🔔 Customer email:', order.customer?.email);
-            console.log('🔔 Status:', { oldStatus, newStatus });
             
             // Define notification details based on status
             let icon = '📦';
@@ -1487,34 +1466,9 @@
             
             // Add notification
             notifications.push(notification);
-            const jsonData = JSON.stringify(notifications);
-            localStorage.setItem('admin_notifications', jsonData);
+            localStorage.setItem('admin_notifications', JSON.stringify(notifications));
             
-            // Force a small delay and verify write was successful
-            setTimeout(() => {
-                const verify = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
-                console.log('✅ Auto-notification created:', notification);
-                console.log('✅ Total notifications in storage now:', verify.length);
-                console.log('✅ All notifications:', verify);
-                console.log('✅ Raw localStorage data length:', localStorage.getItem('admin_notifications')?.length);
-                
-                // Dispatch event to all tabs
-                window.dispatchEvent(new StorageEvent('storage', {
-                    key: 'admin_notifications',
-                    newValue: jsonData,
-                    oldValue: null,
-                    storageArea: localStorage
-                }));
-                
-                // Also dispatch custom event for same-tab listeners
-                window.dispatchEvent(new CustomEvent('admin_notifications_updated', {
-                    detail: { notification, totalCount: verify.length }
-                }));
-            }, 50);
-            
-                newValue: JSON.stringify(verify),
-                oldValue: null
-            }));
+            console.log('✅ Auto-notification created:', notification);
         }
 
         // Function to create automatic notification when delivery file is sent
