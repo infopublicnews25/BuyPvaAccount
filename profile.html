@@ -1109,110 +1109,155 @@
             }
         }
 
-        // Initialize on page load
-        window.addEventListener('DOMContentLoaded', () => {
-            // Use secure storage for authentication data
-            currentUser = secureStorage.getSensitive('client_auth') ||
-                         secureStorage.get('client_auth') ||
-                         JSON.parse(localStorage.getItem('client_auth') || 'null');
+        // Initialize on page load with error handling
+        function initializeProfile() {
+            try {
+                console.log('🚀 initializeProfile starting...');
+                
+                // Use secure storage for authentication data
+                currentUser = secureStorage.getSensitive('client_auth') ||
+                             secureStorage.get('client_auth') ||
+                             JSON.parse(localStorage.getItem('client_auth') || 'null');
 
-            if (!currentUser) {
-                alert('Please login first');
-                window.location.href = 'login.html';
-                return;
-            }
-
-            // Normalize current user email
-            if (currentUser.email) {
-                currentUser.email = currentUser.email.toLowerCase();
-            }
-
-            // AUTO-SYNC: Normalize all emails and link orders
-            autoSyncEmailsAndOrders();
-
-            // Sync with users array to get all registration data
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const registeredUser = users.find(u => u.email === currentUser.email);
-            if (registeredUser) {
-                // Merge registration data with current user session
-                currentUser = { ...registeredUser, ...currentUser };
-                // Update secure storage with complete data
-                secureStorage.setSensitive('client_auth', currentUser);
-            }
-
-            // Load all sections
-            console.log('🔄 Loading all sections...');
-            loadLeftSidebar();  // Load sidebar first to display user info
-            loadDashboard();
-            loadNotifications();  // Load notifications early
-            loadOrders();
-            loadTracking();
-            loadDownloads();
-            loadAccountInfo();
-            console.log('✅ All sections loaded');
-            
-            // Set initial active menu item (Dashboard)
-            const firstMenuItem = document.querySelector('.sidebar-menu-item');
-            if (firstMenuItem) {
-                firstMenuItem.classList.add('active');
-                console.log('✅ First menu item set as active');
-            }
-
-            // Auto-sync tracking with ordermanagement changes
-            // Refresh tracking every 3 seconds to catch any order status updates
-            setInterval(() => {
-                if (document.querySelector('#tracking.active')) {
-                    loadTracking();
+                if (!currentUser) {
+                    console.error('❌ No user found, redirecting to login');
+                    alert('Please login first');
+                    window.location.href = 'login.html';
+                    return;
                 }
-            }, 3000);
 
-            // Also refresh orders every 5 seconds
-            setInterval(() => {
-                if (document.querySelector('#orders.active')) {
-                    loadOrders();
+                console.log('✅ User authenticated:', currentUser.email);
+
+                // Normalize current user email
+                if (currentUser.email) {
+                    currentUser.email = currentUser.email.toLowerCase();
                 }
-            }, 5000);
 
-            // Also refresh notifications every 4 seconds
-            setInterval(() => {
-                loadNotifications();
-            }, 4000);
+                // AUTO-SYNC: Normalize all emails and link orders
+                autoSyncEmailsAndOrders();
 
-            // Listen for storage changes from other tabs/windows (admin changes)
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'all_orders') {
-                    console.log('📢 Order status changed detected from admin, updating all sections...');
+                // Sync with users array to get all registration data
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const registeredUser = users.find(u => u.email === currentUser.email);
+                if (registeredUser) {
+                    // Merge registration data with current user session
+                    currentUser = { ...registeredUser, ...currentUser };
+                    // Update secure storage with complete data
+                    secureStorage.setSensitive('client_auth', currentUser);
+                    console.log('✅ User data synced from registration');
+                }
+
+                // Load all sections with error handling
+                console.log('🔄 Loading all sections...');
+                
+                setTimeout(() => loadLeftSidebar(), 0);  // Load sidebar first to display user info
+                setTimeout(() => loadDashboard(), 50);
+                setTimeout(() => loadNotifications(), 100);  // Load notifications early
+                setTimeout(() => loadOrders(), 150);
+                setTimeout(() => loadTracking(), 200);
+                setTimeout(() => loadDownloads(), 250);
+                setTimeout(() => loadAccountInfo(), 300);
+                
+                console.log('✅ All sections queued for loading');
+                
+                // Set initial active menu item (Dashboard) after slight delay
+                setTimeout(() => {
+                    const dashboardBtn = document.querySelector('[onclick*="showTab(\'dashboard\')"]');
+                    if (dashboardBtn) {
+                        dashboardBtn.classList.add('active');
+                        const dashboardTab = document.getElementById('dashboard');
+                        if (dashboardTab) {
+                            dashboardTab.classList.add('active');
+                        }
+                        console.log('✅ Dashboard tab set as active');
+                    } else {
+                        console.warn('⚠️ Dashboard button not found');
+                    }
+                }, 100);
+
+                // Auto-sync tracking with ordermanagement changes
+                // Refresh tracking every 3 seconds to catch any order status updates
+                setInterval(() => {
+                    if (document.querySelector('#tracking.active')) {
+                        loadTracking();
+                    }
+                }, 3000);
+
+                // Also refresh orders every 5 seconds
+                setInterval(() => {
+                    if (document.querySelector('#orders.active')) {
+                        loadOrders();
+                    }
+                }, 5000);
+
+                // Also refresh notifications every 4 seconds (ALWAYS, not just when tab is active)
+                setInterval(() => {
+                    try {
+                        loadNotifications();
+                    } catch (e) {
+                        console.error('Error auto-refreshing notifications:', e);
+                    }
+                }, 4000);
+
+                // Listen for storage changes from other tabs/windows (admin changes)
+                window.addEventListener('storage', (e) => {
+                    console.log('📦 Storage event detected:', e.key);
+                    if (e.key === 'all_orders') {
+                        console.log('📢 Order status changed detected from admin, updating all sections...');
+                        loadTracking();
+                        loadOrders();
+                        loadNotifications();
+                        loadDashboard();
+                    }
+                    if (e.key === 'admin_notifications') {
+                        console.log('📢 Admin notifications changed, refreshing...');
+                        loadNotifications();
+                    }
+                });
+
+                // Also listen for local storage events from same tab using custom events
+                window.addEventListener('ordersUpdated', () => {
+                    console.log('📢 Orders updated event received');
                     loadTracking();
                     loadOrders();
                     loadNotifications();
                     loadDashboard();
-                }
-                if (e.key === 'admin_notifications') {
-                    console.log('📢 Admin notifications changed, refreshing...');
+                });
+
+                window.addEventListener('notificationsUpdated', () => {
+                    console.log('📢 Notifications updated event received');
                     loadNotifications();
-                }
-            });
+                });
 
-            // Also listen for local storage events from same tab using custom events
-            window.addEventListener('ordersUpdated', () => {
-                console.log('📢 Orders updated event received');
-                loadTracking();
-                loadOrders();
-                loadNotifications();
-                loadDashboard();
-            });
+                console.log('✅ Profile initialization complete');
+                
+            } catch (error) {
+                console.error('❌ Error during profile initialization:', error);
+                alert('Error loading profile. Please refresh the page.');
+            }
+        }
 
-            window.addEventListener('notificationsUpdated', () => {
-                console.log('📢 Notifications updated event received');
-                loadNotifications();
-            });
+        // Multiple ways to trigger initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeProfile);
+        } else {
+            // Page already loaded
+            initializeProfile();
+        }
+
+        // Also trigger on window load as fallback
+        window.addEventListener('load', () => {
+            if (!currentUser) {
+                console.log('🔄 Page fully loaded, triggering initialization...');
+                initializeProfile();
+            }
         });
 
         function showTab(tabName) {
             console.log('🔄 showTab called with:', tabName);
             
             try {
-                // Hide all tab contents
+                // Hide all tab contents and remove active class
                 document.querySelectorAll('.tab-content').forEach(tab => {
                     tab.classList.remove('active');
                 });
@@ -1222,40 +1267,58 @@
                     btn.classList.remove('active');
                 });
 
-                // Show selected tab content
+                // Show selected tab content by ID
                 const tabContent = document.getElementById(tabName);
                 if (tabContent) {
-                    console.log('✅ Found tab content:', tabName);
                     tabContent.classList.add('active');
+                    console.log('✅ Tab activated:', tabName);
                 } else {
-                    console.error('❌ Tab content not found:', tabName);
-                    return;
+                    console.error('❌ Tab not found:', tabName);
+                    return false;
                 }
 
-                // Add active class to clicked sidebar menu item
-                if (event && event.target) {
-                    event.target.classList.add('active');
-                    console.log('✅ Set menu item active:', event.target.textContent);
+                // Mark the clicked button as active
+                // Find button with onclick containing this tabName
+                const buttons = document.querySelectorAll('.sidebar-menu-item');
+                let found = false;
+                
+                for (let btn of buttons) {
+                    const onclick = btn.getAttribute('onclick');
+                    if (onclick && onclick.includes(`showTab('${tabName}')`)) {
+                        btn.classList.add('active');
+                        console.log('✅ Menu button activated:', btn.textContent.trim());
+                        found = true;
+                        break;
+                    }
+                }
+                
+                if (!found) {
+                    console.warn('⚠️ Menu button not found for tab:', tabName);
                 }
 
                 // Reload specific content when switching tabs
+                console.log('🔄 Loading content for tab:', tabName);
+                
                 if (tabName === 'account') {
-                    loadAccountInfo(); // Refresh user information
+                    loadAccountInfo();
                 } else if (tabName === 'dashboard') {
-                    loadDashboard(); // Refresh dashboard stats
+                    loadDashboard();
                 } else if (tabName === 'notifications') {
-                    loadNotifications(); // Refresh notifications
+                    loadNotifications();
                 } else if (tabName === 'orders') {
-                    loadOrders(); // Refresh order history
+                    loadOrders();
                 } else if (tabName === 'tracking') {
-                    loadTracking(); // Refresh tracking info
+                    loadTracking();
                 } else if (tabName === 'downloads') {
-                    loadDownloads(); // Refresh downloads
+                    loadDownloads();
                 }
                 
-                console.log('✅ Tab switched successfully to:', tabName);
+                console.log('✅ Tab content loaded:', tabName);
+                return true;
+                
             } catch (error) {
                 console.error('❌ Error in showTab:', error);
+                return false;
             }
         }
 
