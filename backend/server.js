@@ -635,7 +635,7 @@ app.delete('/api/admin/orders/:orderId', authenticateAdmin, (req, res) => {
         logAdminAction('delete_order', { orderId, customerEmail: removed.customer?.email }, req.adminUser || 'admin');
 
         console.log(`🗑️ Order deleted: ${orderId}`);
-        return res.json({ success: true, message: 'Order deleted', order: removed });
+        return res.json({ success: true, message: 'Order deleted', order: removed, orders });
     } catch (err) {
         console.error('Error deleting order:', err);
         return res.status(500).json({ success: false, message: 'Server error' });

@@ -1556,7 +1556,9 @@
 
             (async () => {
                 try {
-                    const token = localStorage.getItem('admin_auth_token');
+                    const token = (window.secureStorage && secureStorage.getSensitive)
+                        ? (secureStorage.getSensitive('admin_auth_token') || localStorage.getItem('admin_auth_token'))
+                        : localStorage.getItem('admin_auth_token');
                     if (!token) {
                         alert('❌ Authentication required. Please login again.');
                         window.location.href = 'admin.html';
@@ -1589,13 +1591,13 @@
                         return;
                     }
 
-                    // Update localStorage from returned orders if available
+                    // Persist updated orders returned by backend
                     if (data.orders && Array.isArray(data.orders)) {
                         localStorage.setItem('all_orders', JSON.stringify(data.orders));
                     } else {
                         // fallback: remove locally
                         const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
-                        const idx = orders.findIndex(o => o.orderId === orderId);
+                        const idx = orders.findIndex(o => String(o.orderId) === String(orderId));
                         if (idx !== -1) orders.splice(idx, 1);
                         localStorage.setItem('all_orders', JSON.stringify(orders));
                     }
