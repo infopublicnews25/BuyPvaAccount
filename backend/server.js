@@ -511,6 +511,31 @@ app.delete('/api/admin/registered-users/:identifier', authenticateAdmin, (req, r
 app.get('/api/admin/orders', authenticateAdmin, (req, res) => {
     try {
         const orders = readAllOrders();
+
+        // One-time migration: ensure every order has an orderId so admin actions
+        // (delete/status/delivery) work reliably on legacy records.
+        let changed = false;
+        for (const order of orders) {
+            if (!order || order.orderId) continue;
+
+            const existing = order.id || order.order_number || order.orderNumber || order.orderNo;
+            if (existing) {
+                order.orderId = String(existing);
+                changed = true;
+                continue;
+            }
+
+            order.orderId = 'ORD-LEGACY-' + Date.now() + '-' + crypto.randomBytes(3).toString('hex');
+            changed = true;
+        }
+
+        if (changed) {
+            const ok = writeAllOrders(orders);
+            if (!ok) {
+                return res.status(500).json({ success: false, message: 'Failed to persist order migration' });
+            }
+        }
+
         res.json({ success: true, orders });
     } catch (error) {
         console.error('Error fetching orders:', error);

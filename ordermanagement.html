@@ -839,7 +839,9 @@
 
         // Check if user is authenticated on page load
         (function checkAuthentication() {
-            const token = localStorage.getItem('admin_auth_token');
+            const token = (window.secureStorage && secureStorage.getSensitive)
+                ? (secureStorage.getSensitive('admin_auth_token') || localStorage.getItem('admin_auth_token'))
+                : localStorage.getItem('admin_auth_token');
             const loadingState = document.getElementById('loadingState');
             
             if (!token) {
@@ -970,7 +972,9 @@
             console.log('Total orders found:', orders.length);
 
             // If admin is logged in, fetch from backend API
-            const token = localStorage.getItem('admin_auth_token');
+            const token = (window.secureStorage && secureStorage.getSensitive)
+                ? (secureStorage.getSensitive('admin_auth_token') || localStorage.getItem('admin_auth_token'))
+                : localStorage.getItem('admin_auth_token');
             if (token) {
                 try {
                     console.log('Admin authenticated - fetching orders from backend...');
@@ -1567,7 +1571,7 @@
 
                     console.log(`🗑️ Deleting order ${orderId} with token: ${token.substring(0, 10)}...`);
                     
-                    const resp = await fetch(`${CONFIG.API}/admin/orders/${orderId}`, { 
+                    const resp = await fetch(`${CONFIG.API}/admin/orders/${encodeURIComponent(String(orderId))}`, { 
                         method: 'DELETE',
                         headers: { 
                             'Authorization': `Bearer ${token}`,
@@ -1577,7 +1581,13 @@
                     
                     console.log(`Delete response status: ${resp.status} ${resp.statusText}`);
                     
-                    const data = await resp.json();
+                    const raw = await resp.text();
+                    let data;
+                    try {
+                        data = raw ? JSON.parse(raw) : {};
+                    } catch (e) {
+                        data = { success: false, message: raw || `Request failed (${resp.status})` };
+                    }
                     if (!resp.ok) {
                         const errorMsg = data && data.message ? data.message : resp.statusText;
                         console.error(`Delete failed: ${resp.status} - ${errorMsg}`);
