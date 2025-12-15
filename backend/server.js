@@ -178,6 +178,17 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
+// Custom middleware to debug request bodies
+app.use((req, res, next) => {
+    // Log all incoming requests with bodies
+    if ((req.method === 'POST' || req.method === 'PUT') && req.path.includes('/api')) {
+        console.log(`📨 ${req.method} ${req.path}`);
+        console.log('📤 Content-Type:', req.get('content-type'));
+        console.log('📦 Body:', JSON.stringify(req.body));
+    }
+    next();
+});
+
 // Trust proxy - needed for rate limiting with Nginx reverse proxy
 app.set('trust proxy', 1);
 

@@ -337,7 +337,7 @@
                     authType: formData.authType
                 });
                 
-                const response = await fetch(`${CONFIG.API}/signup`, {
+                const response = await fetch(`${CONFIG.API}/api/signup`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
