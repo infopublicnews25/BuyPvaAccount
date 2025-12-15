@@ -174,7 +174,9 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.json());
+// Parse JSON with larger size limit
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Trust proxy - needed for rate limiting with Nginx reverse proxy
 app.set('trust proxy', 1);
@@ -2163,36 +2165,78 @@ app.post('/api/auto-register', async (req, res) => {
 // Public login endpoint for clients
 app.post('/api/login', async (req, res) => {
     try {
-        const { email, password } = req.body || {};
+        // Enhanced logging to debug request body issues
+        console.log('📨 /api/login request received');
+        console.log('📤 Content-Type:', req.get('content-type'));
+        console.log('📦 req.body:', JSON.stringify(req.body));
+        console.log('📋 req.body keys:', Object.keys(req.body || {}));
+        
+        // Handle different body formats
+        let email = req.body?.email;
+        let password = req.body?.password;
+        
+        // Fallback: check for stringified body or alternate formats
         if (!email || !password) {
-            return res.status(400).json({ success: false, message: 'Email and password are required' });
+            console.warn('⚠️ Direct extraction failed, trying fallbacks...');
+            
+            // Try to parse if body is string
+            if (typeof req.body === 'string') {
+                try {
+                    const parsed = JSON.parse(req.body);
+                    email = parsed.email;
+                    password = parsed.password;
+                    console.log('✅ Parsed string body successfully');
+                } catch (e) {
+                    console.warn('⚠️ Could not parse string body');
+                }
+            }
+        }
+        
+        console.log('✅ Email extracted:', !!email, 'Password extracted:', !!password);
+        
+        if (!email || !password) {
+            console.error('❌ Missing email or password:', { email: !!email, password: !!password });
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Email and password are required',
+                debug: { email: !!email, password: !!password }
+            });
         }
 
         const users = readAllUsers();
         const lowerEmail = String(email).toLowerCase();
         const user = users.find(u => (u.email || '').toLowerCase() === lowerEmail && (u.authType === 'email' || !u.authType));
         if (!user) {
+            console.warn('❌ User not found:', lowerEmail);
             return res.status(404).json({ success: false, message: 'No account found with this email' });
         }
+
+        console.log('✅ User found:', user.email);
 
         // Compare password with bcrypt or fallback to base64 for old users
         let isValid = false;
         try {
             if (user.passwordHash) {
                 isValid = await bcrypt.compare(password, user.passwordHash);
+                console.log('✅ Password verified with bcrypt:', isValid);
             } else {
                 throw new Error('no hash');
             }
         } catch (e) {
+            console.warn('⚠️ Bcrypt fallback triggered:', e.message);
             // Fallback to base64 for old users
             if (user.password) {
                 const encoded = Buffer.from(String(password)).toString('base64');
                 isValid = encoded === user.password;
+                console.log('✅ Password verified with base64:', isValid);
             }
         }
         if (!isValid) {
+            console.warn('❌ Password invalid for:', lowerEmail);
             return res.status(401).json({ success: false, message: 'Incorrect password' });
         }
+
+        console.log('✅ Login successful for:', user.email);
 
         // Return minimal user profile
         const safeUser = {
@@ -2205,8 +2249,8 @@ app.post('/api/login', async (req, res) => {
 
         return res.json({ success: true, user: safeUser });
     } catch (err) {
-        console.error('/api/login error:', err);
-        return res.status(500).json({ success: false, message: 'Server error' });
+        console.error('❌ /api/login error:', err);
+        return res.status(500).json({ success: false, message: 'Server error', error: err.message });
     }
 });
 
