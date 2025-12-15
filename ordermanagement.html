@@ -985,6 +985,14 @@
                             localStorage.setItem('all_orders', JSON.stringify(orders));
                             console.log('Fetched orders from backend API. Orders count:', orders.length);
                         }
+                    } else if (response.status === 401) {
+                        // Token is invalid or expired - clear it and redirect to login
+                        console.warn('Token invalid or expired. Redirecting to login...');
+                        localStorage.removeItem('admin_auth_token');
+                        localStorage.removeItem('adminLoggedIn');
+                        localStorage.removeItem('adminToken');
+                        window.location.href = 'admin.html';
+                        return;
                     } else {
                         console.warn('Backend API returned non-ok status, using localStorage fallback');
                     }
@@ -1388,7 +1396,14 @@
                     }
 
                     // Create automatic notification locally as before
-                    try { createOrderStatusNotification(data.order || { orderId, customer: { email: '' } }, newStatus, oldStatus); } catch (e) {}
+                    try { 
+                        // Use the complete order object from localStorage instead of empty one
+                        const orders = JSON.parse(localStorage.getItem('all_orders') || '[]');
+                        const completeOrder = orders.find(o => o.orderId === orderId) || data.order || { orderId, customer: { email: '' } };
+                        createOrderStatusNotification(completeOrder, newStatus, oldStatus); 
+                    } catch (e) {
+                        console.error('❌ Error creating notification:', e);
+                    }
 
                     loadOrders();
                     alert('Order status updated successfully!');
@@ -1401,6 +1416,18 @@
 
         // Function to create automatic notification when order status changes
         function createOrderStatusNotification(order, newStatus, oldStatus) {
+            // Send notification for ALL status changes
+            console.log(`🔔 Notification trigger: ${oldStatus} → ${newStatus} for order ${order.orderId}`);
+            sendNotificationToCustomer(order, newStatus, oldStatus);
+        }
+
+        // Main function to send notifications to customers
+        function sendNotificationToCustomer(order, newStatus, oldStatus) {
+            if (!order.customer || !order.customer.email) {
+                console.warn('⚠️ Cannot send notification - order has no customer email');
+                return;
+            }
+
             const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
             
             // Define notification details based on status
@@ -1456,6 +1483,7 @@
                 title: title,
                 message: message,
                 sentDate: new Date().toISOString(),
+                timestamp: new Date().toISOString(),
                 read: false,
                 orderId: order.orderId,
                 statusChange: {
@@ -1464,11 +1492,21 @@
                 }
             };
             
-            // Add notification
+            // Add notification to localStorage
             notifications.push(notification);
             localStorage.setItem('admin_notifications', JSON.stringify(notifications));
             
-            console.log('✅ Auto-notification created:', notification);
+            // Dispatch event to notify profile.html to refresh notifications
+            window.dispatchEvent(new CustomEvent('notificationsUpdated', {
+                detail: { notification: notification }
+            }));
+            
+            console.log('✅ Notification sent to customer:', {
+                email: order.customer.email,
+                orderId: order.orderId,
+                statusChange: `${oldStatus} → ${newStatus}`,
+                message: message
+            });
         }
 
         // Function to create automatic notification when delivery file is sent

@@ -41,6 +41,10 @@ async function verifyAdmin(username, password) {
 
 async function verifyToken(token) {
     try {
+        if (!token) {
+            return { success: false, message: 'Token is required' };
+        }
+
         // Check admin token first
         const adminTokenFile = path.join(__dirname, 'admin-token.json');
         if (fs.existsSync(adminTokenFile)) {
@@ -51,6 +55,8 @@ async function verifyToken(token) {
                     // Check if token is not too old (24 hours)
                     if (Date.now() - adminTokenData.timestamp < 24 * 60 * 60 * 1000) {
                         return { success: true, user: { username: credentials.username, role: 'admin' } };
+                    } else {
+                        return { success: false, message: 'Token expired' };
                     }
                 }
             }
@@ -64,10 +70,10 @@ async function verifyToken(token) {
                 return { success: true, user };
             }
         }
-        return { success: false };
+        return { success: false, message: 'Token not found in system' };
     } catch (error) {
         console.error('Error verifying token:', error);
-        return { success: false };
+        return { success: false, message: error.message };
     }
 }
 

@@ -910,9 +910,17 @@
       "tot": 9,
       "pm": "cod"
     },
-    "status": "pending",
+    "status": "confirmed",
     "paymentMethod": "cod",
-    "createdAt": "2025-12-05T12:23:42.772Z"
+    "createdAt": "2025-12-05T12:23:42.772Z",
+    "statusUpdatedAt": "2025-12-15T08:16:23.163Z",
+    "statusHistory": [
+      {
+        "from": "pending",
+        "to": "confirmed",
+        "timestamp": "2025-12-15T08:16:23.163Z"
+      }
+    ]
   },
   {
     "orderId": "ORD1764937588175NTII4",
@@ -984,9 +992,10 @@
       "tot": 0.2,
       "pm": "cod"
     },
-    "status": "pending",
+    "status": "processing",
     "paymentMethod": "cod",
-    "createdAt": "2025-12-05T12:28:46.856Z"
+    "createdAt": "2025-12-05T12:28:46.856Z",
+    "statusUpdatedAt": "2025-12-15T07:51:47.434Z"
   },
   {
     "orderId": "ORD1765717594206EC2U1",
@@ -1021,9 +1030,97 @@
       "tot": 0.3,
       "pm": "cod"
     },
-    "status": "processing",
+    "status": "completed",
     "paymentMethod": "cod",
     "createdAt": "2025-12-14T13:06:34.206Z",
-    "statusUpdatedAt": "2025-12-14T13:07:14.451Z"
+    "statusUpdatedAt": "2025-12-15T07:58:20.159Z"
+  },
+  {
+    "orderId": "ORD1765786476403WBLW9",
+    "customer": {
+      "fullName": "sdfgdsg gsgf",
+      "first": "sdfgdsg",
+      "last": "gsgf",
+      "phone": "dfgsdgfdg",
+      "email": "jasimmiyan842@gmail.com",
+      "extra": "dfgsfgdfg",
+      "country": "Bangladesh",
+      "notes": ""
+    },
+    "coupon": null,
+    "items": [
+      {
+        "id": "openphone-accounts",
+        "name": "OpenPhone Accounts",
+        "payMethod": "",
+        "unitPrice": 0.5,
+        "quantity": 1,
+        "currency": "USD",
+        "total": 0.5,
+        "ts": 1765786461193
+      }
+    ],
+    "totals": {
+      "sub": 0.5,
+      "couponDis": 0,
+      "cryptoDis": 0,
+      "totalDis": 0,
+      "tot": 0.5,
+      "pm": "cod"
+    },
+    "status": "hold",
+    "paymentMethod": "cod",
+    "createdAt": "2025-12-15T08:14:36.403Z",
+    "statusUpdatedAt": "2025-12-15T08:37:20.705Z",
+    "statusHistory": [
+      {
+        "from": "pending",
+        "to": "confirmed",
+        "timestamp": "2025-12-15T08:15:02.457Z"
+      },
+      {
+        "from": "confirmed",
+        "to": "processing",
+        "timestamp": "2025-12-15T08:15:15.778Z"
+      }
+    ]
+  },
+  {
+    "orderId": "ORD1765787181165OG2XW",
+    "customer": {
+      "fullName": "sdfgdsg f",
+      "first": "sdfgdsg",
+      "last": "f",
+      "phone": "",
+      "email": "jasimmiyan842@gmail.com",
+      "extra": "",
+      "country": "Bangladesh",
+      "notes": "fsdf"
+    },
+    "coupon": null,
+    "items": [
+      {
+        "id": "gmail-account-easy-login",
+        "name": "Gmail Account Easy Login",
+        "payMethod": "",
+        "unitPrice": 0.6,
+        "quantity": 1,
+        "currency": "USD",
+        "total": 0.6,
+        "ts": 1765787168293
+      }
+    ],
+    "totals": {
+      "sub": 0.6,
+      "couponDis": 0,
+      "cryptoDis": 0,
+      "totalDis": 0,
+      "tot": 0.6,
+      "pm": "cod"
+    },
+    "status": "completed",
+    "paymentMethod": "cod",
+    "createdAt": "2025-12-15T08:26:21.165Z",
+    "statusUpdatedAt": "2025-12-15T08:27:43.878Z"
   }
 ]

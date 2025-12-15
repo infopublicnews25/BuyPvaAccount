@@ -288,8 +288,8 @@ app.post('/api/admin-login', async (req, res) => {
     try {
         const result = await verifyAdmin(username, password);
         if (result.success) {
-            // Generate a secure token
-            const token = await bcrypt.hash(Date.now().toString() + username, 8);
+            // Generate a secure random token (simple string instead of bcrypt hash for comparison)
+            const token = require('crypto').randomBytes(32).toString('hex');
 
             // Store token for the user
             await storeUserToken(username, token);
