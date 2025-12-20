@@ -24,6 +24,12 @@ function applyEditorRestrictions(staff) {
 
     const allowed = new Set(Array.isArray(staff?.permissions) ? staff.permissions : []);
 
+    // Editor should not see the dashboard sidebar; keep the UI focused.
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) sidebar.style.display = 'none';
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (menuToggle) menuToggle.style.display = 'none';
+
     // Hide whole sections that are not in editor scope
     const pagesOverview = document.querySelector('.pages-overview');
     if (pagesOverview) pagesOverview.style.display = 'none';
