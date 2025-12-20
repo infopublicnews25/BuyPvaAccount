@@ -635,8 +635,34 @@ app.use((req, res, next) => {
 // });
 
 // Authentication middleware
+function parseCookieHeader(cookieHeader) {
+    const out = {};
+    const raw = String(cookieHeader || '');
+    if (!raw) return out;
+    raw.split(';').forEach(part => {
+        const idx = part.indexOf('=');
+        if (idx === -1) return;
+        const key = part.slice(0, idx).trim();
+        const val = part.slice(idx + 1).trim();
+        if (!key) return;
+        try {
+            out[key] = decodeURIComponent(val);
+        } catch (e) {
+            out[key] = val;
+        }
+    });
+    return out;
+}
+
+function getAuthTokenFromRequest(req) {
+    const headerToken = req.headers.authorization?.replace('Bearer ', '');
+    if (headerToken) return headerToken;
+    const cookies = parseCookieHeader(req.headers.cookie);
+    return cookies.admin_auth_token || '';
+}
+
 const authenticateStaff = async (req, res, next) => {
-    const token = req.headers.authorization?.replace('Bearer ', '');
+    const token = getAuthTokenFromRequest(req);
     if (!token) {
         console.warn('❌ Auth failed: No token provided');
         return res.status(401).json({ success: false, message: 'No token provided' });
@@ -666,6 +692,22 @@ const authenticateAdmin = async (req, res, next) => {
         }
         return next();
     });
+};
+
+// Page guard variant: redirects instead of JSON
+const authenticateAdminPage = async (req, res, next) => {
+    const token = getAuthTokenFromRequest(req);
+    if (!token) return res.redirect('/admin.html');
+    try {
+        const result = await verifyToken(token);
+        if (!result.success) return res.redirect('/admin.html');
+        req.user = result.user;
+        const role = String(req.user?.role || '').toLowerCase();
+        if (role !== 'admin') return res.status(403).send('Access Denied');
+        return next();
+    } catch (e) {
+        return res.redirect('/admin.html');
+    }
 };
 
 function hasStaffPermission(user, permission) {
@@ -818,7 +860,7 @@ app.get('/categories.html', authenticateAdmin, (req, res) => {
 });
 
 // Protected route for ordermanagement.html (admin-only)
-app.get('/ordermanagement.html', authenticateAdmin, (req, res) => {
+app.get('/ordermanagement.html', authenticateAdminPage, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'ordermanagement.html'));
 });
 
@@ -857,6 +899,15 @@ app.post('/api/admin-login', async (req, res) => {
 
             // Store token for the user
             await storeUserToken(username, token);
+
+            // Also set HttpOnly cookie so server-side page protection can work (Nginx can proxy HTML routes)
+            res.cookie('admin_auth_token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Lax',
+                path: '/',
+                maxAge: 1000 * 60 * 60 * 24 * 7
+            });
 
             res.json({
                 success: true,
