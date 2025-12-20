@@ -78,61 +78,63 @@ function applyEditorRestrictions(staff) {
         card.onclick = () => { window.location.href = href; };
     };
 
+    // Hide all widget cards first
     document.querySelectorAll('.widgets-grid .page-card').forEach(card => {
-        const rawTitle = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
         card.style.display = 'none';
-
-        // Create Post (requires blog permission)
-        if (rawTitle === 'create post') {
-            if (!allowed.has('blog')) return;
-            configureWidgetCard(card, {
-                title: 'Create post',
-                description: 'Create Post',
-                iconClass: 'fas fa-plus-circle',
-                color: '#f39c12',
-                href: 'create-post.html'
-            });
-            card.style.display = '';
-            return;
-        }
-
-        // Blog Admin (reuse the existing “create product review” card)
-        if (rawTitle.includes('create product review')) {
-            if (!allowed.has('blog')) return;
-            configureWidgetCard(card, {
-                title: 'Blog admin',
-                description: 'Manage blog posts',
-                iconClass: 'fas fa-blog',
-                color: '#2b6cb0',
-                href: 'blog-admin.html'
-            });
-            card.style.display = '';
-            return;
-        }
-
-        // Media Library (reuse the existing “create reminder” card)
-        if (rawTitle.includes('reminder')) {
-            if (!allowed.has('media')) return;
-            configureWidgetCard(card, {
-                title: 'Media library',
-                description: 'Upload and manage files',
-                iconClass: 'fas fa-photo-video',
-                color: '#38a169',
-                href: 'media-library.html'
-            });
-            card.style.display = '';
-            return;
-        }
     });
 
-    // Products section cards: keep only the permitted ones
+    const createPostCard = document.querySelector('.widgets-grid .page-card[data-editor-tool="create-post"]');
+    const blogAdminCard = document.querySelector('.widgets-grid .page-card[data-editor-tool="blog-admin"]');
+    const mediaLibraryCard = document.querySelector('.widgets-grid .page-card[data-editor-tool="media-library"]');
+
+    if (createPostCard && allowed.has('blog')) {
+        configureWidgetCard(createPostCard, {
+            title: 'Create post',
+            description: 'Create Post',
+            iconClass: 'fas fa-plus-circle',
+            color: '#f39c12',
+            href: 'create-post.html'
+        });
+        createPostCard.style.display = '';
+    }
+
+    if (blogAdminCard && allowed.has('blog')) {
+        configureWidgetCard(blogAdminCard, {
+            title: 'Blog admin',
+            description: 'Manage blog posts',
+            iconClass: 'fas fa-blog',
+            color: '#2b6cb0',
+            href: 'blog-admin.html'
+        });
+        blogAdminCard.style.display = '';
+    }
+
+    if (mediaLibraryCard && allowed.has('media')) {
+        configureWidgetCard(mediaLibraryCard, {
+            title: 'Media library',
+            description: 'Upload and manage files',
+            iconClass: 'fas fa-photo-video',
+            color: '#38a169',
+            href: 'media-library.html'
+        });
+        mediaLibraryCard.style.display = '';
+    }
+
+    // Products section cards: keep only the permitted ones (stable selectors)
     document.querySelectorAll('.products-grid .page-card').forEach(card => {
-        const title = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
+        const key = String(card.getAttribute('data-editor-tool') || '').trim();
         let keep = false;
-        if (title.includes('add product')) keep = allowed.has('products');
-        else if (title.includes('product categories')) keep = allowed.has('categories');
+        if (key === 'add-product') keep = allowed.has('products');
+        else if (key === 'product-categories') keep = allowed.has('categories');
         // Editor allowed list does NOT include Inventory
-        else if (title === 'inventory') keep = false;
+        else if (key === 'inventory') keep = false;
+        else {
+            // Fallback for unexpected markup
+            const title = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
+            if (title.includes('add product')) keep = allowed.has('products');
+            else if (title.includes('product categories')) keep = allowed.has('categories');
+            else if (title === 'inventory') keep = false;
+        }
         card.style.display = keep ? '' : 'none';
     });
 
@@ -147,6 +149,20 @@ function applyEditorRestrictions(staff) {
 
     hideIfNoVisibleCards('.widgets-section');
     hideIfNoVisibleCards('.products-section');
+
+    // Avoid a fully blank dashboard for editors if permissions are missing
+    const widgetsSection = document.querySelector('.widgets-section');
+    const productsSection = document.querySelector('.products-section');
+    const widgetsVisible = widgetsSection && widgetsSection.style.display !== 'none';
+    const productsVisible = productsSection && productsSection.style.display !== 'none';
+    if (!widgetsVisible && !productsVisible) {
+        // Keep the widgets section visible and update its description text
+        if (widgetsSection) {
+            widgetsSection.style.display = '';
+            const p = widgetsSection.querySelector('.section-header p');
+            if (p) p.textContent = 'No access has been assigned to this editor. Please contact admin.';
+        }
+    }
 }
 
 // Initialize products in localStorage
@@ -253,14 +269,18 @@ document.addEventListener('DOMContentLoaded', function() {
 // Setup event listeners
 function setupEventListeners() {
     // Search functionality
-    document.getElementById('search-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchFiles();
-        }
-    });
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchFiles();
+            }
+        });
+    }
 
     // File content changes
-    document.getElementById('file-content').addEventListener('input', function() {
+    const fileContent = document.getElementById('file-content');
+    if (fileContent) fileContent.addEventListener('input', function() {
         // Mark file as modified
         const saveBtn = document.querySelector('.save-btn');
         if (saveBtn) {
