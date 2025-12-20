@@ -9,6 +9,62 @@ function getAuthHeaders() {
     return token ? { 'Authorization': `Bearer ${token}` } : {};
 }
 
+async function getStaffContext() {
+    try {
+        const res = await fetch('/api/staff/me', { headers: { ...getAuthHeaders() } });
+        const data = await res.json();
+        if (data && data.success && data.user) return data.user;
+    } catch (e) {}
+    return null;
+}
+
+function applyEditorRestrictions(staff) {
+    const role = String(staff?.role || '').toLowerCase();
+    if (role !== 'editor') return;
+
+    const allowed = new Set(Array.isArray(staff?.permissions) ? staff.permissions : []);
+
+    // Hide whole sections that are not in editor scope
+    const pagesOverview = document.querySelector('.pages-overview');
+    if (pagesOverview) pagesOverview.style.display = 'none';
+    const fileManagerSection = document.querySelector('.menu-section:nth-child(2)');
+    if (fileManagerSection) fileManagerSection.style.display = 'none';
+
+    // Hide sidebar quick actions that expose admin panel
+    document.querySelectorAll('a[href="admin.html"]').forEach(a => {
+        if (a && a.closest('.sidebar')) a.style.display = 'none';
+    });
+
+    // Hide header buttons to admin-only areas
+    document.querySelectorAll('.header-actions .admin-btn, .header-actions .orders-btn, .header-actions .notifications-btn').forEach(btn => {
+        if (btn) btn.style.display = 'none';
+    });
+
+    // Hide all content widgets by default, then show only allowed
+    document.querySelectorAll('.widgets-grid .page-card').forEach(card => {
+        if (card) card.style.display = 'none';
+    });
+
+    const showIf = (perm, selector) => {
+        if (!allowed.has(perm)) return;
+        const el = document.querySelector(selector);
+        if (el) el.style.display = '';
+    };
+
+    showIf('blog', '#widget-blog-admin');
+    showIf('media', '#widget-media-library');
+
+    // Products section cards: keep only the permitted ones
+    document.querySelectorAll('.products-grid .page-card').forEach(card => {
+        const title = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
+        let keep = false;
+        if (title.includes('add product')) keep = allowed.has('products');
+        else if (title.includes('product categories')) keep = allowed.has('categories');
+        else if (title === 'inventory') keep = allowed.has('inventory');
+        card.style.display = keep ? '' : 'none';
+    });
+}
+
 // Initialize products in localStorage
 async function initializeProducts() {
     const existingProducts = localStorage.getItem('admin_products_v1');
@@ -83,17 +139,31 @@ document.addEventListener('DOMContentLoaded', function() {
     //     return;
     // }
 
-    initializeProducts();
-    loadFileTree();
-    loadWebsitePages();
-    loadFiles(currentPath);
-    loadReminders();
-    loadNotifications();
-    setupEventListeners();
-    handleUrlParameters();
-    
-    // Check for product updates every 10 seconds
-    setInterval(checkForProductUpdates, 10 * 1000);
+    (async () => {
+        const staff = await getStaffContext();
+        if (!staff) {
+            // Invalid or expired token
+            localStorage.removeItem('admin_auth_token');
+            localStorage.removeItem('adminLoggedIn');
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('admin_user');
+            window.location.href = 'admin.html';
+            return;
+        }
+
+        applyEditorRestrictions(staff);
+        initializeProducts();
+        loadFileTree();
+        loadWebsitePages();
+        loadFiles(currentPath);
+        loadReminders();
+        loadNotifications();
+        setupEventListeners();
+        handleUrlParameters();
+
+        // Check for product updates every 10 seconds
+        setInterval(checkForProductUpdates, 10 * 1000);
+    })();
 });
 
 // Setup event listeners

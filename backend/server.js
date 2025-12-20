@@ -635,7 +635,7 @@ app.use((req, res, next) => {
 // });
 
 // Authentication middleware
-const authenticateAdmin = async (req, res, next) => {
+const authenticateStaff = async (req, res, next) => {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
         console.warn('❌ Auth failed: No token provided');
@@ -657,6 +657,45 @@ const authenticateAdmin = async (req, res, next) => {
         res.status(401).json({ success: false, message: 'Authentication failed' });
     }
 };
+
+const authenticateAdmin = async (req, res, next) => {
+    return authenticateStaff(req, res, () => {
+        const role = String(req.user?.role || '').toLowerCase();
+        if (role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Admin access required' });
+        }
+        return next();
+    });
+};
+
+function hasStaffPermission(user, permission) {
+    const role = String(user?.role || '').toLowerCase();
+    if (role === 'admin') return true;
+    const perms = Array.isArray(user?.permissions) ? user.permissions : [];
+    return perms.includes(String(permission || '').trim());
+}
+
+function requireStaffPermission(permission) {
+    return (req, res, next) => {
+        if (hasStaffPermission(req.user, permission)) return next();
+        return res.status(403).json({ success: false, message: 'Insufficient permissions' });
+    };
+}
+
+// Staff identity (admin/editor)
+app.get('/api/staff/me', authenticateStaff, (req, res) => {
+    const u = req.user || {};
+    return res.json({
+        success: true,
+        user: {
+            username: u.username,
+            email: u.email,
+            role: u.role,
+            status: u.status,
+            permissions: Array.isArray(u.permissions) ? u.permissions : []
+        }
+    });
+});
 
 // ========== ADMIN 2FA (TOTP) ==========
 
@@ -3775,8 +3814,8 @@ app.get('/api/posts/:id', (req, res) => {
     }
 });
 
-// Create new post
-app.post('/api/posts', (req, res) => {
+// Create new post (admin/editor with permission)
+app.post('/api/posts', authenticateStaff, requireStaffPermission('blog'), (req, res) => {
     try {
         const newPost = req.body;
 
@@ -3810,8 +3849,8 @@ app.post('/api/posts', (req, res) => {
     }
 });
 
-// Update existing post
-app.put('/api/posts/:id', (req, res) => {
+// Update existing post (admin/editor with permission)
+app.put('/api/posts/:id', authenticateStaff, requireStaffPermission('blog'), (req, res) => {
     try {
         const postId = req.params.id;
         const updatedPost = req.body;
@@ -3843,8 +3882,8 @@ app.put('/api/posts/:id', (req, res) => {
     }
 });
 
-// Delete post
-app.delete('/api/posts/:id', (req, res) => {
+// Delete post (admin/editor with permission)
+app.delete('/api/posts/:id', authenticateStaff, requireStaffPermission('blog'), (req, res) => {
     try {
         const postId = req.params.id;
         const posts = readAllPosts();
@@ -3937,8 +3976,8 @@ app.get('/api/products', (req, res) => {
     }
 });
 
-// Add new product (admin only)
-app.post('/api/products', authenticateAdmin, (req, res) => {
+// Add new product (admin/editor with permission)
+app.post('/api/products', authenticateStaff, requireStaffPermission('products'), (req, res) => {
     const product = req.body;
 
     if (!product || !product.title) {
@@ -3967,8 +4006,8 @@ app.post('/api/products', authenticateAdmin, (req, res) => {
     }
 });
 
-// Update product (admin only)
-app.put('/api/products/:id', authenticateAdmin, (req, res) => {
+// Update product (admin/editor with permission)
+app.put('/api/products/:id', authenticateStaff, requireStaffPermission('products'), (req, res) => {
     const { id } = req.params;
     const updatedProduct = req.body;
 
@@ -3994,8 +4033,8 @@ app.put('/api/products/:id', authenticateAdmin, (req, res) => {
     }
 });
 
-// Delete product (admin only)
-app.delete('/api/products/:id', authenticateAdmin, (req, res) => {
+// Delete product (admin/editor with permission)
+app.delete('/api/products/:id', authenticateStaff, requireStaffPermission('products'), (req, res) => {
     const { id } = req.params;
 
     try {
@@ -4019,8 +4058,8 @@ app.delete('/api/products/:id', authenticateAdmin, (req, res) => {
     }
 });
 
-// Bulk update products (admin only) - for saving all products at once
-app.put('/api/products', authenticateAdmin, (req, res) => {
+// Bulk update products (admin/editor with permission) - for saving all products at once
+app.put('/api/products', authenticateStaff, requireStaffPermission('products'), (req, res) => {
     const products = req.body;
 
     if (!Array.isArray(products)) {
@@ -4052,8 +4091,8 @@ app.get('/api/categories', (req, res) => {
     }
 });
 
-// Add new category (admin only)
-app.post('/api/categories', authenticateAdmin, (req, res) => {
+// Add new category (admin/editor with permission)
+app.post('/api/categories', authenticateStaff, requireStaffPermission('categories'), (req, res) => {
     try {
         const { name, description } = req.body;
 
@@ -4088,8 +4127,8 @@ app.post('/api/categories', authenticateAdmin, (req, res) => {
     }
 });
 
-// Update category (admin only)
-app.put('/api/categories/:name', authenticateAdmin, (req, res) => {
+// Update category (admin/editor with permission)
+app.put('/api/categories/:name', authenticateStaff, requireStaffPermission('categories'), (req, res) => {
     try {
         const categoryName = decodeURIComponent(req.params.name);
         const { name: newName, description } = req.body;
@@ -4126,8 +4165,8 @@ app.put('/api/categories/:name', authenticateAdmin, (req, res) => {
     }
 });
 
-// Delete category (admin only)
-app.delete('/api/categories/:name', authenticateAdmin, (req, res) => {
+// Delete category (admin/editor with permission)
+app.delete('/api/categories/:name', authenticateStaff, requireStaffPermission('categories'), (req, res) => {
     try {
         const categoryName = decodeURIComponent(req.params.name);
 
@@ -4153,8 +4192,8 @@ app.delete('/api/categories/:name', authenticateAdmin, (req, res) => {
 
 // ========== MEDIA MANAGEMENT ENDPOINTS ==========
 
-// Get all media files (admin only)
-app.get('/api/media', authenticateAdmin, (req, res) => {
+// Get all media files (admin/editor with permission)
+app.get('/api/media', authenticateStaff, requireStaffPermission('media'), (req, res) => {
     try {
         const media = readAllMedia();
         const folders = readAllFolders();
@@ -4165,8 +4204,8 @@ app.get('/api/media', authenticateAdmin, (req, res) => {
     }
 });
 
-// Upload media file (admin only)
-app.post('/api/media', authenticateAdmin, upload.single('file'), (req, res) => {
+// Upload media file (admin/editor with permission)
+app.post('/api/media', authenticateStaff, requireStaffPermission('media'), upload.single('file'), (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No file uploaded' });
@@ -4205,8 +4244,8 @@ app.post('/api/media', authenticateAdmin, upload.single('file'), (req, res) => {
     }
 });
 
-// Delete media file (admin only)
-app.delete('/api/media/:id', authenticateAdmin, (req, res) => {
+// Delete media file (admin/editor with permission)
+app.delete('/api/media/:id', authenticateStaff, requireStaffPermission('media'), (req, res) => {
     try {
         const { id } = req.params;
         const media = readAllMedia();
@@ -4238,8 +4277,8 @@ app.delete('/api/media/:id', authenticateAdmin, (req, res) => {
     }
 });
 
-// Create folder (admin only)
-app.post('/api/folders', authenticateAdmin, (req, res) => {
+// Create folder (admin/editor with permission)
+app.post('/api/folders', authenticateStaff, requireStaffPermission('media'), (req, res) => {
     try {
         const { name, parent } = req.body;
 
@@ -4275,8 +4314,8 @@ app.post('/api/folders', authenticateAdmin, (req, res) => {
     }
 });
 
-// Delete folder (admin only)
-app.delete('/api/folders/:id', authenticateAdmin, (req, res) => {
+// Delete folder (admin/editor with permission)
+app.delete('/api/folders/:id', authenticateStaff, requireStaffPermission('media'), (req, res) => {
     try {
         const { id } = req.params;
         const folders = readAllFolders();
@@ -4314,8 +4353,8 @@ app.delete('/api/folders/:id', authenticateAdmin, (req, res) => {
     }
 });
 
-// Move file to folder (admin only)
-app.put('/api/media/:id/move', authenticateAdmin, (req, res) => {
+// Move file to folder (admin/editor with permission)
+app.put('/api/media/:id/move', authenticateStaff, requireStaffPermission('media'), (req, res) => {
     try {
         const { id } = req.params;
         const { folderId } = req.body;

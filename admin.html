@@ -765,6 +765,18 @@
                         <option value="admin">Admin</option>
                     </select>
                 </div>
+
+                <div class="form-group" id="editorPermissionsGroup" style="display: none;">
+                    <label>Editor Widgets Access</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f7fafc;">
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="media"> Media Library</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="products"> Add Product</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="categories"> Product Categories</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="inventory"> Inventory</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="blog"> Blog Admin</label>
+                    </div>
+                    <small style="color:#666; display:block; margin-top:6px;">Admin can select which widgets an Editor can use.</small>
+                </div>
                 <div class="form-group">
                     <label>Access Status</label>
                     <select id="userStatus">
@@ -1221,6 +1233,13 @@
                     localStorage.setItem('adminToken', data.token);
                     localStorage.setItem('admin_user', data.user.username);
                     errorDiv.style.display = 'none';
+
+                    // Editors should go to the Website Dashboard (limited access)
+                    if (String(data.user?.role || '').toLowerCase() === 'editor') {
+                        window.location.href = 'dashboard.html';
+                        return;
+                    }
+
                     showDashboard();
                 } else {
                     errorDiv.style.display = 'block';
@@ -1553,6 +1572,7 @@
             document.getElementById('userPassword').value = '';
             document.getElementById('userRole').value = 'user';
             document.getElementById('userStatus').value = 'active';
+            setEditorPermissionsUI('user', ['media', 'products', 'categories', 'inventory', 'blog']);
             document.getElementById('userModal').style.display = 'block';
         }
 
@@ -1569,8 +1589,36 @@
             document.getElementById('userPassword').value = '';
             document.getElementById('userRole').value = user.role;
             document.getElementById('userStatus').value = user.status || 'active';
+            setEditorPermissionsUI(user.role, user.permissions || []);
             document.getElementById('userModal').style.display = 'block';
         }
+
+        function setEditorPermissionsUI(role, permissions) {
+            const group = document.getElementById('editorPermissionsGroup');
+            const isEditor = String(role || '').toLowerCase() === 'editor';
+            if (group) group.style.display = isEditor ? 'block' : 'none';
+
+            const perms = Array.isArray(permissions) ? permissions.map(p => String(p || '').trim()) : [];
+            document.querySelectorAll('.editor-perm').forEach(cb => {
+                cb.checked = isEditor ? perms.includes(cb.value) : false;
+            });
+        }
+
+        // Show/hide editor permissions when role changes
+        document.addEventListener('DOMContentLoaded', () => {
+            const roleSelect = document.getElementById('userRole');
+            if (roleSelect) {
+                roleSelect.addEventListener('change', () => {
+                    const role = roleSelect.value;
+                    if (String(role).toLowerCase() === 'editor') {
+                        // default: all widget perms enabled
+                        setEditorPermissionsUI(role, ['media', 'products', 'categories', 'inventory', 'blog']);
+                    } else {
+                        setEditorPermissionsUI(role, []);
+                    }
+                });
+            }
+        });
 
         async function saveUser(e) {
             e.preventDefault();
@@ -1581,6 +1629,13 @@
             const password = document.getElementById('userPassword').value.trim();
             const role = document.getElementById('userRole').value;
             const status = document.getElementById('userStatus').value;
+
+            let permissions = [];
+            if (String(role).toLowerCase() === 'editor') {
+                permissions = Array.from(document.querySelectorAll('.editor-perm'))
+                    .filter(cb => cb && cb.checked)
+                    .map(cb => cb.value);
+            }
 
             console.log('=== SAVE USER DEBUG ===');
             console.log('isEdit:', isEdit);
@@ -1603,6 +1658,7 @@
 
             const userData = { username, email, role, status };
             if (password) userData.password = password;
+            if (String(role).toLowerCase() === 'editor') userData.permissions = permissions;
 
             const url = isEdit ? `${API}/admin/users/${username}` : `${API}/admin/users`;
             const method = isEdit ? 'PUT' : 'POST';

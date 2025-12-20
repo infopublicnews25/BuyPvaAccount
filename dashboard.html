@@ -17,14 +17,9 @@
         }
     </style>
     <script>
-        // Admin authentication check - Only logged-in admins can access this page
-        if (!localStorage.getItem('adminLoggedIn') || localStorage.getItem('adminLoggedIn') !== 'true') {
-            window.location.href = 'admin.html';
-        }
-
-        // Additional security: Check admin token
-        const adminToken = localStorage.getItem('adminToken');
-        if (!adminToken) {
+        // Staff authentication check (admin/editor). Login happens via admin.html
+        const staffToken = localStorage.getItem('admin_auth_token');
+        if (!staffToken) {
             window.location.href = 'admin.html';
         }
     </script>
@@ -219,6 +214,36 @@
                                     <i class="fas fa-shield-alt"></i> Moderate
                                 </button>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="page-card" id="widget-blog-admin">
+                        <div class="page-icon" style="color: #2b6cb0">
+                            <i class="fas fa-blog"></i>
+                        </div>
+                        <div class="page-info">
+                            <h4>Blog Admin</h4>
+                            <p>Manage blog posts</p>
+                        </div>
+                        <div class="page-actions">
+                            <button onclick="window.open('blog-admin.html', '_blank'); event.stopPropagation();" class="view-btn" title="Open Blog Admin">
+                                <i class="fas fa-external-link-alt"></i> Open
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="page-card" id="widget-media-library">
+                        <div class="page-icon" style="color: #38a169">
+                            <i class="fas fa-photo-video"></i>
+                        </div>
+                        <div class="page-info">
+                            <h4>Media Library</h4>
+                            <p>Upload and manage files</p>
+                        </div>
+                        <div class="page-actions">
+                            <button onclick="window.open('media-library.html', '_blank'); event.stopPropagation();" class="view-btn" title="Open Media Library">
+                                <i class="fas fa-external-link-alt"></i> Open
+                            </button>
                         </div>
                     </div>
                 </div>

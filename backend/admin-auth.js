@@ -7,6 +7,14 @@ const USERS_FILE = path.join(__dirname, '../admin_users.json');
 
 const { statements } = require('./db');
 
+function normalizePermissions(perms) {
+    if (!Array.isArray(perms)) return [];
+    return perms
+        .map(p => String(p || '').trim())
+        .filter(Boolean)
+        .slice(0, 50);
+}
+
 async function verifyAdmin(username, password) {
     try {
         // First check admin credentials
@@ -28,7 +36,16 @@ async function verifyAdmin(username, password) {
                 // Update last login
                 user.lastLogin = new Date().toISOString();
                 statements.updateAdminUser.run(user.username, user.email, user.role, user.passwordHash, user.lastLogin, user.id);
-                return { success: true, user: { username: user.username, role: user.role, email: user.email, status: user.status || 'active' } };
+                return {
+                    success: true,
+                    user: {
+                        username: user.username,
+                        role: user.role,
+                        email: user.email,
+                        status: user.status || 'active',
+                        permissions: normalizePermissions(user.permissions)
+                    }
+                };
             }
         }
 
@@ -67,7 +84,7 @@ async function verifyToken(token) {
             const users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
             const user = users.find(u => u.token === token);
             if (user) {
-                return { success: true, user };
+                return { success: true, user: { ...user, permissions: normalizePermissions(user.permissions) } };
             }
         }
         return { success: false, message: 'Token not found in system' };
@@ -124,6 +141,7 @@ async function createUser(userData) {
             role: userData.role,
             passwordHash: hashedPassword,
             status: 'active',
+            permissions: normalizePermissions(userData.permissions),
             createdAt: new Date().toISOString(),
             lastLogin: null
         };
@@ -193,6 +211,10 @@ async function updateUser(username, userData) {
         }
         if (userData.role && userData.role !== users[userIndex].role) {
             users[userIndex].role = userData.role;
+        }
+
+        if (userData.permissions !== undefined) {
+            users[userIndex].permissions = normalizePermissions(userData.permissions);
         }
         if (userData.status !== undefined && userData.status !== users[userIndex].status) {
             users[userIndex].status = userData.status;
