@@ -31,11 +31,25 @@ const ADMIN_BACKUP_EMAIL = process.env.ADMIN_BACKUP_EMAIL || process.env.BACKUP_
 const BACKUP_MAX_BYTES = Number(process.env.BACKUP_MAX_BYTES || (25 * 1024 * 1024)); // 25MB default
 const BACKUP_EXCLUDE_DIRS = new Set(['.git', 'node_modules', '.venv', 'logs']);
 const BACKUP_EXCLUDE_FILES = new Set(['backend/.env', 'backend/.env.production', 'backend/.env.example', 'backend/email-config.json']);
+// Gmail blocks archives that contain executable/script files (e.g. .js inside a .zip).
+// Default to a "safe" backup that excludes risky extensions; set BACKUP_MODE=full to include everything (may be blocked by Gmail).
+const BACKUP_MODE = String(process.env.BACKUP_MODE || 'safe').toLowerCase();
+const BACKUP_EXCLUDE_EXTENSIONS_SAFE = new Set([
+    '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
+    '.sh', '.bat', '.cmd', '.ps1',
+    '.exe', '.dll', '.so', '.dylib',
+    '.jar', '.com', '.scr',
+    '.php', '.py', '.rb', '.pl'
+]);
 
 function shouldExcludeRelPath(relPath) {
     const normalized = relPath.replace(/\\/g, '/');
     if (!normalized) return false;
     if (BACKUP_EXCLUDE_FILES.has(normalized)) return true;
+    if (BACKUP_MODE !== 'full') {
+        const ext = path.extname(normalized).toLowerCase();
+        if (ext && BACKUP_EXCLUDE_EXTENSIONS_SAFE.has(ext)) return true;
+    }
     const parts = normalized.split('/').filter(Boolean);
     return parts.some(p => BACKUP_EXCLUDE_DIRS.has(p));
 }
@@ -53,7 +67,8 @@ async function createSiteBackupZip() {
     const siteRoot = path.join(__dirname, '..');
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'buypva-backup-'));
-    const zipPath = path.join(tmpDir, `site-backup-${stamp}.zip`);
+    const modeSuffix = BACKUP_MODE === 'full' ? 'full' : 'safe';
+    const zipPath = path.join(tmpDir, `site-backup-${modeSuffix}-${stamp}.zip`);
 
     let totalBytes = 0;
 
@@ -671,6 +686,11 @@ app.post('/api/admin/alerts/mark-all-read', authenticateAdmin, (req, res) => {
 
 // ========== SITE BACKUP (ADMIN) ==========
 
+app.get('/api/admin/backup/recipient', authenticateAdmin, (req, res) => {
+    const to = String(ADMIN_BACKUP_EMAIL || '').trim();
+    return res.json({ success: true, to, mode: BACKUP_MODE === 'full' ? 'full' : 'safe' });
+});
+
 app.post('/api/admin/backup/email', authenticateAdmin, async (req, res) => {
     let tmpDir = null;
     let zipPath = null;
@@ -692,12 +712,17 @@ app.post('/api/admin/backup/email', authenticateAdmin, async (req, res) => {
             return res.status(500).json({ success: false, message: 'Backup recipient email not configured' });
         }
 
+        const modeLabel = BACKUP_MODE === 'full' ? 'FULL' : 'SAFE';
+        const note = BACKUP_MODE === 'full'
+            ? 'Full backup requested. Note: Gmail may block ZIP archives containing script/executable files.'
+            : 'Safe backup excludes script/executable files to avoid Gmail blocking the attachment.';
+
         const mailOptions = {
             from: `"BuyPvaAccount" <${emailConfig.email}>`,
             to,
-            subject: `🗄️ Site Backup - ${new Date().toLocaleString()}`,
-            text: `Attached is the latest site backup. Size: ${sizeMb} MB.`,
-            html: `<p>Attached is the latest site backup.</p><p><strong>Size:</strong> ${sizeMb} MB</p>`,
+            subject: `🗄️ Site Backup (${modeLabel}) - ${new Date().toLocaleString()}`,
+            text: `Attached is the latest site backup (${modeLabel}). Size: ${sizeMb} MB.\n\n${note}`,
+            html: `<p>Attached is the latest site backup (<strong>${modeLabel}</strong>).</p><p><strong>Size:</strong> ${sizeMb} MB</p><p>${note}</p>`,
             attachments: [
                 {
                     filename: path.basename(zipPath),
@@ -708,7 +733,7 @@ app.post('/api/admin/backup/email', authenticateAdmin, async (req, res) => {
         };
 
         await transporter.sendMail(mailOptions);
-        return res.json({ success: true, message: `Backup emailed to ${to}`, bytes: stat.size, filename: path.basename(zipPath) });
+        return res.json({ success: true, message: `Backup emailed to ${to} (${modeLabel})`, bytes: stat.size, filename: path.basename(zipPath), to, mode: modeLabel });
     } catch (err) {
         const msg = err?.message || 'Failed to create/email backup';
         console.error('Backup email error:', err);

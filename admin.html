@@ -192,6 +192,10 @@
             overflow: hidden;
         }
 
+        .notification-wrapper.open .notification-dropdown {
+            display: block;
+        }
+
         .notification-wrapper:hover .notification-dropdown {
             display: block;
         }
@@ -481,7 +485,7 @@
                 <button class="btn btn-secondary" onclick="window.location.href='payment-settings.html'">💳 Payment Settings</button>
                 <button class="btn btn-info" onclick="window.open('dashboard.html', '_blank')">🖥️ Website Dashboard</button>
                 <div class="notification-wrapper" id="notificationWrapper">
-                    <div class="notification-btn" id="notificationBell" onclick="window.location.href='notifications.html'">
+                    <div class="notification-btn" id="notificationBell" role="button" tabindex="0" aria-label="Open notifications">
                         🔔
                         <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
                     </div>
@@ -679,8 +683,9 @@
                 <!-- Backup Settings -->
                 <div style="margin-bottom: 30px; padding: 24px; background: #f7fafc; border-radius: 12px;">
                     <h3 style="margin-bottom: 16px;">🗄️ Site Backup</h3>
-                    <p style="margin-bottom: 16px; color: #666;">Before making updates, generate a full site backup and email it as a ZIP attachment.</p>
+                    <p style="margin-bottom: 16px; color: #666;">Before making updates, generate a site backup and email it as a ZIP attachment.</p>
                     <button type="button" class="btn btn-secondary" id="backupEmailBtn" onclick="emailSiteBackup()">Create Backup & Email</button>
+                    <span id="backupEmailRecipient" style="margin-left: 12px; color: #666;"></span>
                     <span id="backupEmailStatus" style="margin-left: 12px; color: #666;"></span>
                 </div>
             </div>
@@ -857,6 +862,68 @@
             });
         }
 
+        function setupNotificationDropdownInteractions() {
+            const wrapper = document.getElementById('notificationWrapper');
+            const bell = document.getElementById('notificationBell');
+            const dropdown = document.getElementById('notificationDropdown');
+            if (!wrapper || !bell || !dropdown) return;
+
+            function setOpen(open) {
+                wrapper.classList.toggle('open', Boolean(open));
+                bell.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+
+            // Keep existing hover behavior, but add click-to-toggle so the list is usable on touch devices
+            bell.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isOpen = wrapper.classList.contains('open');
+                setOpen(!isOpen);
+            });
+
+            bell.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    bell.click();
+                }
+            });
+
+            // Clicking inside dropdown should not close it
+            dropdown.addEventListener('click', (e) => e.stopPropagation());
+
+            // Click outside closes
+            document.addEventListener('click', () => setOpen(false));
+
+            // Escape closes
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') setOpen(false);
+            });
+        }
+
+        async function loadBackupRecipientEmail() {
+            const token = localStorage.getItem(AUTH_KEY);
+            const recipientEl = document.getElementById('backupEmailRecipient');
+            if (!recipientEl) return;
+            if (!token) {
+                recipientEl.textContent = '';
+                return;
+            }
+            try {
+                const resp = await fetch(`${API}/admin/backup/recipient`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    cache: 'no-store'
+                });
+                const data = await resp.json().catch(() => null);
+                if (resp.ok && data && data.success && data.to) {
+                    recipientEl.textContent = `Sends to: ${data.to}`;
+                } else {
+                    recipientEl.textContent = '';
+                }
+            } catch {
+                recipientEl.textContent = '';
+            }
+        }
+
         // Session timeout settings
         const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
         let lastActivity = Date.now();
@@ -952,7 +1019,7 @@
                 return;
             }
 
-            if (!confirm('Create a full site backup and email it now?')) return;
+            if (!confirm('Create a site backup and email it now?')) return;
 
             const btn = document.getElementById('backupEmailBtn');
             const statusEl = document.getElementById('backupEmailStatus');
@@ -1006,6 +1073,8 @@
                 // Update bell badge immediately and periodically
                 updateNotificationCount();
                 startNotificationPolling();
+                setupNotificationDropdownInteractions();
+                loadBackupRecipientEmail();
                 // Restore the previously active tab
                 const savedTab = localStorage.getItem('activeAdminTab') || 'dashboard';
                 restoreActiveTab(savedTab);
