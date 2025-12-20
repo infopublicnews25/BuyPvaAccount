@@ -627,6 +627,106 @@ const authenticateAdmin = async (req, res, next) => {
     }
 };
 
+// ========== ADMIN 2FA (TOTP) ==========
+
+const ADMIN_2FA_FILE = path.join(__dirname, 'admin-2fa.json');
+
+function readAdmin2FAStore() {
+    try {
+        if (!fs.existsSync(ADMIN_2FA_FILE)) return {};
+        const raw = fs.readFileSync(ADMIN_2FA_FILE, 'utf8');
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (e) {
+        console.error('Error reading admin-2fa.json:', e);
+        return {};
+    }
+}
+
+function writeAdmin2FAStore(store) {
+    try {
+        const safe = store && typeof store === 'object' ? store : {};
+        fs.writeFileSync(ADMIN_2FA_FILE, JSON.stringify(safe, null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error writing admin-2fa.json:', e);
+        return false;
+    }
+}
+
+function getAdmin2FA(username) {
+    const u = String(username || '').trim().toLowerCase();
+    if (!u) return { enabled: false };
+    const store = readAdmin2FAStore();
+    const entry = store[u];
+    if (!entry || typeof entry !== 'object') return { enabled: false };
+    return {
+        enabled: entry.enabled === true,
+        secret: typeof entry.secret === 'string' ? entry.secret : ''
+    };
+}
+
+function setAdmin2FA(username, secret) {
+    const u = String(username || '').trim().toLowerCase();
+    const s = String(secret || '').trim().toUpperCase();
+    if (!u || !s) return false;
+    const store = readAdmin2FAStore();
+    store[u] = { enabled: true, secret: s, updatedAt: new Date().toISOString() };
+    return writeAdmin2FAStore(store);
+}
+
+function disableAdmin2FA(username) {
+    const u = String(username || '').trim().toLowerCase();
+    if (!u) return false;
+    const store = readAdmin2FAStore();
+    store[u] = { enabled: false, secret: '', updatedAt: new Date().toISOString() };
+    return writeAdmin2FAStore(store);
+}
+
+function base32ToBuffer(secretBase32) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    const clean = String(secretBase32 || '').toUpperCase().replace(/[^A-Z2-7]/g, '');
+    let bits = '';
+    for (const ch of clean) {
+        const idx = alphabet.indexOf(ch);
+        if (idx === -1) continue;
+        bits += idx.toString(2).padStart(5, '0');
+    }
+    const bytes = [];
+    for (let i = 0; i + 8 <= bits.length; i += 8) {
+        bytes.push(parseInt(bits.slice(i, i + 8), 2));
+    }
+    return Buffer.from(bytes);
+}
+
+function generateTOTPServer(secretBase32, timestampMs = Date.now(), timeStepSeconds = 30) {
+    const key = base32ToBuffer(secretBase32);
+    if (!key || key.length === 0) return '';
+
+    const counter = Math.floor(timestampMs / 1000 / timeStepSeconds);
+    const buf = Buffer.alloc(8);
+    // Write big-endian counter
+    buf.writeUInt32BE(Math.floor(counter / 0x100000000), 0);
+    buf.writeUInt32BE(counter >>> 0, 4);
+
+    const hmac = crypto.createHmac('sha1', key).update(buf).digest();
+    const offset = hmac[hmac.length - 1] & 0x0f;
+    const binCode = hmac.readUInt32BE(offset) & 0x7fffffff;
+    const code = (binCode % 1000000).toString().padStart(6, '0');
+    return code;
+}
+
+function verifyTOTPServer(secretBase32, code, windowSteps = 1) {
+    const c = String(code || '').trim();
+    if (!/^\d{6}$/.test(c)) return false;
+    const now = Date.now();
+    for (let w = -windowSteps; w <= windowSteps; w++) {
+        const ts = now + (w * 30 * 1000);
+        if (generateTOTPServer(secretBase32, ts) === c) return true;
+    }
+    return false;
+}
+
 // Protected route for admin.html (must come before static middleware)
 app.get('/admin.html', authenticateAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin.html'));
@@ -658,13 +758,25 @@ app.get('/', (req, res) => {
 
 // Admin login endpoint
 app.post('/api/admin-login', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, twofaCode } = req.body;
     if (!username || !password) {
         return res.status(400).json({ success: false, message: 'Username and password required' });
     }
     try {
         const result = await verifyAdmin(username, password);
         if (result.success) {
+            const loginUsername = String(result.user?.username || username || '').trim();
+            const twofa = getAdmin2FA(loginUsername);
+            if (twofa.enabled) {
+                const code = String(twofaCode || '').trim();
+                if (!code) {
+                    return res.status(401).json({ success: false, message: '2FA code required', twoFactorRequired: true });
+                }
+                if (!verifyTOTPServer(twofa.secret, code, 1)) {
+                    return res.status(401).json({ success: false, message: 'Invalid 2FA code', twoFactorRequired: true });
+                }
+            }
+
             // Generate a secure random token (simple string instead of bcrypt hash for comparison)
             const token = crypto.randomBytes(32).toString('hex');
 
@@ -682,6 +794,41 @@ app.post('/api/admin-login', async (req, res) => {
     } catch (e) {
         res.status(500).json({ success: false, message: 'Server error' });
     }
+});
+
+// Admin 2FA management
+app.get('/api/admin/2fa/status', authenticateAdmin, (req, res) => {
+    const username = String(req.user?.username || '').trim();
+    if (!username) return res.status(401).json({ success: false, message: 'Invalid admin session' });
+    const twofa = getAdmin2FA(username);
+    return res.json({ success: true, enabled: twofa.enabled });
+});
+
+app.post('/api/admin/2fa/enable', authenticateAdmin, (req, res) => {
+    const username = String(req.user?.username || '').trim();
+    if (!username) return res.status(401).json({ success: false, message: 'Invalid admin session' });
+
+    const secret = String(req.body?.secret || '').trim().toUpperCase();
+    const code = String(req.body?.code || '').trim();
+
+    if (!secret) return res.status(400).json({ success: false, message: '2FA secret is required' });
+    if (!/^\d{6}$/.test(code)) return res.status(400).json({ success: false, message: 'Valid 6-digit 2FA code required' });
+
+    if (!verifyTOTPServer(secret, code, 1)) {
+        return res.status(400).json({ success: false, message: 'Invalid 2FA code for the provided secret' });
+    }
+
+    const ok = setAdmin2FA(username, secret);
+    if (!ok) return res.status(500).json({ success: false, message: 'Failed to enable 2FA' });
+    return res.json({ success: true, enabled: true });
+});
+
+app.post('/api/admin/2fa/disable', authenticateAdmin, (req, res) => {
+    const username = String(req.user?.username || '').trim();
+    if (!username) return res.status(401).json({ success: false, message: 'Invalid admin session' });
+    const ok = disableAdmin2FA(username);
+    if (!ok) return res.status(500).json({ success: false, message: 'Failed to disable 2FA' });
+    return res.json({ success: true, enabled: false });
 });
 
 // Payment settings (public read)
@@ -834,6 +981,7 @@ app.post('/api/admin/backup/download', authenticateAdmin, async (req, res) => {
     let zipPath = null;
     try {
         const password = String(req.body?.password || '').trim();
+        const twofaCode = String(req.body?.twofaCode || '').trim();
         if (!password) {
             return res.status(400).json({ success: false, message: 'Password is required' });
         }
@@ -846,6 +994,17 @@ app.post('/api/admin/backup/download', authenticateAdmin, async (req, res) => {
         const valid = await verifyAdmin(username, password);
         if (!valid?.success) {
             return res.status(401).json({ success: false, message: 'Incorrect admin password' });
+        }
+
+        // If 2FA is enabled for this admin, require and verify a 6-digit code.
+        const twofa = getAdmin2FA(username);
+        if (twofa.enabled) {
+            if (!twofaCode) {
+                return res.status(401).json({ success: false, message: '2FA code required', twoFactorRequired: true });
+            }
+            if (!verifyTOTPServer(twofa.secret, twofaCode, 1)) {
+                return res.status(401).json({ success: false, message: 'Invalid 2FA code', twoFactorRequired: true });
+            }
         }
 
         const backup = await createSiteBackupProtectedZip(password);

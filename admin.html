@@ -1016,17 +1016,71 @@
             if (statusEl) statusEl.textContent = 'Preparing download...';
 
             try {
+                let twofaCode = '';
+                try {
+                    const twofaResp = await fetch(`${API}/admin/2fa/status`, {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        cache: 'no-store'
+                    });
+                    const twofaData = await twofaResp.json().catch(() => null);
+                    if (twofaResp.ok && twofaData && twofaData.success && twofaData.enabled === true) {
+                        twofaCode = (prompt('2FA is enabled. Enter your 6-digit authenticator code:') || '').trim();
+                        if (!/^\d{6}$/.test(twofaCode)) {
+                            throw new Error('Valid 6-digit 2FA code required');
+                        }
+                    }
+                } catch {
+                    // If status check fails, we will rely on backend response.
+                }
+
                 const resp = await fetch(`${API}/admin/backup/download`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ password })
+                    body: JSON.stringify({ password, twofaCode })
                 });
 
                 if (!resp.ok) {
                     const data = await resp.json().catch(() => null);
+
+                    if (data && data.twoFactorRequired) {
+                        const retryCode = (prompt('2FA code required. Enter 6-digit code:') || '').trim();
+                        if (!/^\d{6}$/.test(retryCode)) {
+                            throw new Error('Valid 6-digit 2FA code required');
+                        }
+
+                        const retryResp = await fetch(`${API}/admin/backup/download`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ password, twofaCode: retryCode })
+                        });
+
+                        if (!retryResp.ok) {
+                            const retryData = await retryResp.json().catch(() => null);
+                            throw new Error(retryData?.message || `Request failed (${retryResp.status})`);
+                        }
+
+                        const blob = await retryResp.blob();
+                        const filename = getFilenameFromContentDisposition(retryResp.headers.get('Content-Disposition')) || 'site-backup.zip';
+
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(url);
+
+                        if (statusEl) statusEl.textContent = 'Backup downloaded.';
+                        return;
+                    }
+
                     throw new Error(data?.message || `Request failed (${resp.status})`);
                 }
 
@@ -1092,12 +1146,13 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('loginError');
+            const twofaCode = document.getElementById('twofaCode')?.value?.trim() || '';
 
             try {
                 const res = await fetch(`${API}/admin-login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username, password, twofaCode })
                 });
                 const raw = await res.text();
                 let data;
@@ -1122,39 +1177,6 @@
                         return;
                     }
                     
-                    // Check if 2FA is enabled
-                    const twofaEnabled = localStorage.getItem('admin_2fa_enabled') === 'true';
-                    if (twofaEnabled) {
-                        let code = document.getElementById('twofaCode').value.trim();
-                        if (!code || code.length !== 6 || isNaN(code)) {
-                            errorDiv.style.display = 'block';
-                            errorDiv.textContent = 'Valid 6-digit 2FA code required';
-                            document.getElementById('twofaGroup').style.display = 'block';
-                            return;
-                        }
-                        
-                        const secret = localStorage.getItem('admin_2fa_secret');
-                        const expectedCode = generateTOTP(secret);
-                        const prevTime = Math.floor((Date.now() - 30000) / 1000 / 30);
-                        const prevTimeHex = prevTime.toString(16).padStart(16, '0');
-                        const keyBytes = base32Decode(secret);
-                        const keyHex = keyBytes.map(b => b.toString(16).padStart(2, '0')).join('');
-                        const hmacPrev = new jsSHA('SHA-1', 'HEX');
-                        hmacPrev.setHMACKey(keyHex, 'HEX');
-                        hmacPrev.update(prevTimeHex);
-                        const hmacResultPrev = hmacPrev.getHMAC('HEX');
-                        const offsetPrev = parseInt(hmacResultPrev.substr(38, 2), 16) & 0xf;
-                        const binCodePrev = parseInt(hmacResultPrev.substr(offsetPrev * 2, 8), 16);
-                        const prevCode = ((binCodePrev & 0x7fffffff) % 1000000).toString().padStart(6, '0');
-                        
-                        console.log('Login 2FA - Entered:', code, 'Expected:', expectedCode, 'Prev:', prevCode);
-                        if (code !== expectedCode && code !== prevCode) {
-                            errorDiv.style.display = 'block';
-                            errorDiv.textContent = 'Invalid 2FA code';
-                            return;
-                        }
-                    }
-                    
                     localStorage.setItem(AUTH_KEY, data.token);
                     localStorage.setItem('adminLoggedIn', 'true');
                     localStorage.setItem('adminToken', data.token);
@@ -1164,6 +1186,9 @@
                 } else {
                     errorDiv.style.display = 'block';
                     errorDiv.textContent = data.message || 'Invalid credentials';
+                    if (data && data.twoFactorRequired) {
+                        document.getElementById('twofaGroup').style.display = 'block';
+                    }
                 }
             } catch (err) {
                 errorDiv.style.display = 'block';
@@ -1785,14 +1810,23 @@
 
         // ========== 2FA FUNCTIONS ==========
         function generateTOTPSecret() {
-            // For testing, use a known secret
-            return 'JBSWY3DPEHPK3PXP';
-            // const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-            // let secret = '';
-            // for (let i = 0; i < 32; i++) {
-            //     secret += chars.charAt(Math.floor(Math.random() * chars.length));
-            // }
-            // return secret;
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+            let secret = '';
+            try {
+                if (crypto && crypto.getRandomValues) {
+                    const bytes = new Uint8Array(32);
+                    crypto.getRandomValues(bytes);
+                    for (let i = 0; i < 32; i++) {
+                        secret += chars.charAt(bytes[i] % chars.length);
+                    }
+                    return secret;
+                }
+            } catch {}
+
+            for (let i = 0; i < 32; i++) {
+                secret += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return secret;
         }
 
         function base32Decode(encoded) {
@@ -1837,7 +1871,6 @@
         }
 
         function setup2FA() {
-            alert('Setup 2FA clicked'); // Debug
             try {
                 const secret = generateTOTPSecret();
                 document.getElementById('twofaSecret').value = secret;
@@ -1864,54 +1897,78 @@
             }
         }
 
-        function verifyAndEnable2FA() {
+        async function verifyAndEnable2FA() {
+            const token = localStorage.getItem(AUTH_KEY);
+            if (!token) {
+                show2FAStatus('Please login first.', 'error');
+                return;
+            }
+
             const secret = document.getElementById('twofaSecret').value;
-            let code = document.getElementById('setupTwofaCode').value.trim();
-            alert('Code entered: ' + code + ', length: ' + code.length);
-            
-            if (!code || code.length !== 6 || isNaN(code)) {
+            const code = document.getElementById('setupTwofaCode').value.trim();
+
+            if (!/^\d{6}$/.test(code)) {
                 show2FAStatus('Please enter a valid 6-digit code.', 'error');
                 return;
             }
-            
-            const expectedCode = generateTOTP(secret);
-            const prevTime = Math.floor((Date.now() - 30000) / 1000 / 30); // 30 seconds ago
-            const prevTimeHex = prevTime.toString(16).padStart(16, '0');
-            const keyBytes = base32Decode(secret);
-            const keyHex = keyBytes.map(b => b.toString(16).padStart(2, '0')).join('');
-            const hmacPrev = new jsSHA('SHA-1', 'HEX');
-            hmacPrev.setHMACKey(keyHex, 'HEX');
-            hmacPrev.update(prevTimeHex);
-            const hmacResultPrev = hmacPrev.getHMAC('HEX');
-            const offsetPrev = parseInt(hmacResultPrev.substr(38, 2), 16) & 0xf;
-            const binCodePrev = parseInt(hmacResultPrev.substr(offsetPrev * 2, 8), 16);
-            const prevCode = ((binCodePrev & 0x7fffffff) % 1000000).toString().padStart(6, '0');
-            
-            console.log('Entered code:', code, 'Expected:', expectedCode, 'Prev:', prevCode);
-            if (code === expectedCode || code === prevCode) {
-                // Store secret in localStorage (in production, send to server)
-                localStorage.setItem('admin_2fa_secret', secret);
+
+            try {
+                const resp = await fetch(`${API}/admin/2fa/enable`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ secret, code })
+                });
+
+                const data = await resp.json().catch(() => null);
+                if (!resp.ok || !data || data.success !== true) {
+                    throw new Error(data?.message || `Request failed (${resp.status})`);
+                }
+
+                // Keep local flags in sync for UI.
                 localStorage.setItem('admin_2fa_enabled', 'true');
-                
+                localStorage.setItem('admin_2fa_secret', secret);
+
                 show2FAStatus('2FA enabled successfully!', 'success');
                 document.getElementById('twofaSetup').style.display = 'none';
                 document.getElementById('twofaEnabled').style.display = 'block';
                 document.getElementById('setup2FABtn').style.display = 'none';
-                document.getElementById('twofaGroup').style.display = 'block'; // Keep showing for login
-            } else {
-                show2FAStatus('Invalid code. Please try again.', 'error');
+                document.getElementById('twofaGroup').style.display = 'block';
+            } catch (e) {
+                show2FAStatus(e.message || 'Failed to enable 2FA', 'error');
             }
         }
 
-        function disable2FA() {
+        async function disable2FA() {
             if (!confirm('Are you sure you want to disable 2FA? This will make your account less secure.')) return;
-            
-            localStorage.removeItem('admin_2fa_secret');
-            localStorage.removeItem('admin_2fa_enabled');
-            
-            document.getElementById('twofaEnabled').style.display = 'none';
-            document.getElementById('setup2FABtn').style.display = 'block';
-            show2FAStatus('2FA disabled.', 'info');
+
+            const token = localStorage.getItem(AUTH_KEY);
+            if (!token) {
+                show2FAStatus('Please login first.', 'error');
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${API}/admin/2fa/disable`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await resp.json().catch(() => null);
+                if (!resp.ok || !data || data.success !== true) {
+                    throw new Error(data?.message || `Request failed (${resp.status})`);
+                }
+
+                localStorage.removeItem('admin_2fa_secret');
+                localStorage.setItem('admin_2fa_enabled', 'false');
+
+                document.getElementById('twofaEnabled').style.display = 'none';
+                document.getElementById('setup2FABtn').style.display = 'block';
+                show2FAStatus('2FA disabled.', 'info');
+            } catch (e) {
+                show2FAStatus(e.message || 'Failed to disable 2FA', 'error');
+            }
         }
 
         function testCurrentCode() {
@@ -1933,13 +1990,30 @@
         }
 
         // Check 2FA status on load
-        function check2FAStatus() {
-            const enabled = localStorage.getItem('admin_2fa_enabled') === 'true';
+        async function check2FAStatus() {
+            const token = localStorage.getItem(AUTH_KEY);
+            let enabled = localStorage.getItem('admin_2fa_enabled') === 'true';
+
+            if (token) {
+                try {
+                    const resp = await fetch(`${API}/admin/2fa/status`, {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        cache: 'no-store'
+                    });
+                    const data = await resp.json().catch(() => null);
+                    if (resp.ok && data && data.success) {
+                        enabled = data.enabled === true;
+                        localStorage.setItem('admin_2fa_enabled', enabled ? 'true' : 'false');
+                    }
+                } catch {}
+            }
+
             if (enabled) {
                 document.getElementById('twofaEnabled').style.display = 'block';
                 document.getElementById('setup2FABtn').style.display = 'none';
-                document.getElementById('twofaGroup').style.display = 'block'; // Show 2FA field on login
+                document.getElementById('twofaGroup').style.display = 'block';
             } else {
+                document.getElementById('twofaEnabled').style.display = 'none';
                 document.getElementById('setup2FABtn').style.display = 'block';
             }
         }
