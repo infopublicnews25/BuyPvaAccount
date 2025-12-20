@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <title id="cart-page-title">Cart</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="language-utils.js"></script>
   <style>
     :root{--bg:#f7f7fb;--card:#fff;--line:#e5e7eb;--text:#111827;--muted:#6b7280;--ok:#16a34a;--danger:#ef4444}
     body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,Tahoma,Arial,sans-serif}
@@ -202,123 +203,13 @@
   })();
   </script>
   <script>
-  // Cart page translations
+  // Cart page translations (uses saved language; default English)
   (function() {
-    const lang = detectLanguage();
-    
-    const translations = {
-      en: {
-        cartTitle: 'Your Cart',
-        continueShopping: '← Continue shopping',
-        product: 'Product',
-        unitPrice: 'Unit price',
-        qty: 'Qty',
-        subtotal: 'Subtotal',
-        remove: 'Remove',
-        emptyMessage: 'No items in cart yet.',
-        subtotalLabel: 'Subtotal',
-        discountLabel: 'Discount',
-        totalLabel: 'Total',
-        addMore: '← Add more',
-        proceedToCheckout: 'Proceed to checkout'
-      },
-      ru: {
-        cartTitle: 'Ваша корзина',
-        continueShopping: '← Продолжить покупки',
-        product: 'Продукт',
-        unitPrice: 'Цена за единицу',
-        qty: 'Кол-во',
-        subtotal: 'Промежуточный итог',
-        remove: 'Удалить',
-        emptyMessage: 'В корзине пока нет товаров.',
-        subtotalLabel: 'Промежуточный итог',
-        discountLabel: 'Скидка',
-        totalLabel: 'Итого',
-        addMore: '← Добавить еще',
-        proceedToCheckout: 'Перейти к оформлению'
-      },
-      zh: {
-        cartTitle: '您的购物车',
-        continueShopping: '← 继续购物',
-        product: '产品',
-        unitPrice: '单价',
-        qty: '数量',
-        subtotal: '小计',
-        remove: '移除',
-        emptyMessage: '购物车中还没有商品。',
-        subtotalLabel: '小计',
-        discountLabel: '折扣',
-        totalLabel: '总计',
-        addMore: '← 添加更多',
-        proceedToCheckout: '前往结账'
-      },
-      ar: {
-        cartTitle: 'سلة التسوق الخاصة بك',
-        continueShopping: '← متابعة التسوق',
-        product: 'المنتج',
-        unitPrice: 'سعر الوحدة',
-        qty: 'الكمية',
-        subtotal: 'المجموع الفرعي',
-        remove: 'إزالة',
-        emptyMessage: 'لا توجد عناصر في السلة بعد.',
-        subtotalLabel: 'المجموع الفرعي',
-        discountLabel: 'الخصم',
-        totalLabel: 'المجموع',
-        addMore: '← إضافة المزيد',
-        proceedToCheckout: 'المتابعة إلى الدفع'
-      }
-    };
-
-    const t = translations[lang] || translations.en;
-
-    // Apply translations
-    document.getElementById('cart-title').textContent = t.cartTitle;
-    document.getElementById('continue-shopping-link').textContent = t.continueShopping;
-    document.getElementById('product-header').textContent = t.product;
-    document.getElementById('unit-price-header').textContent = t.unitPrice;
-    document.getElementById('qty-header').textContent = t.qty;
-    document.getElementById('subtotal-header').textContent = t.subtotal;
-    document.getElementById('empty-message').textContent = t.emptyMessage;
-    document.getElementById('subtotal-label').textContent = t.subtotalLabel;
-    document.getElementById('discount-label').textContent = t.discountLabel;
-    document.getElementById('total-label').textContent = t.totalLabel;
-    document.getElementById('add-more-link').textContent = t.addMore;
-    document.getElementById('checkout-btn').textContent = t.proceedToCheckout;
-
-    // Update remove buttons text
-    document.querySelectorAll('.danger').forEach(btn => {
-      if (btn.textContent === 'Remove') btn.textContent = t.remove;
-    });
-
-    // Update language switcher active state
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-      if (btn.getAttribute('data-lang') === lang) {
-        btn.style.fontWeight = 'bold';
-        btn.style.textDecoration = 'underline';
-      }
-    });
-  })();
-
-  // Dynamic cart page translations
-  (function() {
-    // Language detection from URL parameter
-    function detectLanguage() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const lang = urlParams.get('lang');
-      return ['en', 'ru', 'zh', 'ar'].includes(lang) ? lang : 'en';
+    const lang = (window.LanguageUtils && window.LanguageUtils.getLanguage) ? window.LanguageUtils.getLanguage() : 'en';
+    if (window.LanguageUtils && window.LanguageUtils.applyDocumentDirection) {
+      window.LanguageUtils.applyDocumentDirection(lang);
     }
-
-    const lang = detectLanguage();
-
-    // Apply RTL class for Arabic
-    if (lang === 'ar') {
-      document.body.classList.add('rtl');
-      document.documentElement.setAttribute('lang', 'ar');
-      document.documentElement.setAttribute('dir', 'rtl');
-    } else {
-      document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh' : lang);
-      document.documentElement.setAttribute('dir', 'ltr');
-    }
+    if (lang === 'ar') document.body.classList.add('rtl');
 
     const translations = {
       en: {
@@ -393,6 +284,17 @@
 
     const t = translations[lang] || translations.en;
 
+    // Keep links in the selected language
+    const marketplaceUrl = (window.LanguageUtils && window.LanguageUtils.marketplacePage)
+      ? window.LanguageUtils.marketplacePage(lang)
+      : 'marketplace.html';
+    const continueLink = document.getElementById('continue-shopping-link');
+    if (continueLink) continueLink.href = marketplaceUrl;
+    const addMoreLink = document.getElementById('add-more-link');
+    if (addMoreLink) addMoreLink.href = marketplaceUrl;
+
+    // Keep checkout URL unchanged; language comes from saved preference
+
     // Apply translations
     document.getElementById('cart-page-title').textContent = t.pageTitle;
     document.getElementById('cart-title').textContent = t.cartTitle;
@@ -413,30 +315,9 @@
       if (btn.textContent === 'Remove') btn.textContent = t.remove;
     });
 
-    // Update language switcher active state
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-      if (btn.getAttribute('data-lang') === lang) {
-        btn.style.fontWeight = 'bold';
-        btn.style.textDecoration = 'underline';
-      }
-    });
-
-    // Update continue shopping link based on language
-    const continueLink = document.getElementById('continue-shopping-link');
-    const addMoreLink = document.getElementById('add-more-link');
-    const marketplaceUrls = {
-      en: 'marketplace.html',
-      ru: 'marketplace-ru.html',
-      zh: 'marketplace-zh.html',
-      ar: 'marketplace-ar.html'
-    };
-    continueLink.href = marketplaceUrls[lang] || 'marketplace.html';
-    addMoreLink.href = marketplaceUrls[lang] || 'marketplace.html';
-
     // Store the translation for cart empty alert
     window.cartTranslations = { cartEmptyAlert: t.cartEmptyAlert };
   })();
   </script>
-  <script src="language-utils.js"></script>
 </body>
 </html>

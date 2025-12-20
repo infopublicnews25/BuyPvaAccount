@@ -8,6 +8,7 @@
     <meta name="description"
         content="Stay updated with the latest guides, tips, and news about PVA accounts, email marketing, and social media strategies.">
     <script src="config.js"></script>
+    <script src="language-utils.js"></script>
     <style>
         * {
             margin: 0;
@@ -449,8 +450,8 @@
 <body>
     <div class="header">
         <div class="header-content">
-            <h1>📝 Blog</h1>
-            <a href="marketplace.html" class="header-link">← Back to Home</a>
+            <h1 id="blog-title">📝 Blog</h1>
+            <a href="marketplace.html" id="blog-back" class="header-link">← Back to Home</a>
         </div>
     </div>
 
@@ -463,29 +464,29 @@
                     <div class="filter-buttons" id="filterButtons"></div>
                 </div>
                 <div class="featured-section" id="featuredSection" style="display: none;">
-                    <h2 class="section-title">Featured Posts</h2>
+                    <h2 class="section-title" id="featured-title">Featured Posts</h2>
                     <div class="featured-grid" id="featuredGrid"></div>
                 </div>
                 <div>
-                    <h2 class="section-title">All Posts</h2>
+                    <h2 class="section-title" id="all-title">All Posts</h2>
                     <div class="blog-grid" id="blogGrid"></div>
                 </div>
                 <div class="empty-state" id="emptyState" style="display: none;">
-                    <h3>No posts found</h3>
-                    <p>Try adjusting your search or filters</p>
+                    <h3 id="empty-title">No posts found</h3>
+                    <p id="empty-text">Try adjusting your search or filters</p>
                 </div>
             </div>
             <div class="sidebar">
                 <div class="widget">
-                    <div class="widget-title">📢 Latest Updates</div>
+                    <div class="widget-title" id="widget-updates">📢 Latest Updates</div>
                     <div id="latestUpdatesContainer"></div>
                 </div>
                 <div class="widget">
-                    <div class="widget-title">📁 Categories</div>
+                    <div class="widget-title" id="widget-categories">📁 Categories</div>
                     <ul class="category-list" id="categoriesList"></ul>
                 </div>
                 <div class="widget">
-                    <div class="widget-title">🔗 Quick Links</div>
+                    <div class="widget-title" id="widget-links">🔗 Quick Links</div>
                     <ul class="category-list" id="quickLinksList"></ul>
                 </div>
             </div>
@@ -495,6 +496,117 @@
     <div class="back-to-top" id="backToTop">↑</div>
 
     <script>
+        const BLOG_LANG = (window.LanguageUtils && window.LanguageUtils.getLanguage) ? window.LanguageUtils.getLanguage() : 'en';
+        if (window.LanguageUtils && window.LanguageUtils.applyDocumentDirection) window.LanguageUtils.applyDocumentDirection(BLOG_LANG);
+
+        const BLOG_I18N = {
+            en: {
+                title: '📝 Blog',
+                back: '← Back to Home',
+                search: 'Search articles...',
+                featured: 'Featured Posts',
+                all: 'All Posts',
+                emptyTitle: 'No posts found',
+                emptyText: 'Try adjusting your search or filters',
+                latestUpdates: '📢 Latest Updates',
+                categories: '📁 Categories',
+                quickLinks: '🔗 Quick Links',
+                noUpdates: 'No updates available',
+                today: 'Today',
+                oneDay: '1 day ago',
+                daysAgo: 'days ago',
+                newBadge: 'NEW',
+                learnMore: 'Learn more →',
+                home: 'Home',
+                marketplace: 'Marketplace',
+                allPostsLabel: 'All Posts',
+                readMore: 'Read More →'
+            },
+            ru: {
+                title: '📝 Блог',
+                back: '← Назад',
+                search: 'Поиск статей...',
+                featured: 'Избранные',
+                all: 'Все статьи',
+                emptyTitle: 'Посты не найдены',
+                emptyText: 'Попробуйте изменить поиск или фильтры',
+                latestUpdates: '📢 Последние обновления',
+                categories: '📁 Категории',
+                quickLinks: '🔗 Быстрые ссылки',
+                noUpdates: 'Нет обновлений',
+                today: 'Сегодня',
+                oneDay: '1 день назад',
+                daysAgo: 'дней назад',
+                newBadge: 'НОВОЕ',
+                learnMore: 'Подробнее →',
+                home: 'Главная',
+                marketplace: 'Маркетплейс',
+                allPostsLabel: 'Все статьи',
+                readMore: 'Читать →'
+            },
+            zh: {
+                title: '📝 博客',
+                back: '← 返回',
+                search: '搜索文章...',
+                featured: '精选文章',
+                all: '全部文章',
+                emptyTitle: '未找到文章',
+                emptyText: '请尝试调整搜索或筛选条件',
+                latestUpdates: '📢 最新更新',
+                categories: '📁 分类',
+                quickLinks: '🔗 快捷链接',
+                noUpdates: '暂无更新',
+                today: '今天',
+                oneDay: '1 天前',
+                daysAgo: '天前',
+                newBadge: '最新',
+                learnMore: '了解更多 →',
+                home: '主页',
+                marketplace: '市场',
+                allPostsLabel: '全部文章',
+                readMore: '阅读全文 →'
+            },
+            ar: {
+                title: '📝 المدونة',
+                back: 'العودة ←',
+                search: 'ابحث عن مقالات...',
+                featured: 'مقالات مميزة',
+                all: 'كل المقالات',
+                emptyTitle: 'لم يتم العثور على مقالات',
+                emptyText: 'جرّب تعديل البحث أو الفلاتر',
+                latestUpdates: '📢 آخر التحديثات',
+                categories: '📁 الفئات',
+                quickLinks: '🔗 روابط سريعة',
+                noUpdates: 'لا توجد تحديثات',
+                today: 'اليوم',
+                oneDay: 'منذ يوم واحد',
+                daysAgo: 'أيام مضت',
+                newBadge: 'جديد',
+                learnMore: 'اعرف المزيد →',
+                home: 'الرئيسية',
+                marketplace: 'المتجر',
+                allPostsLabel: 'كل المقالات',
+                readMore: 'اقرأ المزيد →'
+            }
+        };
+        const BI = BLOG_I18N[BLOG_LANG] || BLOG_I18N.en;
+
+        document.getElementById('blog-title').textContent = BI.title;
+        const backEl = document.getElementById('blog-back');
+        backEl.textContent = BI.back;
+        backEl.href = (window.LanguageUtils && window.LanguageUtils.marketplacePage)
+            ? window.LanguageUtils.marketplacePage(BLOG_LANG)
+            : 'marketplace.html';
+
+        document.getElementById('searchInput').placeholder = BI.search;
+        document.getElementById('featured-title').textContent = BI.featured;
+        document.getElementById('all-title').textContent = BI.all;
+        document.getElementById('empty-title').textContent = BI.emptyTitle;
+        document.getElementById('empty-text').textContent = BI.emptyText;
+        document.getElementById('widget-updates').textContent = BI.latestUpdates;
+        document.getElementById('widget-categories').textContent = BI.categories;
+        document.getElementById('widget-links').textContent = BI.quickLinks;
+
         let allPosts = [];
         let currentCategory = 'all';
         let searchQuery = '';
@@ -504,19 +616,19 @@
             const updates = JSON.parse(localStorage.getItem('blogLatestUpdates')) || [];
             const updatesContainer = document.getElementById('latestUpdatesContainer');
             if (updates.length === 0) {
-                safeSetInnerHTML(updatesContainer, '<p style="color: var(--text-light); font-size: 13px;">No updates available</p>', true);
+                safeSetInnerHTML(updatesContainer, '<p style="color: var(--text-light); font-size: 13px;">' + BI.noUpdates + '</p>', true);
             } else {
                 safeSetInnerHTML(updatesContainer, updates.map(u => {
                     const date = new Date(u.date);
                     const now = new Date();
                     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-                    const timeAgo = diffDays === 0 ? 'Today' : diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
-                    return `<div class="update-item"><span class="update-badge">NEW</span><div class="update-title">${u.title}</div>${u.link ? '<div class="update-text"><a href="' + u.link + '" style="color: var(--primary);">Learn more →</a></div>' : ''}<div class="update-date">${timeAgo}</div></div>`;
+                    const timeAgo = diffDays === 0 ? BI.today : diffDays === 1 ? BI.oneDay : `${diffDays} ${BI.daysAgo}`;
+                    return `<div class="update-item"><span class="update-badge">${BI.newBadge}</span><div class="update-title">${u.title}</div>${u.link ? '<div class="update-text"><a href="' + u.link + '" style="color: var(--primary);">' + BI.learnMore + '</a></div>' : ''}<div class="update-date">${timeAgo}</div></div>`;
                 }).join(''), true);
             }
 
             const categoriesList = document.getElementById('categoriesList');
-            const allCount = `<li class="category-item" data-category="all"><span>All Posts</span><span class="category-count" id="countAll">0</span></li>`;
+            const allCount = `<li class="category-item" data-category="all"><span>${BI.allPostsLabel}</span><span class="category-count" id="countAll">0</span></li>`;
             const catItems = categories.map(cat => {
                 const id = 'count' + cat.replace(/\s+/g, '');
                 return `<li class="category-item" data-category="${cat}"><span>${cat}</span><span class="category-count" id="${id}">0</span></li>`;
@@ -526,7 +638,15 @@
             const links = JSON.parse(localStorage.getItem('blogQuickLinks')) || [];
             const quickLinksList = document.getElementById('quickLinksList');
             if (links.length === 0) {
-                safeSetInnerHTML(quickLinksList, '<li class="category-item" onclick="window.location.href=\'http://buypvaaccount.com/\'"><span>Home</span></li><li class="category-item" onclick="window.location.href=\'http://buypvaaccount.com/marketplace.html\'"><span>Marketplace</span></li>', true);
+                const mp = (window.LanguageUtils && window.LanguageUtils.marketplacePage)
+                    ? window.LanguageUtils.marketplacePage(BLOG_LANG)
+                    : 'marketplace.html';
+                safeSetInnerHTML(
+                    quickLinksList,
+                    '<li class="category-item" onclick="window.location.href=\'' + window.location.origin + '/\'"><span>' + BI.home + '</span></li>' +
+                    '<li class="category-item" onclick="window.location.href=\'' + window.location.origin + '/' + mp + '\'"><span>' + BI.marketplace + '</span></li>',
+                    true
+                );
             } else {
                 safeSetInnerHTML(quickLinksList, links.map(l => `<li class="category-item" onclick="window.location.href='${l.url}'"><span>${l.title}</span></li>`).join(''), true);
             }
@@ -669,7 +789,7 @@
                         <h3 class="blog-title">${post.title}</h3>
                         <p class="blog-excerpt">${post.excerpt}</p>
                         <div class="blog-footer">
-                            <a href="post.html?id=${post.slug}" class="read-more" onclick="event.stopPropagation()">Read More →</a>
+                            <a href="post.html?id=${post.slug}" class="read-more" onclick="event.stopPropagation()">${BI.readMore}</a>
                             <div class="tags">
                                 ${post.tags ? post.tags.slice(0, 2).map(tag => `<span class="tag">#${tag}</span>`).join('') : ''}
                             </div>

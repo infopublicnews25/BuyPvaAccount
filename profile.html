@@ -904,6 +904,7 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="config.js"></script>
+    <script src="language-utils.js"></script>
     <script src="safe-html.js"></script>
     <script src="secure-storage.js"></script>
 </head>
@@ -2301,7 +2302,8 @@
         }
 
         function logout() {
-            if (confirm('Are you sure you want to logout?')) {
+            const msg = (window.__profileI18N__ && window.__profileI18N__.logoutConfirm) || 'Are you sure you want to logout?';
+            if (confirm(msg)) {
                 // Clear sensitive authentication data
                 secureStorage.removeSensitive('client_auth');
                 secureStorage.remove('client_auth');
@@ -2312,5 +2314,191 @@
             }
         }
     </script>
+
+        <script>
+            // Profile i18n + keep language across pages
+            (function(){
+                const lang = (window.LanguageUtils && window.LanguageUtils.getLanguage) ? window.LanguageUtils.getLanguage() : 'en';
+                if (window.LanguageUtils && window.LanguageUtils.applyDocumentDirection) window.LanguageUtils.applyDocumentDirection(lang);
+
+                const T = {
+                    en: {
+                        changePhoto: '📷 Change Photo',
+                        marketplace: '🛒 Marketplace',
+                        myCart: '🛍️ My Cart',
+                        dashboard: '🏠 Dashboard',
+                        notifications: '🔔 Notifications',
+                        orderHistory: '📦 Order History',
+                        tracking: '🚚 Tracking',
+                        downloads: '📥 Downloads',
+                        userInfo: '👤 User Information',
+                        logout: '🚪 Logout',
+                        dashboardOverview: '📊 Dashboard Overview',
+                        totalOrders: '📦 Total Orders',
+                        completed: '✅ Completed',
+                        processing: '⏳ Processing',
+                        cancelled: '❌ Cancelled',
+                        refunded: '💰 Refunded',
+                        notifTitle: 'Notifications',
+                        notifSubtitle: 'Stay updated with your orders and messages',
+                        markAllRead: '✅ Mark All Read',
+                        myOrders: 'My Orders',
+                        trackingTitle: 'Order Tracking',
+                        downloadsTitle: 'Downloads',
+                        accountTitle: 'User Information',
+                        accountSubtitle: 'View and edit your registration details',
+                        logoutConfirm: 'Are you sure you want to logout?'
+                    },
+                    ru: {
+                        changePhoto: '📷 Изменить фото',
+                        marketplace: '🛒 Маркетплейс',
+                        myCart: '🛍️ Моя корзина',
+                        dashboard: '🏠 Панель',
+                        notifications: '🔔 Уведомления',
+                        orderHistory: '📦 История заказов',
+                        tracking: '🚚 Отслеживание',
+                        downloads: '📥 Загрузки',
+                        userInfo: '👤 Данные пользователя',
+                        logout: '🚪 Выйти',
+                        dashboardOverview: '📊 Обзор',
+                        totalOrders: '📦 Всего заказов',
+                        completed: '✅ Завершено',
+                        processing: '⏳ В обработке',
+                        cancelled: '❌ Отменено',
+                        refunded: '💰 Возвраты',
+                        notifTitle: 'Уведомления',
+                        notifSubtitle: 'Следите за заказами и сообщениями',
+                        markAllRead: '✅ Отметить всё прочитанным',
+                        myOrders: 'Мои заказы',
+                        trackingTitle: 'Отслеживание заказа',
+                        downloadsTitle: 'Загрузки',
+                        accountTitle: 'Данные пользователя',
+                        accountSubtitle: 'Просмотр и редактирование регистрационных данных',
+                        logoutConfirm: 'Вы уверены, что хотите выйти?'
+                    },
+                    zh: {
+                        changePhoto: '📷 更换头像',
+                        marketplace: '🛒 市场',
+                        myCart: '🛍️ 我的购物车',
+                        dashboard: '🏠 仪表盘',
+                        notifications: '🔔 通知',
+                        orderHistory: '📦 订单记录',
+                        tracking: '🚚 物流追踪',
+                        downloads: '📥 下载',
+                        userInfo: '👤 用户信息',
+                        logout: '🚪 退出登录',
+                        dashboardOverview: '📊 概览',
+                        totalOrders: '📦 订单总数',
+                        completed: '✅ 已完成',
+                        processing: '⏳ 处理中',
+                        cancelled: '❌ 已取消',
+                        refunded: '💰 已退款',
+                        notifTitle: '通知',
+                        notifSubtitle: '及时了解您的订单和消息',
+                        markAllRead: '✅ 全部标为已读',
+                        myOrders: '我的订单',
+                        trackingTitle: '订单追踪',
+                        downloadsTitle: '下载',
+                        accountTitle: '用户信息',
+                        accountSubtitle: '查看并编辑您的注册信息',
+                        logoutConfirm: '确定要退出登录吗？'
+                    },
+                    ar: {
+                        changePhoto: '📷 تغيير الصورة',
+                        marketplace: '🛒 المتجر',
+                        myCart: '🛍️ سلتي',
+                        dashboard: '🏠 لوحة التحكم',
+                        notifications: '🔔 الإشعارات',
+                        orderHistory: '📦 سجل الطلبات',
+                        tracking: '🚚 تتبع',
+                        downloads: '📥 التنزيلات',
+                        userInfo: '👤 معلومات المستخدم',
+                        logout: '🚪 تسجيل الخروج',
+                        dashboardOverview: '📊 نظرة عامة',
+                        totalOrders: '📦 إجمالي الطلبات',
+                        completed: '✅ مكتمل',
+                        processing: '⏳ قيد المعالجة',
+                        cancelled: '❌ ملغي',
+                        refunded: '💰 مسترد',
+                        notifTitle: 'الإشعارات',
+                        notifSubtitle: 'ابقَ على اطلاع بطلباتك ورسائلك',
+                        markAllRead: '✅ تحديد الكل كمقروء',
+                        myOrders: 'طلباتي',
+                        trackingTitle: 'تتبع الطلب',
+                        downloadsTitle: 'التنزيلات',
+                        accountTitle: 'معلومات المستخدم',
+                        accountSubtitle: 'عرض وتعديل بيانات التسجيل',
+                        logoutConfirm: 'هل أنت متأكد أنك تريد تسجيل الخروج؟'
+                    }
+                };
+
+                const t = T[lang] || T.en;
+                window.__profileI18N__ = { logoutConfirm: t.logoutConfirm };
+
+                // Avatar overlay
+                const overlay = document.querySelector('.avatar-overlay span');
+                if (overlay) overlay.textContent = t.changePhoto;
+
+                // Sidebar buttons
+                const mpBtn = document.querySelector('.sidebar-buttons .btn-marketplace');
+                if (mpBtn) mpBtn.textContent = t.marketplace;
+                const cartBtn = document.querySelector('.sidebar-buttons .btn-cart');
+                if (cartBtn) cartBtn.textContent = t.myCart;
+
+                // Sidebar menu by onclick
+                const setMenu = (onclick, text) => {
+                    const b = document.querySelector(`.sidebar-menu button[onclick=\"${onclick}\"]`);
+                    if (b) b.textContent = text;
+                };
+                setMenu("showTab('dashboard')", t.dashboard);
+                setMenu("showTab('notifications')", t.notifications);
+                setMenu("showTab('orders')", t.orderHistory);
+                setMenu("showTab('tracking')", t.tracking);
+                setMenu("showTab('downloads')", t.downloads);
+                setMenu("showTab('account')", t.userInfo);
+                const logoutBtn = document.querySelector('.sidebar-menu button[onclick="logout()"]');
+                if (logoutBtn) logoutBtn.textContent = t.logout;
+
+                // Dashboard header button (first dashboard button)
+                const dashHeaderBtn = document.querySelector('#dashboard button[onclick="showTab(\'dashboard\')"]');
+                if (dashHeaderBtn) dashHeaderBtn.textContent = t.dashboardOverview;
+
+                // Stats cards
+                document.querySelectorAll('.stat-card h3').forEach(h3 => {
+                    const txt = (h3.textContent || '').trim();
+                    if (txt.includes('Total Orders')) h3.textContent = t.totalOrders;
+                    if (txt.includes('Completed')) h3.textContent = t.completed;
+                    if (txt.includes('Processing')) h3.textContent = t.processing;
+                    if (txt.includes('Cancelled')) h3.textContent = t.cancelled;
+                    if (txt.includes('Refunded')) h3.textContent = t.refunded;
+                });
+
+                // Tab headings
+                const nTitle = document.querySelector('#notifications h2');
+                if (nTitle) nTitle.textContent = t.notifTitle;
+                const nSub = document.querySelector('#notifications .notifications-header p');
+                if (nSub) nSub.textContent = t.notifSubtitle;
+                const markAll = document.querySelector('#notifications .mark-all-read-btn');
+                if (markAll) markAll.textContent = t.markAllRead;
+
+                const ordersH2 = document.querySelector('#orders h2');
+                if (ordersH2) ordersH2.textContent = t.myOrders;
+                const trackingH2 = document.querySelector('#tracking h2');
+                if (trackingH2) trackingH2.textContent = t.trackingTitle;
+                const downloadsH2 = document.querySelector('#downloads h2');
+                if (downloadsH2) downloadsH2.textContent = t.downloadsTitle;
+                const accountH2 = document.querySelector('#account h2');
+                if (accountH2) accountH2.textContent = t.accountTitle;
+                const accountP = document.querySelector('#account p');
+                if (accountP) accountP.textContent = t.accountSubtitle;
+
+                // Rewrite marketplace/cart links
+                const marketplaceUrl = (window.LanguageUtils && window.LanguageUtils.marketplacePage)
+                    ? window.LanguageUtils.marketplacePage(lang)
+                    : 'marketplace.html';
+                document.querySelectorAll('a[href="marketplace.html"]').forEach(a => a.href = marketplaceUrl);
+                document.querySelectorAll('a[href="Cartpage.html"]').forEach(a => a.href = 'Cartpage.html');
+            })();
+        </script>
 </body>
 </html>

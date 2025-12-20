@@ -7,6 +7,7 @@
     <title id="pageTitle">Loading... | BuyPvaAccount Blog</title>
     <meta name="description" id="pageDescription" content="">
     <script src="config.js"></script>
+    <script src="language-utils.js"></script>
     <style>
         * {
             margin: 0;
@@ -313,13 +314,13 @@
 
 <body>
     <div class="loading" id="loading">
-        <div>Loading article...</div>
+        <div id="post-loading-text">Loading article...</div>
     </div>
 
     <div id="articleContent" style="display: none;">
         <div class="hero-section">
             <div class="hero-content">
-                <a href="blog.html" class="back-link">← Back to Blog</a>
+                <a href="blog.html" id="post-back-link" class="back-link">← Back to Blog</a>
                 <h1 class="post-title" id="postTitle"></h1>
                 <div class="post-meta">
                     <span id="postCategory"></span>
@@ -335,13 +336,58 @@
             </div>
 
             <div class="related-section">
-                <h3 class="related-title">Suggested Articles</h3>
+                <h3 class="related-title" id="post-related-title">Suggested Articles</h3>
                 <div class="related-grid" id="relatedPosts"></div>
             </div>
         </div>
     </div>
 
     <script>
+        const POST_LANG = (window.LanguageUtils && window.LanguageUtils.getLanguage) ? window.LanguageUtils.getLanguage() : 'en';
+        if (window.LanguageUtils && window.LanguageUtils.applyDocumentDirection) window.LanguageUtils.applyDocumentDirection(POST_LANG);
+
+        const POST_I18N = {
+            en: {
+                loading: 'Loading article...',
+                back: '← Back to Blog',
+                suggested: 'Suggested Articles',
+                views: 'views',
+                noRelated: 'No related articles found'
+            },
+            ru: {
+                loading: 'Загрузка статьи...',
+                back: '← Назад в блог',
+                suggested: 'Рекомендуемые статьи',
+                views: 'просмотров',
+                noRelated: 'Похожие статьи не найдены'
+            },
+            zh: {
+                loading: '正在加载文章...',
+                back: '← 返回博客',
+                suggested: '推荐阅读',
+                views: '浏览',
+                noRelated: '未找到相关文章'
+            },
+            ar: {
+                loading: 'جارٍ تحميل المقال...',
+                back: 'العودة إلى المدونة ←',
+                suggested: 'مقالات مقترحة',
+                views: 'مشاهدة',
+                noRelated: 'لا توجد مقالات ذات صلة'
+            }
+        };
+        const PI = POST_I18N[POST_LANG] || POST_I18N.en;
+
+        const loadingText = document.getElementById('post-loading-text');
+        if (loadingText) loadingText.textContent = PI.loading;
+        const backLink = document.getElementById('post-back-link');
+        if (backLink) {
+            backLink.textContent = PI.back;
+            backLink.href = 'blog.html';
+        }
+        const relTitle = document.getElementById('post-related-title');
+        if (relTitle) relTitle.textContent = PI.suggested;
+
         const API_URL = `${CONFIG.API}/posts`; // Use dynamic CONFIG
         const urlParams = new URLSearchParams(window.location.search);
         const postSlug = urlParams.get('id');
@@ -381,12 +427,14 @@
 
                         document.getElementById('postTitle').textContent = post.title;
                         document.getElementById('postCategory').textContent = '📂 ' + post.category;
-                        document.getElementById('postDate').textContent = '📅 ' + new Date(post.createdAt).toLocaleDateString('en-US', {
+                        const localeMap = { en: 'en-US', ru: 'ru-RU', zh: 'zh-CN', ar: 'ar-SA' };
+                        const locale = localeMap[POST_LANG] || 'en-US';
+                        document.getElementById('postDate').textContent = '📅 ' + new Date(post.createdAt).toLocaleDateString(locale, {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'
                         });
-                        document.getElementById('postViews').textContent = '👁️ ' + (post.views || 0) + ' views';
+                        document.getElementById('postViews').textContent = '👁️ ' + (post.views || 0) + ' ' + PI.views;
                         safeSetInnerHTML(document.getElementById('postContent'), post.content, true);
 
                         // Try to record view (optional, won't break if API fails)
@@ -426,7 +474,7 @@
             const relatedContainer = document.getElementById('relatedPosts');
 
             if (related.length === 0) {
-                safeSetInnerHTML(relatedContainer, '<div style="text-align: center; color: #718096; font-size: 16px; padding: 40px;">No related articles found</div>', true);
+                safeSetInnerHTML(relatedContainer, '<div style="text-align: center; color: #718096; font-size: 16px; padding: 40px;">' + PI.noRelated + '</div>', true);
                 return;
             }
 

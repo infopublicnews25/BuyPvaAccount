@@ -27,7 +27,7 @@ function sendNotificationRequest(event) {
 // Load News Updates
 function loadNewsUpdates() {
   const newsContainer = document.getElementById('newsContainer');
-  const lang = window.LanguageUtils ? window.LanguageUtils.detectLanguage() : 'en';
+  const lang = detectLanguage();
   const news = JSON.parse(localStorage.getItem('newsUpdates') || '[]');
   if (news.length === 0) {
     const defaultNews = {
@@ -57,13 +57,49 @@ function loadNewsUpdates() {
       <div class="item"><div class="date">${item.date}</div><div>${item.content}</div></div>
     `).join(''), true);
   } else {
-    safeSetInnerHTML(newsContainer, news.map(item => `
-      <div class="item">
-        <div class="date">${item.date}</div>
-        <div class="news-content">${item.content}</div>
-      </div>
-    `).join(''), true);
+    const hasLocalized = news.some(n => n && (n[`content_${lang}`] || n[`date_${lang}`]));
+
+    // If admin stored only English news but user is browsing RU/ZH/AR,
+    // show the default localized news so the section changes language.
+    if (lang !== 'en' && !hasLocalized) {
+      const langNews = defaultNews[lang] || defaultNews.en;
+      safeSetInnerHTML(newsContainer, langNews.map(item => `
+        <div class="item"><div class="date">${item.date}</div><div>${item.content}</div></div>
+      `).join(''), true);
+      return;
+    }
+
+    safeSetInnerHTML(newsContainer, news.map(item => {
+      const date = (item && (item[`date_${lang}`] || item.date)) || '';
+      const content = (item && (item[`content_${lang}`] || item.content)) || '';
+      return `
+        <div class="item">
+          <div class="date">${date}</div>
+          <div class="news-content">${content}</div>
+        </div>
+      `;
+    }).join(''), true);
   }
+}
+
+function detectLanguage() {
+  try {
+    const path = String(window.location.pathname || '').toLowerCase();
+    if (path.includes('marketplace-ru.html')) return 'ru';
+    if (path.includes('marketplace-zh.html')) return 'zh';
+    if (path.includes('marketplace-ar.html')) return 'ar';
+
+    const urlLang = new URLSearchParams(window.location.search).get('lang');
+    if (urlLang && ['en', 'ru', 'zh', 'ar'].includes(urlLang)) return urlLang;
+
+    const htmlLang = (document.documentElement.getAttribute('lang') || '').toLowerCase();
+    if (htmlLang && ['en', 'ru', 'zh', 'ar'].includes(htmlLang)) return htmlLang;
+
+    if (window.LanguageUtils && typeof window.LanguageUtils.detectLanguage === 'function') {
+      return window.LanguageUtils.detectLanguage() || 'en';
+    }
+  } catch {}
+  return 'en';
 }
 
 // Main Marketplace Logic
@@ -71,6 +107,146 @@ function loadNewsUpdates() {
   const CART_KEY = 'mp_cart_v1'; // Keep for backward compatibility
   const CART_URL = (document.getElementById('mp-cart-url')?.dataset?.url) || '/cart/';
   const CATEGORIES_KEY = 'product_categories';
+
+  const I18N = {
+    requestTitle: { en: 'Request Notification', ru: 'Запрос уведомления', zh: '请求通知', ar: 'طلب إشعار' },
+    requestDesc: {
+      en: "If you can't find your desired account in the list or if it's out of stock, you can place a custom order with us.",
+      ru: 'Если вы не нашли нужный аккаунт в списке или он отсутствует на складе, вы можете оформить индивидуальный заказ.',
+      zh: '如果列表中找不到您想要的账户或已售罄，您可以向我们提交定制订单。',
+      ar: 'إذا لم تجد الحساب المطلوب في القائمة أو كان غير متوفر، يمكنك تقديم طلب مخصص لدينا.'
+    },
+    accountTypeLabel: { en: 'Account Type:', ru: 'Тип аккаунта:', zh: '账户类型：', ar: 'نوع الحساب:' },
+    accountTypePlaceholder: { en: 'Type account name', ru: 'Введите название аккаунта', zh: '输入账户名称', ar: 'اكتب اسم الحساب' },
+    amountLabel: { en: 'Amount:', ru: 'Количество:', zh: '数量：', ar: 'الكمية:' },
+    amountPlaceholder: { en: 'e.g. 1000', ru: 'например 1000', zh: '例如 1000', ar: 'مثال: 1000' },
+    emailLabel: { en: 'E-mail:', ru: 'E-mail:', zh: '电子邮箱：', ar: 'البريد الإلكتروني:' },
+    emailPlaceholder: { en: 'your-email@example.com', ru: 'your-email@example.com', zh: 'your-email@example.com', ar: 'your-email@example.com' },
+    requestSubmit: { en: 'Account Request Submit', ru: 'Отправить запрос', zh: '提交请求', ar: 'إرسال الطلب' },
+    newsTitle: { en: 'News & Updates', ru: 'Новости и обновления', zh: '新闻与更新', ar: 'الأخبار والتحديثات' },
+    helpTitle: { en: 'Need help?', ru: 'Нужна помощь?', zh: '需要帮助？', ar: 'هل تحتاج مساعدة؟' },
+    contactsPrefix: { en: 'CONTACTS:', ru: 'КОНТАКТЫ:', zh: '联系方式：', ar: 'جهات الاتصال:' },
+    tableTitle: { en: 'Title', ru: 'Название', zh: '标题', ar: 'العنوان' },
+    tableQty: { en: 'Quantity', ru: 'Количество', zh: '数量', ar: 'الكمية' },
+    tablePrice: { en: 'Price', ru: 'Цена', zh: '价格', ar: 'السعر' },
+    searchPlaceholder: { en: 'Search title or notes…', ru: 'Поиск по названию или заметкам…', zh: '搜索标题或备注…', ar: 'البحث في العنوان أو الملاحظات…' },
+    all: { en: 'ALL', ru: 'ВСЕ', zh: '全部', ar: 'الكل' },
+    buyNow: { en: 'Buy Now', ru: 'Купить сейчас', zh: '立即购买', ar: 'اشترِ الآن' },
+    quickAdd: { en: 'Quick add', ru: 'Быстро добавить', zh: '快速添加', ar: 'إضافة سريعة' },
+    qty: { en: 'Qty', ru: 'Кол-во', zh: '数量', ar: 'الكمية' },
+    unitPrice: { en: 'Unit price', ru: 'Цена за единицу', zh: '单价', ar: 'سعر الوحدة' },
+    total: { en: 'Total', ru: 'Итого', zh: '合计', ar: 'الإجمالي' },
+    addToCart: { en: 'Add to Cart', ru: 'Добавить в корзину', zh: '添加到购物车', ar: 'أضف إلى السلة' },
+    deliveryFallback: {
+      en: '• Delivery: Email + Password + Login instructions',
+      ru: '• Доставка: Email + Пароль + Инструкции по входу',
+      zh: '• 交付：邮箱 + 密码 + 登录说明',
+      ar: '• التسليم: البريد الإلكتروني + كلمة المرور + تعليمات تسجيل الدخول'
+    }
+  };
+
+  function t(key, lang) {
+    const l = lang || detectLanguage();
+    return (I18N[key] && (I18N[key][l] || I18N[key].en)) || '';
+  }
+
+  function categoryLabel(rawValue, lang) {
+    const v = String(rawValue || '').trim();
+    const upper = v.toUpperCase();
+    const l = lang || detectLanguage();
+    const map = {
+      OTHER: { en: 'OTHER', ru: 'ДРУГОЕ', zh: '其他', ar: 'أخرى' }
+    };
+
+    if (map[upper]) return map[upper][l] || map[upper].en;
+    return upper;
+  }
+
+  function applyStaticTranslations(lang) {
+    const l = lang || detectLanguage();
+
+    // Search
+    const qEl = document.getElementById('q');
+    if (qEl) qEl.placeholder = t('searchPlaceholder', l);
+
+    // Table headers
+    const th = document.querySelector('.list .thead');
+    if (th) {
+      const cells = th.querySelectorAll(':scope > div');
+      if (cells[0]) cells[0].textContent = t('tableTitle', l);
+      if (cells[1]) cells[1].textContent = t('tableQty', l);
+      if (cells[2]) cells[2].textContent = t('tablePrice', l);
+    }
+
+    // Sidebar titles
+    const requestBox = document.querySelector('.request-box');
+    if (requestBox) {
+      const h3 = requestBox.querySelector('h3');
+      if (h3) h3.textContent = t('requestTitle', l);
+
+      const p = requestBox.querySelector('p.muted');
+      if (p) p.textContent = t('requestDesc', l);
+
+      const labelAccountType = requestBox.querySelector('label[for="accountType"]');
+      if (labelAccountType) labelAccountType.textContent = t('accountTypeLabel', l);
+      const inputAccountType = requestBox.querySelector('#accountType');
+      if (inputAccountType) inputAccountType.placeholder = t('accountTypePlaceholder', l);
+
+      const labelQty = requestBox.querySelector('label[for="quantity"]');
+      if (labelQty) labelQty.textContent = t('amountLabel', l);
+      const inputQty = requestBox.querySelector('#quantity');
+      if (inputQty) inputQty.placeholder = t('amountPlaceholder', l);
+
+      const labelEmail = requestBox.querySelector('label[for="email"]');
+      if (labelEmail) labelEmail.textContent = t('emailLabel', l);
+      const inputEmail = requestBox.querySelector('#email');
+      if (inputEmail) inputEmail.placeholder = t('emailPlaceholder', l);
+
+      const submitBtn = requestBox.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.textContent = t('requestSubmit', l);
+    }
+
+    const newsBox = document.querySelector('.side.news');
+    if (newsBox) {
+      const h3 = newsBox.querySelector('h3');
+      if (h3) h3.innerHTML = t('newsTitle', l).replace('&', '&amp;');
+    }
+
+    // Help section
+    const helpBox = Array.from(document.querySelectorAll('.sidebar .side')).find(el => {
+      const h = el.querySelector('h3');
+      return h && /need help\?/i.test(h.textContent || '');
+    });
+    if (helpBox) {
+      const h3 = helpBox.querySelector('h3');
+      if (h3) h3.textContent = t('helpTitle', l);
+      const muted = helpBox.querySelector('.muted');
+      if (muted) {
+        // Preserve the link but translate prefix
+        const link = muted.querySelector('a');
+        if (link) {
+          muted.innerHTML = '';
+          muted.appendChild(document.createTextNode(t('contactsPrefix', l) + ' '));
+          muted.appendChild(link);
+        }
+      }
+    }
+
+    // Mini-cart modal
+    const mcTitle = document.getElementById('mc-title');
+    if (mcTitle) mcTitle.textContent = t('quickAdd', l);
+
+    const mcGo = document.getElementById('mc-go');
+    if (mcGo) mcGo.textContent = t('addToCart', l);
+
+    const labels = document.querySelectorAll('#mc .row label');
+    labels.forEach(label => {
+      const txt = (label.textContent || '').trim().toLowerCase();
+      if (txt === 'qty') label.textContent = t('qty', l);
+      if (txt === 'unit price') label.textContent = t('unitPrice', l);
+      if (txt === 'total') label.textContent = t('total', l);
+    });
+  }
 
   async function loadCategories() {
     try {
@@ -99,10 +275,6 @@ function loadNewsUpdates() {
     };
 
     return categoryTranslations[lang] || categoryTranslations.en;
-  }
-
-  function detectLanguage() {
-    return window.LanguageUtils ? window.LanguageUtils.detectLanguage() : 'en';
   }
 
   function setLanguage(lang) {
@@ -141,18 +313,13 @@ function loadNewsUpdates() {
     const currentCategory = getCurrentCategory();
     const currentCategoryNorm = normalizeCategoryName(currentCategory);
     const lang = detectLanguage();
-    const allTranslations = {
-      en: 'ALL',
-      ru: 'ВСЕ',
-      zh: '全部',
-      ar: 'الكل'
-    };
-    const allText = allTranslations[lang] || 'ALL';
+    const allText = t('all', lang) || 'ALL';
     let html = `<a href="?category=all" class="category-tab ${currentCategory === 'all' ? 'active' : ''}" data-category="all">${allText}</a>`;
     categories.forEach(cat => {
       const catValue = String(getCategoryValue(cat) || '');
       const isActive = currentCategoryNorm === normalizeCategoryName(catValue);
-      html += `<a href="?category=${encodeURIComponent(catValue)}" class="category-tab ${isActive ? 'active' : ''}" data-category="${catValue}">${catValue.toUpperCase()}</a>`;
+      const label = categoryLabel(catValue, lang);
+      html += `<a href="?category=${encodeURIComponent(catValue)}" class="category-tab ${isActive ? 'active' : ''}" data-category="${catValue}">${label}</a>`;
     });
     safeSetInnerHTML(container, html, true);
     container.querySelectorAll('.category-tab').forEach(tab => {
@@ -263,13 +430,7 @@ function loadNewsUpdates() {
     const currentCategoryNorm = normalizeCategoryName(currentCategory);
     const isAllCategory = currentCategoryNorm === 'all' || currentCategory === 'all';
     const lang = detectLanguage();
-    const buyNowTranslations = {
-      en: 'Buy Now',
-      ru: 'Купить сейчас',
-      zh: '立即购买',
-      ar: 'اشترِ الآن'
-    };
-    const buyNowText = buyNowTranslations[lang] || 'Buy Now';
+    const buyNowText = t('buyNow', lang) || 'Buy Now';
 
     PRODUCTS.forEach(p => {
       // Get translated title and note
@@ -305,7 +466,7 @@ function loadNewsUpdates() {
           <div>
             <p class="d-title">${translatedTitle}</p>
             <div class="product-full-description muted" style="margin:0 0 6px 18px">
-              ${translatedNote || `• Delivery: Email + Password + Login instructions`}
+              ${translatedNote || t('deliveryFallback', lang)}
             </div>
           </div>
         </div>
@@ -461,6 +622,8 @@ function loadNewsUpdates() {
   }
 
   (async () => {
+    const lang = detectLanguage();
+    applyStaticTranslations(lang);
     await renderCategoryTabs();
     render();
   })();

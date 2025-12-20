@@ -5,6 +5,7 @@
   <title>Checkout</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="config.js"></script>
+  <script src="language-utils.js"></script>
   <style>
     :root{--bg:#f7f7fb;--card:#fff;--line:#e5e7eb;--text:#111827;--muted:#6b7280;--ok:#16a34a;--danger:#ef4444;--primary:#2563eb}
     body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI, Tahoma, Arial, sans-serif}
@@ -39,10 +40,10 @@
   <section id="checkout" class="checkout-page" aria-label="Checkout">
     <div class="container">
       <div class="header">
-        <h1>You are almost there</h1>
+        <h1 id="checkout-headline">You are almost there</h1>
         <div class="actions">
-          <a class="btn" href="Cartpage.html">← Back to cart</a>
-          <a class="btn" href="marketplace.html">Continue shopping</a>
+          <a class="btn" id="checkout-back-cart" href="Cartpage.html">← Back to cart</a>
+          <a class="btn" id="checkout-continue-marketplace" href="marketplace.html">Continue shopping</a>
         </div>
       </div>
 
@@ -50,7 +51,7 @@
         <!-- Billing -->
         <div class="card">
           <div class="section">
-            <div class="title">Billing details</div>
+            <div class="title" id="billing-title">Billing details</div>
             <div class="row">
               <div class="field"><label for="b-first">First name *</label><input id="b-first" required></div>
               <div class="field"><label for="b-last">Last name *</label><input id="b-last" required></div>
@@ -72,50 +73,50 @@
         <!-- Order & Payment -->
         <div class="card">
           <div class="section summary">
-            <div class="title">Your order</div>
+            <div class="title" id="order-title">Your order</div>
             <div id="sum-items"></div>
             <div class="totals">
-              <div class="row"><span>Subtotal</span><strong id="sum-sub">$0.00</strong></div>
-              <div class="row"><span>Discounts</span><span id="sum-dis">$0.00</span></div>
-              <div class="row total"><span>Total</span><strong id="sum-total">$0.00</strong></div>
+              <div class="row"><span id="sum-sub-label">Subtotal</span><strong id="sum-sub">$0.00</strong></div>
+              <div class="row"><span id="sum-dis-label">Discounts</span><span id="sum-dis">$0.00</span></div>
+              <div class="row total"><span id="sum-total-label">Total</span><strong id="sum-total">$0.00</strong></div>
             </div>
 
             <div class="field" style="margin-top:12px">
               <label for="coupon">Coupon Code</label>
               <div style="display:flex;gap:8px"><input id="coupon" placeholder="Enter coupon"><button class="btn" id="apply-coupon" type="button">Apply</button></div>
-              <div class="muted">Demo coupon: COUPON5 (5% off)</div>
+              <div class="muted" id="demo-coupon-hint">Demo coupon: COUPON5 (5% off)</div>
             </div>
 
-            <div class="title" style="margin-top:8px">Payment</div>
+            <div class="title" id="payment-title" style="margin-top:8px">Payment</div>
             <div class="pm-box">
               <div data-pm="cod">
                 <label class="pm-option">
                   <input type="radio" name="pm" value="cod" checked>
-                  <span>💵 Cash on Delivery (COD)</span>
+                  <span id="pm-cod-title">💵 Cash on Delivery (COD)</span>
                 </label>
-                <div class="muted" style="margin-left:28px;margin-top:4px">Pay with cash upon delivery</div>
+                <div class="muted" id="pm-cod-desc" style="margin-left:28px;margin-top:4px">Pay with cash upon delivery</div>
               </div>
 
               <div data-pm="crypto" style="margin-top:12px">
                 <label class="pm-option">
                   <input type="radio" name="pm" value="crypto">
-                  <span>₿ Crypto Currency Payment</span>
+                  <span id="pm-crypto-title">₿ Crypto Currency Payment</span>
                 </label>
-                <div class="muted" style="margin-left:28px;margin-top:4px">Pay with Bitcoin, USDT, Ethereum and more via NOWPayments</div>
+                <div class="muted" id="pm-crypto-desc" style="margin-left:28px;margin-top:4px">Pay with Bitcoin, USDT, Ethereum and more via NOWPayments</div>
               </div>
             </div>
 
             <div class="field terms" style="margin-top:12px">
               <label for="agree" style="display: flex; align-items: center; gap: 8px;">
                 <input id="agree" type="checkbox" />
-                <span>I have read and agree to the <a href="/terms/" target="_blank" rel="noopener">website terms and conditions</a> <span style="color: #ef4444; font-size: 18px; font-weight: bold;">*</span></span>
+                <span id="terms-text">I have read and agree to the <a href="/terms/" target="_blank" rel="noopener">website terms and conditions</a> <span style="color: #ef4444; font-size: 18px; font-weight: bold;">*</span></span>
               </label>
             </div>
 
             <div style="display:flex;gap:8px;margin-top:10px">
               <button id="place-order" class="btn ok" type="button">Place Order</button>
             </div>
-            <div class="muted" style="margin-top:10px">SSL secured checkout • 24/7 support available</div>
+            <div class="muted" id="ssl-note" style="margin-top:10px">SSL secured checkout • 24/7 support available</div>
           </div>
         </div>
       </div>
@@ -171,7 +172,10 @@
       if(!sel) return;
       sel.innerHTML = '';
       // default placeholder on top
-      const ph = document.createElement('option'); ph.value=''; ph.textContent='Select country'; sel.appendChild(ph);
+      const ph = document.createElement('option');
+      ph.value='';
+      ph.textContent=(window.checkoutTranslations && window.checkoutTranslations.selectCountry) || 'Select country';
+      sel.appendChild(ph);
       COUNTRIES.sort().forEach(c=>{
         const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o);
       });
@@ -184,7 +188,12 @@
     const itemsEl=$('#sum-items');
     function renderItems(){
       itemsEl.innerHTML='';
-      if(!cart.length){ itemsEl.innerHTML='<div class="muted">Your cart is empty.</div>'; totals(); return; }
+      if(!cart.length){
+        const emptyText = (window.checkoutTranslations && window.checkoutTranslations.cartEmpty) || 'Your cart is empty.';
+        itemsEl.innerHTML='<div class="muted">'+emptyText+'</div>';
+        totals();
+        return;
+      }
       cart.forEach(it=>{
         const line=document.createElement('div'); line.className='item';
         const t=document.createElement('div'); t.textContent=it.name;
@@ -501,7 +510,7 @@
           price_currency: 'usd',
           order_id: order.orderId,
           order_description: `Order #${order.orderId} - ${order.items.length} item(s)`,
-          success_url: window.location.origin + '/orderSuccess.html?orderId=' + order.orderId,
+          success_url: window.location.origin + '/orderSuccess.html?orderId=' + encodeURIComponent(order.orderId),
           cancel_url: window.location.origin + '/Checkout.html'
         };
 
@@ -581,6 +590,245 @@
     window.addEventListener('storage',ev=>{
       if(ev && ALL.includes(ev.key)){ cart=migrate(readAll()); renderItems(); }
     });
+  })();
+  </script>
+
+  <script>
+  // Checkout translations + keep language across pages
+  (function(){
+    const lang = (window.LanguageUtils && window.LanguageUtils.getLanguage) ? window.LanguageUtils.getLanguage() : 'en';
+    if (window.LanguageUtils && window.LanguageUtils.applyDocumentDirection) window.LanguageUtils.applyDocumentDirection(lang);
+
+    const T = {
+      en: {
+        title: 'Checkout',
+        headline: 'You are almost there',
+        backToCart: '← Back to cart',
+        continueShopping: 'Continue shopping',
+        billingTitle: 'Billing details',
+        firstName: 'First name *',
+        lastName: 'Last name *',
+        phone: 'Phone',
+        email: 'Email address *',
+        extra: 'Additional Contact (WhatsApp, Telegram, Skype, Other)',
+        country: 'Country / Region',
+        addInfo: 'Additional information',
+        notesPh: 'Any specific delivery format, batch size, timing...',
+        orderTitle: 'Your order',
+        subtotal: 'Subtotal',
+        discounts: 'Discounts',
+        total: 'Total',
+        couponLabel: 'Coupon Code',
+        couponPh: 'Enter coupon',
+        apply: 'Apply',
+        demoCoupon: 'Demo coupon: COUPON5 (5% off)',
+        paymentTitle: 'Payment',
+        codTitle: '💵 Cash on Delivery (COD)',
+        codDesc: 'Pay with cash upon delivery',
+        cryptoTitle: '₿ Crypto Currency Payment',
+        cryptoDesc: 'Pay with Bitcoin, USDT, Ethereum and more via NOWPayments',
+        terms: 'I have read and agree to the website terms and conditions',
+        placeOrder: 'Place Order',
+        ssl: 'SSL secured checkout • 24/7 support available',
+        selectCountry: 'Select country',
+        cartEmpty: 'Your cart is empty.'
+      },
+      ru: {
+        title: 'Оформление заказа',
+        headline: 'Вы почти у цели',
+        backToCart: '← Назад в корзину',
+        continueShopping: 'Продолжить покупки',
+        billingTitle: 'Платежные данные',
+        firstName: 'Имя *',
+        lastName: 'Фамилия *',
+        phone: 'Телефон',
+        email: 'Email *',
+        extra: 'Дополнительный контакт (WhatsApp, Telegram, Skype, Другое)',
+        country: 'Страна / Регион',
+        addInfo: 'Дополнительная информация',
+        notesPh: 'Формат доставки, партия, сроки...',
+        orderTitle: 'Ваш заказ',
+        subtotal: 'Промежуточный итог',
+        discounts: 'Скидки',
+        total: 'Итого',
+        couponLabel: 'Купон',
+        couponPh: 'Введите купон',
+        apply: 'Применить',
+        demoCoupon: 'Демо купон: COUPON5 (скидка 5%)',
+        paymentTitle: 'Оплата',
+        codTitle: '💵 Оплата при получении (COD)',
+        codDesc: 'Оплата наличными при доставке',
+        cryptoTitle: '₿ Оплата криптовалютой',
+        cryptoDesc: 'Оплата Bitcoin, USDT, Ethereum и др. через NOWPayments',
+        terms: 'Я прочитал(а) и согласен(на) с условиями сайта',
+        placeOrder: 'Оформить заказ',
+        ssl: 'Безопасная оплата SSL • Поддержка 24/7',
+        selectCountry: 'Выберите страну',
+        cartEmpty: 'Ваша корзина пуста.'
+      },
+      zh: {
+        title: '结账',
+        headline: '马上就完成了',
+        backToCart: '← 返回购物车',
+        continueShopping: '继续购物',
+        billingTitle: '账单信息',
+        firstName: '名 *',
+        lastName: '姓 *',
+        phone: '电话',
+        email: '电子邮箱 *',
+        extra: '其他联系方式（WhatsApp、Telegram、Skype 等）',
+        country: '国家/地区',
+        addInfo: '附加信息',
+        notesPh: '交付格式、批量大小、时间…',
+        orderTitle: '您的订单',
+        subtotal: '小计',
+        discounts: '折扣',
+        total: '总计',
+        couponLabel: '优惠码',
+        couponPh: '输入优惠码',
+        apply: '应用',
+        demoCoupon: '演示优惠码：COUPON5（立减 5%）',
+        paymentTitle: '支付方式',
+        codTitle: '💵 货到付款（COD）',
+        codDesc: '交付时现金支付',
+        cryptoTitle: '₿ 加密货币支付',
+        cryptoDesc: '通过 NOWPayments 使用 Bitcoin、USDT、Ethereum 等支付',
+        terms: '我已阅读并同意网站条款与条件',
+        placeOrder: '下单',
+        ssl: 'SSL 安全结账 • 24/7 客服支持',
+        selectCountry: '选择国家',
+        cartEmpty: '您的购物车是空的。'
+      },
+      ar: {
+        title: 'الدفع',
+        headline: 'أوشكت على الانتهاء',
+        backToCart: 'العودة إلى السلة ←',
+        continueShopping: 'متابعة التسوق',
+        billingTitle: 'تفاصيل الفاتورة',
+        firstName: 'الاسم الأول *',
+        lastName: 'اسم العائلة *',
+        phone: 'الهاتف',
+        email: 'البريد الإلكتروني *',
+        extra: 'وسيلة تواصل إضافية (واتساب، تيليجرام، سكايب، أخرى)',
+        country: 'الدولة / المنطقة',
+        addInfo: 'معلومات إضافية',
+        notesPh: 'تنسيق التسليم، حجم الدفعة، التوقيت...',
+        orderTitle: 'طلبك',
+        subtotal: 'المجموع الفرعي',
+        discounts: 'الخصومات',
+        total: 'الإجمالي',
+        couponLabel: 'كود القسيمة',
+        couponPh: 'أدخل القسيمة',
+        apply: 'تطبيق',
+        demoCoupon: 'قسيمة تجريبية: COUPON5 (خصم 5%)',
+        paymentTitle: 'الدفع',
+        codTitle: '💵 الدفع عند الاستلام (COD)',
+        codDesc: 'ادفع نقداً عند التسليم',
+        cryptoTitle: '₿ الدفع بالعملات الرقمية',
+        cryptoDesc: 'ادفع بـ Bitcoin وUSDT وEthereum والمزيد عبر NOWPayments',
+        terms: 'لقد قرأت وأوافق على شروط وأحكام الموقع',
+        placeOrder: 'تأكيد الطلب',
+        ssl: 'دفع آمن عبر SSL • دعم 24/7',
+        selectCountry: 'اختر الدولة',
+        cartEmpty: 'سلة التسوق فارغة.'
+      }
+    };
+
+    const t = T[lang] || T.en;
+    window.checkoutTranslations = { selectCountry: t.selectCountry, cartEmpty: t.cartEmpty };
+
+    // Update country placeholder if countries already populated
+    const countrySel = document.getElementById('b-country');
+    if (countrySel && countrySel.options && countrySel.options.length) {
+      countrySel.options[0].textContent = t.selectCountry;
+    }
+
+    // If cart is empty and message already rendered, translate it
+    const itemsEl = document.getElementById('sum-items');
+    if (itemsEl && /Your cart is empty\.|Ваша корзина пуста\.|您的购物车是空的。|سلة التسوق فارغة\./.test(itemsEl.textContent || '')) {
+      const muted = itemsEl.querySelector('.muted');
+      if (muted) muted.textContent = t.cartEmpty;
+    }
+
+    document.title = t.title;
+    const h = document.getElementById('checkout-headline');
+    if (h) h.textContent = t.headline;
+    const back = document.getElementById('checkout-back-cart');
+    if (back) back.textContent = t.backToCart;
+    const cont = document.getElementById('checkout-continue-marketplace');
+    if (cont) cont.textContent = t.continueShopping;
+
+    const marketplaceUrl = (window.LanguageUtils && window.LanguageUtils.marketplacePage)
+      ? window.LanguageUtils.marketplacePage(lang)
+      : 'marketplace.html';
+    if (cont) cont.href = marketplaceUrl;
+    if (back) back.href = 'Cartpage.html';
+
+    const bTitle = document.getElementById('billing-title');
+    if (bTitle) bTitle.textContent = t.billingTitle;
+    const oTitle = document.getElementById('order-title');
+    if (oTitle) oTitle.textContent = t.orderTitle;
+    const pTitle = document.getElementById('payment-title');
+    if (pTitle) pTitle.textContent = t.paymentTitle;
+
+    const setLabel = (forId, text) => {
+      const el = document.querySelector(`label[for="${forId}"]`);
+      if (el) el.textContent = text;
+    };
+    setLabel('b-first', t.firstName);
+    setLabel('b-last', t.lastName);
+    setLabel('b-phone', t.phone);
+    setLabel('b-email', t.email);
+    setLabel('b-extra', t.extra);
+    setLabel('b-country', t.country);
+    setLabel('b-notes', t.addInfo);
+
+    const notes = document.getElementById('b-notes');
+    if (notes) notes.placeholder = t.notesPh;
+
+    const sub = document.getElementById('sum-sub-label');
+    if (sub) sub.textContent = t.subtotal;
+    const dis = document.getElementById('sum-dis-label');
+    if (dis) dis.textContent = t.discounts;
+    const tot = document.getElementById('sum-total-label');
+    if (tot) tot.textContent = t.total;
+
+    const couponLabel = document.querySelector('label[for="coupon"]');
+    if (couponLabel) couponLabel.textContent = t.couponLabel;
+    const coupon = document.getElementById('coupon');
+    if (coupon) coupon.placeholder = t.couponPh;
+    const apply = document.getElementById('apply-coupon');
+    if (apply) apply.textContent = t.apply;
+    const demo = document.getElementById('demo-coupon-hint');
+    if (demo) demo.textContent = t.demoCoupon;
+
+    const codT = document.getElementById('pm-cod-title');
+    if (codT) codT.textContent = t.codTitle;
+    const codD = document.getElementById('pm-cod-desc');
+    if (codD) codD.textContent = t.codDesc;
+    const crT = document.getElementById('pm-crypto-title');
+    if (crT) crT.textContent = t.cryptoTitle;
+    const crD = document.getElementById('pm-crypto-desc');
+    if (crD) crD.textContent = t.cryptoDesc;
+
+    const terms = document.getElementById('terms-text');
+    if (terms) {
+      const a = terms.querySelector('a');
+      terms.innerHTML = '';
+      terms.appendChild(document.createTextNode(t.terms + ' '));
+      if (a) terms.appendChild(a);
+      const star = document.createElement('span');
+      star.textContent = ' *';
+      star.style.color = '#ef4444';
+      star.style.fontSize = '18px';
+      star.style.fontWeight = 'bold';
+      terms.appendChild(star);
+    }
+
+    const place = document.getElementById('place-order');
+    if (place) place.textContent = t.placeOrder;
+    const ssl = document.getElementById('ssl-note');
+    if (ssl) ssl.textContent = t.ssl;
   })();
   </script>
 </body>

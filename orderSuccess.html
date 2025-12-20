@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Success - BuyPvaAccount</title>
+    <script src="language-utils.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: white; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
@@ -45,38 +46,190 @@
 <body>
     <div class="thank-you-card">
         <div class="checkmark">✓</div>
-        <h1>Thank You!</h1>
-        <p class="subtitle">Your order has been successfully placed. We'll send you a confirmation email shortly.</p>
+        <h1 id="os-title">Thank You!</h1>
+        <p class="subtitle" id="os-subtitle">Your order has been successfully placed. We'll send you a confirmation email shortly.</p>
         
         <div class="order-info">
-            <div class="info-row"><span class="info-label">Order Number</span><span class="info-value" id="orderId">Loading...</span></div>
-            <div class="info-row" id="transactionRow"><span class="info-label">Transaction ID</span><span class="info-value" id="transactionId">-</span></div>
-            <div class="info-row"><span class="info-label">Order Date</span><span class="info-value" id="orderDate">Loading...</span></div>
-            <div class="info-row"><span class="info-label">Order Status</span><span class="info-value" style="color: #f59e0b;">Pending</span></div>
-            <div class="info-row"><span class="info-label">Payment Method</span><span class="info-value" id="paymentMethod">Loading...</span></div>
-            <div class="info-row"><span class="info-label">Email</span><span class="info-value" id="customerEmail">Loading...</span></div>
-            <div class="info-row"><span class="info-label">Customer Information</span><span class="info-value" id="customerInfo">Loading...</span></div>
+            <div class="info-row"><span class="info-label" id="os-label-order">Order Number</span><span class="info-value" id="orderId">Loading...</span></div>
+            <div class="info-row" id="transactionRow"><span class="info-label" id="os-label-tx">Transaction ID</span><span class="info-value" id="transactionId">-</span></div>
+            <div class="info-row"><span class="info-label" id="os-label-date">Order Date</span><span class="info-value" id="orderDate">Loading...</span></div>
+            <div class="info-row"><span class="info-label" id="os-label-status">Order Status</span><span class="info-value" id="os-status" style="color: #f59e0b;">Pending</span></div>
+            <div class="info-row"><span class="info-label" id="os-label-pm">Payment Method</span><span class="info-value" id="paymentMethod">Loading...</span></div>
+            <div class="info-row"><span class="info-label" id="os-label-email">Email</span><span class="info-value" id="customerEmail">Loading...</span></div>
+            <div class="info-row"><span class="info-label" id="os-label-cust">Customer Information</span><span class="info-value" id="customerInfo">Loading...</span></div>
             <div id="itemsListRows"></div>
-            <div class="info-row"><span class="info-label">Subtotal</span><span class="info-value" id="subtotal">$0.00</span></div>
-            <div class="info-row" id="discountRow" style="display: none;"><span class="info-label">Discount</span><span class="info-value" id="discount" style="color: #10b981;">-$0.00</span></div>
-            <div class="info-row" style="border-top: 2px solid #1f2937; font-weight: 700; font-size: 16px;"><span class="info-label">Total Amount</span><span class="info-value" id="totalAmount">$0.00</span></div>
+            <div class="info-row"><span class="info-label" id="os-label-sub">Subtotal</span><span class="info-value" id="subtotal">$0.00</span></div>
+            <div class="info-row" id="discountRow" style="display: none;"><span class="info-label" id="os-label-dis">Discount</span><span class="info-value" id="discount" style="color: #10b981;">-$0.00</span></div>
+            <div class="info-row" style="border-top: 2px solid #1f2937; font-weight: 700; font-size: 16px;"><span class="info-label" id="os-label-total">Total Amount</span><span class="info-value" id="totalAmount">$0.00</span></div>
         </div>
 
         <div id="cryptoPaymentInfo" class="crypto-info" style="display: none;">
-            <h3 style="margin: 0 0 15px 0; color: #78350f; font-size: 16px;">₿ Cryptocurrency Payment Details</h3>
+            <h3 id="os-crypto-title" style="margin: 0 0 15px 0; color: #78350f; font-size: 16px;">₿ Cryptocurrency Payment Details</h3>
             <div id="cryptoDetails"></div>
         </div>
 
         <div class="message-box">
-            <p><strong>📧 What's Next?</strong><br><span id="nextStepsText">We've sent a confirmation email to your email address. You can track your order anytime from your account dashboard.</span></p>
+            <p><strong id="os-next-title">📧 What's Next?</strong><br><span id="nextStepsText">We've sent a confirmation email to your email address. You can track your order anytime from your account dashboard.</span></p>
         </div>
         
         <div class="buttons">
-            <a href="profile.html" class="btn btn-primary">View My Orders</a>
-            <a href="marketplace.html" class="btn btn-secondary">Continue Shopping</a>
+            <a href="profile.html" id="os-view-orders" class="btn btn-primary">View My Orders</a>
+            <a href="marketplace.html" id="os-continue" class="btn btn-secondary">Continue Shopping</a>
         </div>
     </div>
     <script>
+        // Apply saved language and translate static UI
+        (function(){
+            const lang = (window.LanguageUtils && window.LanguageUtils.getLanguage) ? window.LanguageUtils.getLanguage() : 'en';
+            if (window.LanguageUtils && window.LanguageUtils.applyDocumentDirection) window.LanguageUtils.applyDocumentDirection(lang);
+
+            const T = {
+                en: {
+                    title: 'Thank You!',
+                    subtitle: "Your order has been successfully placed. We'll send you a confirmation email shortly.",
+                    order: 'Order Number',
+                    tx: 'Transaction ID',
+                    date: 'Order Date',
+                    status: 'Order Status',
+                    pending: 'Pending',
+                    pm: 'Payment Method',
+                    email: 'Email',
+                    customer: 'Customer Information',
+                    subtotal: 'Subtotal',
+                    discount: 'Discount',
+                    total: 'Total Amount',
+                    cryptoTitle: '₿ Cryptocurrency Payment Details',
+                    nextTitle: "📧 What's Next?",
+                    nextText: "We've sent a confirmation email to your email address. You can track your order anytime from your account dashboard.",
+                    viewOrders: 'View My Orders',
+                    continue: 'Continue Shopping',
+                    cryptoPm: '₿ Cryptocurrency',
+                    codPm: '💵 Cash on Delivery',
+                    invoiceId: 'Invoice ID:',
+                    paymentStatus: 'Payment Status:',
+                    completePayment: 'Complete Payment →',
+                    paymentProcessing: 'Payment processing...',
+                    cryptoNext: "Please complete your cryptocurrency payment using the link above. Once confirmed on the blockchain, we'll process your order immediately and send you a confirmation email.",
+                    qty: 'Qty'
+                },
+                ru: {
+                    title: 'Спасибо!',
+                    subtitle: 'Ваш заказ успешно оформлен. Мы скоро отправим письмо с подтверждением.',
+                    order: 'Номер заказа',
+                    tx: 'ID транзакции',
+                    date: 'Дата заказа',
+                    status: 'Статус заказа',
+                    pending: 'В ожидании',
+                    pm: 'Способ оплаты',
+                    email: 'Email',
+                    customer: 'Данные клиента',
+                    subtotal: 'Промежуточный итог',
+                    discount: 'Скидка',
+                    total: 'Итого к оплате',
+                    cryptoTitle: '₿ Детали крипто-платежа',
+                    nextTitle: '📧 Что дальше?',
+                    nextText: 'Мы отправили письмо с подтверждением на ваш адрес. Вы можете отслеживать заказ в личном кабинете.',
+                    viewOrders: 'Мои заказы',
+                    continue: 'Продолжить покупки',
+                    cryptoPm: '₿ Криптовалюта',
+                    codPm: '💵 Оплата при получении',
+                    invoiceId: 'ID счета:',
+                    paymentStatus: 'Статус платежа:',
+                    completePayment: 'Оплатить →',
+                    paymentProcessing: 'Платеж обрабатывается...',
+                    cryptoNext: 'Пожалуйста, завершите крипто-платеж по ссылке выше. После подтверждения в блокчейне мы обработаем заказ и отправим подтверждение.',
+                    qty: 'Кол-во'
+                },
+                zh: {
+                    title: '感谢您！',
+                    subtitle: '您的订单已成功提交。我们将尽快发送确认邮件。',
+                    order: '订单号',
+                    tx: '交易 ID',
+                    date: '下单日期',
+                    status: '订单状态',
+                    pending: '待处理',
+                    pm: '支付方式',
+                    email: '电子邮箱',
+                    customer: '客户信息',
+                    subtotal: '小计',
+                    discount: '折扣',
+                    total: '应付总额',
+                    cryptoTitle: '₿ 加密货币支付详情',
+                    nextTitle: '📧 接下来？',
+                    nextText: '我们已向您的邮箱发送确认邮件。您可以随时在账户面板中查看订单状态。',
+                    viewOrders: '查看我的订单',
+                    continue: '继续购物',
+                    cryptoPm: '₿ 加密货币',
+                    codPm: '💵 货到付款',
+                    invoiceId: '发票 ID：',
+                    paymentStatus: '支付状态：',
+                    completePayment: '完成支付 →',
+                    paymentProcessing: '正在处理支付...',
+                    cryptoNext: '请使用上方链接完成加密货币支付。区块链确认后我们将立即处理订单并发送确认邮件。',
+                    qty: '数量'
+                },
+                ar: {
+                    title: 'شكرًا لك!',
+                    subtitle: 'تم تقديم طلبك بنجاح. سنرسل لك رسالة تأكيد قريبًا.',
+                    order: 'رقم الطلب',
+                    tx: 'معرّف المعاملة',
+                    date: 'تاريخ الطلب',
+                    status: 'حالة الطلب',
+                    pending: 'قيد الانتظار',
+                    pm: 'طريقة الدفع',
+                    email: 'البريد الإلكتروني',
+                    customer: 'معلومات العميل',
+                    subtotal: 'المجموع الفرعي',
+                    discount: 'الخصم',
+                    total: 'المبلغ الإجمالي',
+                    cryptoTitle: '₿ تفاصيل الدفع بالعملة الرقمية',
+                    nextTitle: '📧 ما التالي؟',
+                    nextText: 'لقد أرسلنا رسالة تأكيد إلى بريدك الإلكتروني. يمكنك تتبع طلبك في أي وقت من لوحة حسابك.',
+                    viewOrders: 'عرض طلباتي',
+                    continue: 'متابعة التسوق',
+                    cryptoPm: '₿ عملة رقمية',
+                    codPm: '💵 الدفع عند الاستلام',
+                    invoiceId: 'معرّف الفاتورة:',
+                    paymentStatus: 'حالة الدفع:',
+                    completePayment: 'إكمال الدفع →',
+                    paymentProcessing: 'جارٍ معالجة الدفع...',
+                    cryptoNext: 'يرجى إكمال الدفع بالعملة الرقمية عبر الرابط أعلاه. بعد التأكيد على البلوكتشين سنعالج طلبك فورًا ونرسل رسالة تأكيد.',
+                    qty: 'الكمية'
+                }
+            };
+
+            const t = T[lang] || T.en;
+            document.getElementById('os-title').textContent = t.title;
+            document.getElementById('os-subtitle').textContent = t.subtitle;
+            document.getElementById('os-label-order').textContent = t.order;
+            document.getElementById('os-label-tx').textContent = t.tx;
+            document.getElementById('os-label-date').textContent = t.date;
+            document.getElementById('os-label-status').textContent = t.status;
+            document.getElementById('os-status').textContent = t.pending;
+            document.getElementById('os-label-pm').textContent = t.pm;
+            document.getElementById('os-label-email').textContent = t.email;
+            document.getElementById('os-label-cust').textContent = t.customer;
+            document.getElementById('os-label-sub').textContent = t.subtotal;
+            document.getElementById('os-label-dis').textContent = t.discount;
+            document.getElementById('os-label-total').textContent = t.total;
+            document.getElementById('os-crypto-title').textContent = t.cryptoTitle;
+            document.getElementById('os-next-title').textContent = t.nextTitle;
+            document.getElementById('nextStepsText').textContent = t.nextText;
+            document.getElementById('os-view-orders').textContent = t.viewOrders;
+            document.getElementById('os-continue').textContent = t.continue;
+
+            // Fix buttons URLs
+            const viewOrders = document.getElementById('os-view-orders');
+            if (viewOrders) viewOrders.href = 'profile.html';
+            const cont = document.getElementById('os-continue');
+            const marketplaceUrl = (window.LanguageUtils && window.LanguageUtils.marketplacePage)
+              ? window.LanguageUtils.marketplacePage(lang)
+              : 'marketplace.html';
+            if (cont) cont.href = marketplaceUrl;
+
+            window.__ORDER_SUCCESS_I18N__ = { lang, t };
+        })();
+
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('orderId');
         if (orderId) {
@@ -98,7 +251,10 @@
                 document.getElementById('transactionId').textContent = transactionId;
                 
                 const orderDate = new Date(order.createdAt);
-                document.getElementById('orderDate').textContent = orderDate.toLocaleDateString('en-US', { 
+                const i18n = window.__ORDER_SUCCESS_I18N__ || { lang: 'en', t: {} };
+                const localeMap = { en: 'en-US', ru: 'ru-RU', zh: 'zh-CN', ar: 'ar-SA' };
+                const locale = localeMap[i18n.lang] || 'en-US';
+                document.getElementById('orderDate').textContent = orderDate.toLocaleDateString(locale, { 
                     month: 'long', 
                     day: 'numeric', 
                     year: 'numeric', 
@@ -146,7 +302,8 @@
                 // Payment Method
                 const paymentMethod = order.paymentMethod || 'cod';
                 if (paymentMethod === 'crypto') {
-                    document.getElementById('paymentMethod').textContent = '₿ Cryptocurrency';
+                    const i18n = window.__ORDER_SUCCESS_I18N__ || { lang: 'en', t: {} };
+                    document.getElementById('paymentMethod').textContent = i18n.t.cryptoPm || '₿ Cryptocurrency';
                     
                     // Show crypto payment info
                     if (order.paymentData) {
@@ -154,24 +311,26 @@
                         const cryptoDetails = document.getElementById('cryptoDetails');
                         cryptoInfo.style.display = 'block';
                         
+                        const i18n2 = window.__ORDER_SUCCESS_I18N__ || { lang: 'en', t: {} };
                         let detailsHTML = '';
                         if (order.paymentData.invoice_id) {
-                            detailsHTML += `<p><strong>Invoice ID:</strong> ${order.paymentData.invoice_id}</p>`;
+                            detailsHTML += `<p><strong>${i18n2.t.invoiceId || 'Invoice ID:'}</strong> ${order.paymentData.invoice_id}</p>`;
                         }
                         if (order.paymentData.payment_status) {
-                            detailsHTML += `<p><strong>Payment Status:</strong> ${order.paymentData.payment_status.replace(/_/g, ' ').toUpperCase()}</p>`;
+                            detailsHTML += `<p><strong>${i18n2.t.paymentStatus || 'Payment Status:'}</strong> ${order.paymentData.payment_status.replace(/_/g, ' ').toUpperCase()}</p>`;
                         }
                         if (order.paymentData.invoice_url) {
-                            detailsHTML += `<p style="margin-top: 10px;"><a href="${order.paymentData.invoice_url}" target="_blank" class="crypto-link">Complete Payment →</a></p>`;
+                            detailsHTML += `<p style="margin-top: 10px;"><a href="${order.paymentData.invoice_url}" target="_blank" class="crypto-link">${i18n2.t.completePayment || 'Complete Payment →'}</a></p>`;
                         }
                         
-                        cryptoDetails.innerHTML = detailsHTML || '<p>Payment processing...</p>';
+                        cryptoDetails.innerHTML = detailsHTML || `<p>${i18n2.t.paymentProcessing || 'Payment processing...'}</p>`;
                         
                         // Update next steps for crypto
-                        document.getElementById('nextStepsText').textContent = 'Please complete your cryptocurrency payment using the link above. Once confirmed on the blockchain, we\'ll process your order immediately and send you a confirmation email.';
+                        document.getElementById('nextStepsText').textContent = i18n2.t.cryptoNext || 'Please complete your cryptocurrency payment using the link above. Once confirmed on the blockchain, we\'ll process your order immediately and send you a confirmation email.';
                     }
                 } else {
-                    document.getElementById('paymentMethod').textContent = '💵 Cash on Delivery';
+                    const i18n = window.__ORDER_SUCCESS_I18N__ || { lang: 'en', t: {} };
+                    document.getElementById('paymentMethod').textContent = i18n.t.codPm || '💵 Cash on Delivery';
                 }
             }
         }
