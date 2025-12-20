@@ -547,6 +547,8 @@
         };
 
         let currentAccountFilter = 'all';
+        const urlParams = new URLSearchParams(window.location.search);
+        const pendingOpenRequestId = urlParams.get('requestId');
 
         // Updated filter function for account requests only
         function filterNotifications(filter, type) {
@@ -618,11 +620,23 @@
                 const div = createNotificationItem(request, index, false);
                 container.appendChild(div);
             });
+
+            if (pendingOpenRequestId) {
+                const match = container.querySelector(`[data-request-id="${CSS.escape(pendingOpenRequestId)}"]`);
+                if (match) {
+                    match.classList.add('expanded');
+                    match.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
         }
 
         function createNotificationItem(request, index, isSupportRequest) {
             const div = document.createElement('div');
             div.className = `notification-item ${request.status || 'new'}`;
+            const rid = request && (request.id || request.requestId) ? String(request.id || request.requestId) : '';
+            if (rid) {
+                div.dataset.requestId = rid;
+            }
 
             const date = new Date(request.timestamp);
             const formattedDate = date.toLocaleString();
