@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawn } = require('child_process');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const archiver = require('archiver');
@@ -114,6 +115,85 @@ async function createSiteBackupZip() {
     walk(siteRoot, '');
     await archive.finalize();
     return await done;
+}
+
+async function createPasswordProtectedZipFromFiles({
+    cwd,
+    outputZipPath,
+    password,
+    relativeFiles
+}) {
+    return await new Promise((resolve, reject) => {
+        const args = ['-q', '-@', '-P', String(password || ''), outputZipPath];
+        const child = spawn('zip', args, { cwd, stdio: ['pipe', 'ignore', 'pipe'] });
+
+        let stderr = '';
+        child.stderr.on('data', (d) => {
+            stderr += d.toString();
+        });
+
+        child.on('error', (err) => {
+            reject(new Error(`zip command failed to start: ${err.message}`));
+        });
+
+        child.on('close', (code) => {
+            if (code === 0) return resolve(true);
+            reject(new Error(`zip command failed (code ${code})${stderr ? `: ${stderr.trim()}` : ''}`));
+        });
+
+        // Feed file list to zip via stdin
+        for (const file of relativeFiles || []) {
+            child.stdin.write(`${file}\n`);
+        }
+        child.stdin.end();
+    });
+}
+
+async function createSiteBackupProtectedZip(password) {
+    const siteRoot = path.join(__dirname, '..');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'buypva-backup-'));
+    const modeSuffix = BACKUP_MODE === 'full' ? 'full' : 'safe';
+    const zipPath = path.join(tmpDir, `site-backup-${modeSuffix}-${stamp}.zip`);
+
+    let totalBytes = 0;
+    const relativeFiles = [];
+
+    function walk(currentAbs, currentRel) {
+        const entries = fs.readdirSync(currentAbs, { withFileTypes: true });
+        for (const entry of entries) {
+            const abs = path.join(currentAbs, entry.name);
+            const rel = currentRel ? `${currentRel}/${entry.name}` : entry.name;
+            if (shouldExcludeRelPath(rel)) continue;
+
+            if (entry.isDirectory()) {
+                walk(abs, rel);
+            } else if (entry.isFile()) {
+                const st = fs.statSync(abs);
+                totalBytes += st.size;
+                if (BACKUP_MAX_BYTES > 0 && totalBytes > BACKUP_MAX_BYTES) {
+                    throw new Error(`Backup exceeded size limit (${BACKUP_MAX_BYTES} bytes)`);
+                }
+                relativeFiles.push(rel);
+            }
+        }
+    }
+
+    walk(siteRoot, '');
+
+    if (!password || String(password).trim().length < 1) {
+        throw new Error('Backup password is required');
+    }
+
+    await createPasswordProtectedZipFromFiles({
+        cwd: siteRoot,
+        outputZipPath: zipPath,
+        password: String(password),
+        relativeFiles
+    });
+
+    const stat = fs.statSync(zipPath);
+    return { zipPath, tmpDir, bytes: stat.size };
 }
 
 function readJsonArrayFile(filePath) {
@@ -745,6 +825,56 @@ app.post('/api/admin/backup/email', authenticateAdmin, async (req, res) => {
         try {
             if (tmpDir && fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
         } catch {}
+    }
+});
+
+// Download a password-protected ZIP backup (admin)
+app.post('/api/admin/backup/download', authenticateAdmin, async (req, res) => {
+    let tmpDir = null;
+    let zipPath = null;
+    try {
+        const password = String(req.body?.password || '').trim();
+        if (!password) {
+            return res.status(400).json({ success: false, message: 'Password is required' });
+        }
+
+        // Verify the provided password matches the current admin credentials
+        const username = String(req.user?.username || '').trim();
+        if (!username) {
+            return res.status(401).json({ success: false, message: 'Invalid admin session' });
+        }
+        const valid = await verifyAdmin(username, password);
+        if (!valid?.success) {
+            return res.status(401).json({ success: false, message: 'Incorrect admin password' });
+        }
+
+        const backup = await createSiteBackupProtectedZip(password);
+        tmpDir = backup.tmpDir;
+        zipPath = backup.zipPath;
+
+        // Stream as a download
+        res.setHeader('Content-Type', 'application/zip');
+        return res.download(zipPath, path.basename(zipPath), (err) => {
+            if (err) {
+                console.error('Backup download error:', err);
+            }
+            try {
+                if (zipPath && fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+            } catch {}
+            try {
+                if (tmpDir && fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+            } catch {}
+        });
+    } catch (err) {
+        const msg = err?.message || 'Failed to create backup';
+        console.error('Backup download error:', err);
+        try {
+            if (zipPath && fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+        } catch {}
+        try {
+            if (tmpDir && fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+        } catch {}
+        return res.status(500).json({ success: false, message: msg });
     }
 });
 

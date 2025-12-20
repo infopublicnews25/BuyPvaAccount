@@ -683,9 +683,8 @@
                 <!-- Backup Settings -->
                 <div style="margin-bottom: 30px; padding: 24px; background: #f7fafc; border-radius: 12px;">
                     <h3 style="margin-bottom: 16px;">🗄️ Site Backup</h3>
-                    <p style="margin-bottom: 16px; color: #666;">Before making updates, generate a site backup and email it as a ZIP attachment.</p>
-                    <button type="button" class="btn btn-secondary" id="backupEmailBtn" onclick="emailSiteBackup()">Create Backup & Email</button>
-                    <span id="backupEmailRecipient" style="margin-left: 12px; color: #666;"></span>
+                    <p style="margin-bottom: 16px; color: #666;">Download a password-protected ZIP backup. Use your admin login password to open/unzip it.</p>
+                    <button type="button" class="btn btn-secondary" id="backupEmailBtn" onclick="downloadSiteBackup()">Download Locked Backup ZIP</button>
                     <span id="backupEmailStatus" style="margin-left: 12px; color: #666;"></span>
                 </div>
             </div>
@@ -900,27 +899,14 @@
             });
         }
 
-        async function loadBackupRecipientEmail() {
-            const token = localStorage.getItem(AUTH_KEY);
-            const recipientEl = document.getElementById('backupEmailRecipient');
-            if (!recipientEl) return;
-            if (!token) {
-                recipientEl.textContent = '';
-                return;
-            }
+        function getFilenameFromContentDisposition(cdHeader) {
+            const cd = String(cdHeader || '');
+            const m = cd.match(/filename\*=(?:UTF-8''|)([^;]+)|filename="?([^";]+)"?/i);
+            const raw = (m && (m[1] || m[2])) ? (m[1] || m[2]) : '';
             try {
-                const resp = await fetch(`${API}/admin/backup/recipient`, {
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    cache: 'no-store'
-                });
-                const data = await resp.json().catch(() => null);
-                if (resp.ok && data && data.success && data.to) {
-                    recipientEl.textContent = `Sends to: ${data.to}`;
-                } else {
-                    recipientEl.textContent = '';
-                }
+                return raw ? decodeURIComponent(raw.replace(/(^\s+|\s+$)/g, '')) : '';
             } catch {
-                recipientEl.textContent = '';
+                return raw ? raw.trim() : '';
             }
         }
 
@@ -1012,34 +998,51 @@
             }
         }
 
-        async function emailSiteBackup() {
+        async function downloadSiteBackup() {
             const token = localStorage.getItem(AUTH_KEY);
             if (!token) {
                 alert('No admin token found. Please login again.');
                 return;
             }
 
-            if (!confirm('Create a site backup and email it now?')) return;
+            const password = prompt('Enter your admin login password to protect the ZIP backup:');
+            if (!password) return;
+
+            if (!confirm('Create and download a locked backup ZIP now?')) return;
 
             const btn = document.getElementById('backupEmailBtn');
             const statusEl = document.getElementById('backupEmailStatus');
             if (btn) btn.disabled = true;
-            if (statusEl) statusEl.textContent = 'Creating backup...';
+            if (statusEl) statusEl.textContent = 'Preparing download...';
 
             try {
-                const resp = await fetch(`${API}/admin/backup/email`, {
+                const resp = await fetch(`${API}/admin/backup/download`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password })
                 });
-                const data = await resp.json().catch(() => null);
-                if (!resp.ok || !data || data.success !== true) {
+
+                if (!resp.ok) {
+                    const data = await resp.json().catch(() => null);
                     throw new Error(data?.message || `Request failed (${resp.status})`);
                 }
 
-                if (statusEl) statusEl.textContent = data.message || 'Backup emailed successfully.';
-                alert(data.message || 'Backup emailed successfully.');
+                const blob = await resp.blob();
+                const filename = getFilenameFromContentDisposition(resp.headers.get('Content-Disposition')) || 'site-backup.zip';
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+
+                if (statusEl) statusEl.textContent = 'Backup downloaded.';
             } catch (e) {
                 if (statusEl) statusEl.textContent = `Failed: ${e.message || 'Unknown error'}`;
                 alert(`Backup failed: ${e.message || 'Unknown error'}`);
@@ -1074,7 +1077,6 @@
                 updateNotificationCount();
                 startNotificationPolling();
                 setupNotificationDropdownInteractions();
-                loadBackupRecipientEmail();
                 // Restore the previously active tab
                 const savedTab = localStorage.getItem('activeAdminTab') || 'dashboard';
                 restoreActiveTab(savedTab);
