@@ -665,7 +665,6 @@
                         <div class="form-group">
                             <label>Verification Code</label>
                             <input type="text" id="setupTwofaCode" placeholder="Enter 6-digit code from app" maxlength="6" pattern="\d{6}" inputmode="numeric">
-                            <button type="button" onclick="testCurrentCode()">Test Current Code</button>
                         </div>
                         
                         <button type="button" class="btn btn-success" onclick="verifyAndEnable2FA()">Verify & Enable 2FA</button>
@@ -2009,12 +2008,6 @@
             } catch (e) {
                 show2FAStatus(e.message || 'Failed to disable 2FA', 'error');
             }
-        }
-
-        function testCurrentCode() {
-            const secret = document.getElementById('twofaSecret').value;
-            const currentCode = generateTOTP(secret);
-            alert('Current expected code: ' + currentCode);
         }
 
         function show2FAStatus(message, type) {
