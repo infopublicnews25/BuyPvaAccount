@@ -4,9 +4,11 @@ const nodemailer = require('nodemailer');
 const cors = require('cors');
 const crypto = require('crypto');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
+const archiver = require('archiver');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const { verifyAdmin, createUser, getAllUsers, updateUser, deleteUser, verifyToken, storeUserToken, updateAdminCredentials } = require('./admin-auth');
@@ -23,6 +25,81 @@ const ADMIN_ALERTS_FILE = path.join(__dirname, '../admin_alerts.json');
 const ACCOUNT_REQUESTS_FILE = path.join(__dirname, '../account_requests.json');
 const TICKETS_FILE = path.join(__dirname, '../tickets.json');
 const UPLOADS_DIR = path.join(__dirname, '../uploads');
+
+// Backup settings
+const ADMIN_BACKUP_EMAIL = process.env.ADMIN_BACKUP_EMAIL || process.env.BACKUP_EMAIL || 'info.buypva@gmail.com';
+const BACKUP_MAX_BYTES = Number(process.env.BACKUP_MAX_BYTES || (25 * 1024 * 1024)); // 25MB default
+const BACKUP_EXCLUDE_DIRS = new Set(['.git', 'node_modules', '.venv', 'logs']);
+const BACKUP_EXCLUDE_FILES = new Set(['backend/.env', 'backend/.env.production', 'backend/.env.example', 'backend/email-config.json']);
+
+function shouldExcludeRelPath(relPath) {
+    const normalized = relPath.replace(/\\/g, '/');
+    if (!normalized) return false;
+    if (BACKUP_EXCLUDE_FILES.has(normalized)) return true;
+    const parts = normalized.split('/').filter(Boolean);
+    return parts.some(p => BACKUP_EXCLUDE_DIRS.has(p));
+}
+
+async function ensureEmailReady() {
+    let attempts = 0;
+    while ((!transporter || !emailConfig) && attempts < 15) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        attempts++;
+    }
+    return Boolean(transporter && emailConfig);
+}
+
+async function createSiteBackupZip() {
+    const siteRoot = path.join(__dirname, '..');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'buypva-backup-'));
+    const zipPath = path.join(tmpDir, `site-backup-${stamp}.zip`);
+
+    let totalBytes = 0;
+
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    const done = new Promise((resolve, reject) => {
+        output.on('close', () => resolve({ zipPath, bytes: archive.pointer(), tmpDir }));
+        output.on('error', reject);
+        archive.on('warning', (err) => {
+            // non-fatal warnings
+            console.warn('Backup zip warning:', err.message || err);
+        });
+        archive.on('error', reject);
+    });
+
+    archive.pipe(output);
+
+    function walk(currentAbs, currentRel) {
+        const entries = fs.readdirSync(currentAbs, { withFileTypes: true });
+        for (const entry of entries) {
+            const abs = path.join(currentAbs, entry.name);
+            const rel = currentRel ? `${currentRel}/${entry.name}` : entry.name;
+            if (shouldExcludeRelPath(rel)) continue;
+
+            if (entry.isDirectory()) {
+                walk(abs, rel);
+            } else if (entry.isFile()) {
+                try {
+                    const st = fs.statSync(abs);
+                    totalBytes += st.size;
+                    if (BACKUP_MAX_BYTES > 0 && totalBytes > BACKUP_MAX_BYTES) {
+                        throw new Error(`Backup exceeded size limit (${BACKUP_MAX_BYTES} bytes)`);
+                    }
+                    archive.file(abs, { name: rel });
+                } catch (e) {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    walk(siteRoot, '');
+    await archive.finalize();
+    return await done;
+}
 
 function readJsonArrayFile(filePath) {
     try {
@@ -589,6 +666,60 @@ app.post('/api/admin/alerts/mark-all-read', authenticateAdmin, (req, res) => {
     } catch (err) {
         console.error('Error marking alerts read:', err);
         return res.status(500).json({ success: false, message: 'Failed to mark read' });
+    }
+});
+
+// ========== SITE BACKUP (ADMIN) ==========
+
+app.post('/api/admin/backup/email', authenticateAdmin, async (req, res) => {
+    let tmpDir = null;
+    let zipPath = null;
+    try {
+        const ok = await ensureEmailReady();
+        if (!ok) {
+            return res.status(500).json({ success: false, message: 'Email is not configured on the server' });
+        }
+
+        const backup = await createSiteBackupZip();
+        tmpDir = backup.tmpDir;
+        zipPath = backup.zipPath;
+
+        const stat = fs.statSync(zipPath);
+        const sizeMb = (stat.size / (1024 * 1024)).toFixed(2);
+
+        const to = String(ADMIN_BACKUP_EMAIL || '').trim();
+        if (!to) {
+            return res.status(500).json({ success: false, message: 'Backup recipient email not configured' });
+        }
+
+        const mailOptions = {
+            from: `"BuyPvaAccount" <${emailConfig.email}>`,
+            to,
+            subject: `🗄️ Site Backup - ${new Date().toLocaleString()}`,
+            text: `Attached is the latest site backup. Size: ${sizeMb} MB.`,
+            html: `<p>Attached is the latest site backup.</p><p><strong>Size:</strong> ${sizeMb} MB</p>`,
+            attachments: [
+                {
+                    filename: path.basename(zipPath),
+                    path: zipPath,
+                    contentType: 'application/zip'
+                }
+            ]
+        };
+
+        await transporter.sendMail(mailOptions);
+        return res.json({ success: true, message: `Backup emailed to ${to}`, bytes: stat.size, filename: path.basename(zipPath) });
+    } catch (err) {
+        const msg = err?.message || 'Failed to create/email backup';
+        console.error('Backup email error:', err);
+        return res.status(500).json({ success: false, message: msg });
+    } finally {
+        try {
+            if (zipPath && fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+        } catch {}
+        try {
+            if (tmpDir && fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+        } catch {}
     }
 });
 

@@ -675,6 +675,14 @@
                     
                     <button type="button" class="btn btn-primary" id="setup2FABtn" onclick="setup2FA()">Setup 2FA</button>
                 </div>
+
+                <!-- Backup Settings -->
+                <div style="margin-bottom: 30px; padding: 24px; background: #f7fafc; border-radius: 12px;">
+                    <h3 style="margin-bottom: 16px;">🗄️ Site Backup</h3>
+                    <p style="margin-bottom: 16px; color: #666;">Before making updates, generate a full site backup and email it as a ZIP attachment.</p>
+                    <button type="button" class="btn btn-secondary" id="backupEmailBtn" onclick="emailSiteBackup()">Create Backup & Email</button>
+                    <span id="backupEmailStatus" style="margin-left: 12px; color: #666;"></span>
+                </div>
             </div>
         </div>
     </div>
@@ -934,6 +942,42 @@
                 }
 
                 renderNotificationDropdown();
+            }
+        }
+
+        async function emailSiteBackup() {
+            const token = localStorage.getItem(AUTH_KEY);
+            if (!token) {
+                alert('No admin token found. Please login again.');
+                return;
+            }
+
+            if (!confirm('Create a full site backup and email it now?')) return;
+
+            const btn = document.getElementById('backupEmailBtn');
+            const statusEl = document.getElementById('backupEmailStatus');
+            if (btn) btn.disabled = true;
+            if (statusEl) statusEl.textContent = 'Creating backup...';
+
+            try {
+                const resp = await fetch(`${API}/admin/backup/email`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await resp.json().catch(() => null);
+                if (!resp.ok || !data || data.success !== true) {
+                    throw new Error(data?.message || `Request failed (${resp.status})`);
+                }
+
+                if (statusEl) statusEl.textContent = data.message || 'Backup emailed successfully.';
+                alert(data.message || 'Backup emailed successfully.');
+            } catch (e) {
+                if (statusEl) statusEl.textContent = `Failed: ${e.message || 'Unknown error'}`;
+                alert(`Backup failed: ${e.message || 'Unknown error'}`);
+            } finally {
+                if (btn) btn.disabled = false;
             }
         }
 
