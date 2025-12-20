@@ -221,7 +221,38 @@ function readAdminAlerts() {
         if (!fs.existsSync(ADMIN_ALERTS_FILE)) return [];
         const data = fs.readFileSync(ADMIN_ALERTS_FILE, 'utf8');
         const parsed = JSON.parse(data);
-        return Array.isArray(parsed) ? parsed : [];
+        const arr = Array.isArray(parsed) ? parsed : [];
+
+        // Auto-cleanup: remove dataless/invalid alerts to avoid showing blank items in UI.
+        // This also helps when legacy code created placeholder notifications.
+        const sanitized = arr
+            .filter(a => a && typeof a === 'object')
+            .filter(a => {
+                const id = String(a.id || '').trim();
+                if (!id) return false;
+
+                const title = String(a.title || '').trim();
+                const message = String(a.message || '').trim();
+                const meta = a.meta && typeof a.meta === 'object' ? a.meta : null;
+                const metaHasKeys = meta ? Object.keys(meta).length > 0 : false;
+
+                // Keep if it has any meaningful content.
+                return Boolean(title || message || metaHasKeys);
+            })
+            .map(a => ({
+                ...a,
+                // Normalize read flag
+                read: a.read === true
+            }));
+
+        // Persist cleanup if needed
+        if (sanitized.length !== arr.length) {
+            try {
+                writeAdminAlerts(sanitized);
+            } catch {}
+        }
+
+        return sanitized;
     } catch (e) {
         console.error('Error reading admin_alerts.json:', e);
         return [];
@@ -884,6 +915,32 @@ app.get('/api/admin/alerts', authenticateAdmin, (req, res) => {
     } catch (err) {
         console.error('Error fetching admin alerts:', err);
         return res.status(500).json({ success: false, message: 'Failed to fetch alerts' });
+    }
+});
+
+app.post('/api/admin/alerts/:id/mark-read', authenticateAdmin, (req, res) => {
+    try {
+        const id = String(req.params.id || '').trim();
+        if (!id) return res.status(400).json({ success: false, message: 'Alert id required' });
+
+        const alerts = readAdminAlerts();
+        const idx = alerts.findIndex(a => a && String(a.id || '').trim() === id);
+        if (idx === -1) {
+            const unreadCount = alerts.filter(a => a && a.read !== true).length;
+            return res.json({ success: true, unreadCount });
+        }
+
+        if (alerts[idx].read !== true) {
+            alerts[idx] = { ...alerts[idx], read: true, readAt: new Date().toISOString() };
+            const ok = writeAdminAlerts(alerts);
+            if (!ok) return res.status(500).json({ success: false, message: 'Failed to update alert' });
+        }
+
+        const unreadCount = alerts.filter(a => a && a.read !== true).length;
+        return res.json({ success: true, unreadCount });
+    } catch (err) {
+        console.error('Error marking alert read:', err);
+        return res.status(500).json({ success: false, message: 'Failed to mark read' });
     }
 });
 

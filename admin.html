@@ -842,6 +842,7 @@
                 const item = document.createElement('div');
                 item.className = 'notification-dropdown-item';
                 item.dataset.url = getAlertTargetUrl(alert);
+                item.dataset.alertId = String(alert?.id || '');
 
                 const title = escapeHtml(alert.title || alert.type || 'Notification');
                 const message = escapeHtml(alert.message || '');
@@ -855,6 +856,45 @@
 
                 item.addEventListener('click', () => {
                     const url = item.dataset.url || 'notifications.html';
+
+                    // Optimistically mark as read so it disappears from the popup list
+                    // and the bell count decreases immediately.
+                    const alertId = String(item.dataset.alertId || '').trim();
+                    if (alertId) {
+                        try {
+                            cachedAdminAlerts = (cachedAdminAlerts || []).map(a =>
+                                (a && String(a.id || '').trim() === alertId) ? { ...a, read: true } : a
+                            );
+                            if (typeof cachedUnreadCount === 'number' && cachedUnreadCount > 0) {
+                                cachedUnreadCount = Math.max(0, cachedUnreadCount - 1);
+                            }
+
+                            const badge = document.getElementById('notificationBadge');
+                            if (badge) {
+                                if (cachedUnreadCount > 0) {
+                                    badge.textContent = String(cachedUnreadCount);
+                                    badge.style.display = 'flex';
+                                } else {
+                                    badge.style.display = 'none';
+                                }
+                            }
+                            renderNotificationDropdown();
+
+                            const token = localStorage.getItem(AUTH_KEY);
+                            if (token) {
+                                fetch(`${API}/admin/alerts/${encodeURIComponent(alertId)}/mark-read`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${token}` },
+                                    keepalive: true
+                                }).then(r => r.json().catch(() => null)).then(data => {
+                                    if (data && data.success && typeof data.unreadCount === 'number') {
+                                        cachedUnreadCount = data.unreadCount;
+                                    }
+                                }).catch(() => {});
+                            }
+                        } catch {}
+                    }
+
                     window.location.href = url;
                 });
                 listEl.appendChild(item);
