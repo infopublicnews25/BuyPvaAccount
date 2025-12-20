@@ -33,6 +33,10 @@ function applyEditorRestrictions(staff) {
     // Hide whole sections that are not in editor scope
     const pagesOverview = document.querySelector('.pages-overview');
     if (pagesOverview) pagesOverview.style.display = 'none';
+
+    const sendReminderSection = document.querySelector('.send-reminder-section');
+    if (sendReminderSection) sendReminderSection.style.display = 'none';
+
     const fileManagerSection = document.querySelector('.menu-section:nth-child(2)');
     if (fileManagerSection) fileManagerSection.style.display = 'none';
 
@@ -50,6 +54,12 @@ function applyEditorRestrictions(staff) {
     document.querySelectorAll('.widgets-grid .page-card').forEach(card => {
         if (card) card.style.display = 'none';
     });
+
+    // Blog/Media widgets live outside .widgets-grid, so hide them too by default
+    const blogWidget = document.querySelector('#widget-blog-admin');
+    if (blogWidget) blogWidget.style.display = 'none';
+    const mediaWidget = document.querySelector('#widget-media-library');
+    if (mediaWidget) mediaWidget.style.display = 'none';
 
     const showIf = (perm, selector) => {
         if (!allowed.has(perm)) return;
@@ -69,6 +79,18 @@ function applyEditorRestrictions(staff) {
         else if (title === 'inventory') keep = allowed.has('inventory');
         card.style.display = keep ? '' : 'none';
     });
+
+    // If a section ends up with no visible cards, hide the whole section
+    const hideIfNoVisibleCards = (sectionSelector) => {
+        const section = document.querySelector(sectionSelector);
+        if (!section) return;
+        const cards = Array.from(section.querySelectorAll('.page-card'));
+        const anyVisible = cards.some(c => c && c.style.display !== 'none');
+        if (!anyVisible) section.style.display = 'none';
+    };
+
+    hideIfNoVisibleCards('.widgets-section');
+    hideIfNoVisibleCards('.products-section');
 }
 
 // Initialize products in localStorage
