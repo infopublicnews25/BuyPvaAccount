@@ -5,6 +5,19 @@
     <title>Notifications Management - BuyPvaAccount</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow">
+    <script src="staff-guard.js"></script>
+    <script>
+        (async function () {
+            try {
+                await window.StaffGuard.require({
+                    allowAnonymous: false,
+                    role: 'admin',
+                    loginPage: 'admin.html',
+                    redirectOnDeny: 'dashboard.html'
+                });
+            } catch (e) {}
+        })();
+    </script>
     <style>
         :root {
             --bg: #f8fafc;

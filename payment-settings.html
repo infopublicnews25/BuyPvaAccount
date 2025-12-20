@@ -6,6 +6,19 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="robots" content="noindex, nofollow">
   <script src="config.js"></script>
+  <script src="staff-guard.js"></script>
+  <script>
+    (async function () {
+      try {
+        await window.StaffGuard.require({
+          allowAnonymous: false,
+          role: 'admin',
+          loginPage: 'admin.html',
+          redirectOnDeny: 'dashboard.html'
+        });
+      } catch (e) {}
+    })();
+  </script>
   <style>
     :root{--bg:#f7f7fb;--card:#fff;--line:#e5e7eb;--text:#111827;--muted:#6b7280;--primary:#2563eb;--danger:#ef4444}
     body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,Roboto,Arial}

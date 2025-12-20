@@ -5,6 +5,19 @@
   <title>User Management - Admin Only</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="robots" content="noindex, nofollow">
+  <script src="staff-guard.js"></script>
+  <script>
+    (async function () {
+      try {
+        await window.StaffGuard.require({
+          allowAnonymous: false,
+          role: 'admin',
+          loginPage: 'admin.html',
+          redirectOnDeny: 'dashboard.html'
+        });
+      } catch (e) {}
+    })();
+  </script>
   <style>
     body{font-family:Segoe UI,Roboto,Arial;background:#f7f7fb;margin:0;color:#111}
     .wrap{max-width:1100px;margin:24px auto;padding:12px}

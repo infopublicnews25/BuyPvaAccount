@@ -6,6 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Media Library - Admin</title>
     <script src="config.js"></script>
+    <script src="staff-guard.js"></script>
+    <script>
+        (async function () {
+            try {
+                await window.StaffGuard.require({
+                    allowAnonymous: false,
+                    anyOfPermissions: ['media'],
+                    loginPage: 'admin.html',
+                    redirectOnDeny: 'dashboard.html'
+                });
+            } catch (e) {}
+        })();
+    </script>
     <style>
         * {
             margin: 0;

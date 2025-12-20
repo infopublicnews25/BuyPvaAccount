@@ -23,6 +23,19 @@
             window.location.href = 'admin.html';
         }
     </script>
+    <script src="staff-guard.js"></script>
+    <script>
+        (async function () {
+            try {
+                if (!window.StaffGuard) return;
+                await window.StaffGuard.require({
+                    allowAnonymous: false,
+                    loginPage: 'admin.html',
+                    redirectOnDeny: 'admin.html'
+                });
+            } catch (e) {}
+        })();
+    </script>
 </head>
 <body>
     <div class="dashboard-container">

@@ -11,6 +11,7 @@
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
     <script src="config.js"></script>
+    <script src="staff-guard.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/2.3.1/sha1.js"></script>
     <style>
@@ -448,6 +449,21 @@
             color: #2d3748;
         }
     </style>
+
+    <script>
+        // If an editor is already logged in, they must not access admin panel.
+        (async function () {
+            try {
+                if (!window.StaffGuard) return;
+                await window.StaffGuard.require({
+                    allowAnonymous: true,
+                    disallowRoles: ['editor'],
+                    redirectOnDeny: 'dashboard.html',
+                    loginPage: 'admin.html'
+                });
+            } catch (e) {}
+        })();
+    </script>
 </head>
 
 <body>
