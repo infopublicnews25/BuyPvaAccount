@@ -11,7 +11,10 @@ function getAuthHeaders() {
 
 async function getStaffContext() {
     try {
-        const res = await fetch('/api/staff/me', { headers: { ...getAuthHeaders() } });
+        const staffMeUrl = (window.CONFIG && typeof window.CONFIG.API === 'string' && window.CONFIG.API.trim())
+            ? window.CONFIG.API.trim().replace(/\/+$/, '') + '/staff/me'
+            : '/api/staff/me';
+        const res = await fetch(staffMeUrl, { headers: { ...getAuthHeaders() } });
         const data = await res.json();
         if (data && data.success && data.user) return data.user;
     } catch (e) {}
@@ -50,25 +53,20 @@ function applyEditorRestrictions(staff) {
         if (btn) btn.style.display = 'none';
     });
 
-    // Hide all content widgets by default, then show only allowed
+    // Hide all content widgets by default, then show only allowed (existing cards only)
     document.querySelectorAll('.widgets-grid .page-card').forEach(card => {
         if (card) card.style.display = 'none';
     });
 
-    // Blog/Media widgets live outside .widgets-grid, so hide them too by default
-    const blogWidget = document.querySelector('#widget-blog-admin');
-    if (blogWidget) blogWidget.style.display = 'none';
-    const mediaWidget = document.querySelector('#widget-media-library');
-    if (mediaWidget) mediaWidget.style.display = 'none';
-
-    const showIf = (perm, selector) => {
-        if (!allowed.has(perm)) return;
-        const el = document.querySelector(selector);
-        if (el) el.style.display = '';
-    };
-
-    showIf('blog', '#widget-blog-admin');
-    showIf('media', '#widget-media-library');
+    // Allow: Create Post (existing widget) when editor has blog permission
+    if (allowed.has('blog')) {
+        document.querySelectorAll('.widgets-grid .page-card').forEach(card => {
+            const title = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
+            if (title === 'create post') {
+                card.style.display = '';
+            }
+        });
+    }
 
     // Products section cards: keep only the permitted ones
     document.querySelectorAll('.products-grid .page-card').forEach(card => {
@@ -76,7 +74,8 @@ function applyEditorRestrictions(staff) {
         let keep = false;
         if (title.includes('add product')) keep = allowed.has('products');
         else if (title.includes('product categories')) keep = allowed.has('categories');
-        else if (title === 'inventory') keep = allowed.has('inventory');
+        // Editor allowed list does NOT include Inventory
+        else if (title === 'inventory') keep = false;
         card.style.display = keep ? '' : 'none';
     });
 

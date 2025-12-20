@@ -1,10 +1,21 @@
 (function () {
+  function getStaffMeUrl() {
+    try {
+      const apiBase = (window.CONFIG && typeof window.CONFIG.API === 'string') ? window.CONFIG.API.trim() : '';
+      if (apiBase) {
+        // CONFIG.API is typically like "https://domain/api" or "http://localhost:3000/api"
+        return apiBase.replace(/\/+$/, '') + '/staff/me';
+      }
+    } catch (e) {}
+    return '/api/staff/me';
+  }
+
   async function fetchStaffMe() {
     const token = localStorage.getItem('admin_auth_token');
     if (!token) return { ok: false, reason: 'no_token' };
 
     try {
-      const res = await fetch('/api/staff/me', {
+      const res = await fetch(getStaffMeUrl(), {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json().catch(() => null);
