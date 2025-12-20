@@ -53,20 +53,77 @@ function applyEditorRestrictions(staff) {
         if (btn) btn.style.display = 'none';
     });
 
-    // Hide all content widgets by default, then show only allowed (existing cards only)
-    document.querySelectorAll('.widgets-grid .page-card').forEach(card => {
-        if (card) card.style.display = 'none';
-    });
+    // Widgets section: show exactly the allowed tools without adding new cards.
+    // Reuse existing cards by re-labeling them for editor role.
+    const configureWidgetCard = (card, { title, description, iconClass, color, href }) => {
+        const h4 = card.querySelector('h4');
+        const p = card.querySelector('p');
+        if (h4) h4.textContent = title;
+        if (p) p.textContent = description;
 
-    // Allow: Create Post (existing widget) when editor has blog permission
-    if (allowed.has('blog')) {
-        document.querySelectorAll('.widgets-grid .page-card').forEach(card => {
-            const title = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
-            if (title === 'create post') {
-                card.style.display = '';
-            }
-        });
-    }
+        const iconWrap = card.querySelector('.page-icon');
+        if (iconWrap && color) iconWrap.style.color = color;
+        const icon = card.querySelector('.page-icon i');
+        if (icon && iconClass) icon.className = iconClass;
+
+        const actions = card.querySelector('.page-actions');
+        if (actions) {
+            actions.innerHTML = `
+                <button onclick="window.location.href='${href}'; event.stopPropagation();" class="view-btn" title="Open">
+                    <i class="fas fa-external-link-alt"></i> Open
+                </button>
+            `;
+        }
+
+        card.onclick = () => { window.location.href = href; };
+    };
+
+    document.querySelectorAll('.widgets-grid .page-card').forEach(card => {
+        const rawTitle = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
+        card.style.display = 'none';
+
+        // Create Post (requires blog permission)
+        if (rawTitle === 'create post') {
+            if (!allowed.has('blog')) return;
+            configureWidgetCard(card, {
+                title: 'Create post',
+                description: 'Create Post',
+                iconClass: 'fas fa-plus-circle',
+                color: '#f39c12',
+                href: 'create-post.html'
+            });
+            card.style.display = '';
+            return;
+        }
+
+        // Blog Admin (reuse the existing “create product review” card)
+        if (rawTitle.includes('create product review')) {
+            if (!allowed.has('blog')) return;
+            configureWidgetCard(card, {
+                title: 'Blog admin',
+                description: 'Manage blog posts',
+                iconClass: 'fas fa-blog',
+                color: '#2b6cb0',
+                href: 'blog-admin.html'
+            });
+            card.style.display = '';
+            return;
+        }
+
+        // Media Library (reuse the existing “create reminder” card)
+        if (rawTitle.includes('reminder')) {
+            if (!allowed.has('media')) return;
+            configureWidgetCard(card, {
+                title: 'Media library',
+                description: 'Upload and manage files',
+                iconClass: 'fas fa-photo-video',
+                color: '#38a169',
+                href: 'media-library.html'
+            });
+            card.style.display = '';
+            return;
+        }
+    });
 
     // Products section cards: keep only the permitted ones
     document.querySelectorAll('.products-grid .page-card').forEach(card => {
