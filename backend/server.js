@@ -4552,7 +4552,7 @@ BuyPvaAccount Support Team`
 
 // Dashboard API Routes
 // Get file tree structure
-app.get('/api/dashboard/files/tree', authenticateAdmin, (req, res) => {
+app.get('/api/dashboard/files/tree', authenticateStaff, requireStaffPermission('files'), (req, res) => {
     try {
         const rootPath = path.join(__dirname, '..');
         const tree = {};
@@ -4583,7 +4583,7 @@ app.get('/api/dashboard/files/tree', authenticateAdmin, (req, res) => {
 });
 
 // List files in directory
-app.get('/api/dashboard/files/list', authenticateAdmin, (req, res) => {
+app.get('/api/dashboard/files/list', authenticateStaff, requireStaffPermission('files'), (req, res) => {
     try {
         const requestedPath = req.query.path || '/';
         let fullPath;
@@ -4642,7 +4642,7 @@ app.get('/api/dashboard/files/list', authenticateAdmin, (req, res) => {
 });
 
 // Read file content
-app.get('/api/dashboard/files/read', authenticateAdmin, (req, res) => {
+app.get('/api/dashboard/files/read', authenticateStaff, requireStaffPermission('files'), (req, res) => {
     try {
         const requestedPath = req.query.path || '/';
         const filename = req.query.file;
@@ -4693,7 +4693,7 @@ app.get('/api/dashboard/files/read', authenticateAdmin, (req, res) => {
 });
 
 // Save file content
-app.post('/api/dashboard/files/save', authenticateAdmin, (req, res) => {
+app.post('/api/dashboard/files/save', authenticateStaff, requireStaffPermission('files'), (req, res) => {
     try {
         const { path: requestedPath, filename, content } = req.body;
 
@@ -4726,7 +4726,7 @@ app.post('/api/dashboard/files/save', authenticateAdmin, (req, res) => {
 });
 
 // Create new file or folder
-app.post('/api/dashboard/files/create', authenticateAdmin, (req, res) => {
+app.post('/api/dashboard/files/create', authenticateStaff, requireStaffPermission('files'), (req, res) => {
     try {
         const { path: requestedPath, name, type } = req.body;
 
@@ -4770,7 +4770,7 @@ app.post('/api/dashboard/files/create', authenticateAdmin, (req, res) => {
 });
 
 // Delete file or folder
-app.delete('/api/dashboard/files/delete', authenticateAdmin, (req, res) => {
+app.delete('/api/dashboard/files/delete', authenticateStaff, requireStaffPermission('files'), (req, res) => {
     try {
         const { path: requestedPath, name, type } = req.body;
 

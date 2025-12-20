@@ -51,31 +51,61 @@ function applyEditorRestrictions(staff) {
         if (k === 'categories') {
             return normalizedPermissions.has('productcategories') || normalizedPermissions.has('category') || normalizedPermissions.has('categories');
         }
+
+        if (k === 'send') {
+            return normalizedPermissions.has('sendnotification') || normalizedPermissions.has('senddelivery') || normalizedPermissions.has('delivery') || normalizedPermissions.has('notification');
+        }
+        if (k === 'note') {
+            return normalizedPermissions.has('notes') || normalizedPermissions.has('createnote');
+        }
+        if (k === 'comment') {
+            return normalizedPermissions.has('comments') || normalizedPermissions.has('createcomment');
+        }
+        if (k === 'inventory') {
+            return normalizedPermissions.has('stock') || normalizedPermissions.has('productstock');
+        }
+        if (k === 'analytics') {
+            return normalizedPermissions.has('productanalytics') || normalizedPermissions.has('analytics');
+        }
+        if (k === 'reviews') {
+            return normalizedPermissions.has('productreviews') || normalizedPermissions.has('reviews');
+        }
+        if (k === 'files') {
+            return normalizedPermissions.has('filemanager') || normalizedPermissions.has('files') || normalizedPermissions.has('pages') || normalizedPermissions.has('websitepages');
+        }
         return false;
     };
 
+    const canFiles = hasPerm('files');
+    const canSend = hasPerm('send');
+
     // Editor should not see the dashboard sidebar; keep the UI focused.
     const sidebar = document.querySelector('.sidebar');
-    if (sidebar) sidebar.style.display = 'none';
+    if (sidebar) sidebar.style.display = canFiles ? '' : 'none';
     const menuToggle = document.querySelector('.menu-toggle');
-    if (menuToggle) menuToggle.style.display = 'none';
+    if (menuToggle) menuToggle.style.display = canFiles ? '' : 'none';
 
     // When sidebar is removed, also remove the left offset on main content.
     // Otherwise the whole dashboard can shift off-screen and appear blank.
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
-        mainContent.style.marginLeft = '0';
+        // If sidebar is hidden, remove left offset so content doesn't shift off-screen.
+        // If sidebar is allowed, let the stylesheet handle layout.
+        mainContent.style.marginLeft = canFiles ? '' : '0';
     }
 
-    // Hide whole sections that are not in editor scope
+    // Sections toggled by editor permissions
     const pagesOverview = document.querySelector('.pages-overview');
-    if (pagesOverview) pagesOverview.style.display = 'none';
+    if (pagesOverview) pagesOverview.style.display = canFiles ? '' : 'none';
 
     const sendReminderSection = document.querySelector('.send-reminder-section');
-    if (sendReminderSection) sendReminderSection.style.display = 'none';
+    if (sendReminderSection) sendReminderSection.style.display = canSend ? '' : 'none';
 
-    const fileManagerSection = document.querySelector('.menu-section:nth-child(2)');
-    if (fileManagerSection) fileManagerSection.style.display = 'none';
+    const sidebarMenuSections = document.querySelectorAll('.sidebar .menu-section');
+    const pagesMenuSection = sidebarMenuSections?.[0];
+    const fileManagerSection = sidebarMenuSections?.[1];
+    if (pagesMenuSection) pagesMenuSection.style.display = canFiles ? '' : 'none';
+    if (fileManagerSection) fileManagerSection.style.display = canFiles ? '' : 'none';
 
     // Hide sidebar quick actions that expose admin panel
     document.querySelectorAll('a[href="admin.html"]').forEach(a => {
@@ -166,20 +196,35 @@ function applyEditorRestrictions(staff) {
         mediaLibraryCard.style.display = '';
     }
 
+    // Additional widgets (existing cards) toggled by permissions
+    const noteCard = document.querySelector('.widgets-grid .page-card[data-editor-tool="note"]');
+    if (noteCard) noteCard.style.display = hasPerm('note') ? '' : 'none';
+
+    const commentCard = document.querySelector('.widgets-grid .page-card[data-editor-tool="comment"]');
+    if (commentCard) commentCard.style.display = hasPerm('comment') ? '' : 'none';
+
+    const sendNotificationCard = document.querySelector('.send-cards-grid .page-card[data-editor-tool="send-notification"]');
+    if (sendNotificationCard) sendNotificationCard.style.display = canSend ? '' : 'none';
+    const sendDeliveryCard = document.querySelector('.send-cards-grid .page-card[data-editor-tool="send-delivery"]');
+    if (sendDeliveryCard) sendDeliveryCard.style.display = canSend ? '' : 'none';
+
     // Products section cards: keep only the permitted ones (stable selectors)
     document.querySelectorAll('.products-grid .page-card').forEach(card => {
         const key = String(card.getAttribute('data-editor-tool') || '').trim();
         let keep = false;
         if (key === 'add-product') keep = hasPerm('products');
         else if (key === 'product-categories') keep = hasPerm('categories');
-        // Editor allowed list does NOT include Inventory
-        else if (key === 'inventory') keep = false;
+        else if (key === 'inventory') keep = hasPerm('inventory');
+        else if (key === 'product-analytics') keep = hasPerm('analytics');
+        else if (key === 'product-reviews') keep = hasPerm('reviews');
         else {
             // Fallback for unexpected markup
             const title = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
             if (title.includes('add product')) keep = hasPerm('products');
             else if (title.includes('product categories')) keep = hasPerm('categories');
-            else if (title === 'inventory') keep = false;
+            else if (title === 'inventory') keep = hasPerm('inventory');
+            else if (title.includes('analytics')) keep = hasPerm('analytics');
+            else if (title.includes('reviews')) keep = hasPerm('reviews');
         }
         card.style.display = keep ? '' : 'none';
     });
@@ -196,7 +241,7 @@ function applyEditorRestrictions(staff) {
     if (!anyWidgetVisible && !anyProductVisible) {
         const p = widgetsSection?.querySelector('.section-header p');
         if (p) {
-            p.textContent = 'No access has been assigned to this editor (blog/media/products/categories). Please contact admin.';
+            p.textContent = 'No access has been assigned to this editor. Please contact admin.';
         }
     }
 }
@@ -294,9 +339,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const role = String(staff?.role || '').toLowerCase();
         if (role === 'editor') {
-            // Editor dashboard must stay minimal (no file manager, no drag/drop layout, no admin-only widgets).
-            // Keep product initialization so "Add Product" modal can work.
-            try { initializeProducts(); } catch (e) {}
+            // Allow optional sections based on granted permissions.
+            const rawPermissions = Array.isArray(staff?.permissions) ? staff.permissions : [];
+            const normalized = new Set(rawPermissions.map(p => String(p || '').toLowerCase()).map(p => p.replace(/[^a-z0-9]/g, '')).filter(Boolean));
+            const canFiles = normalized.has('files') || normalized.has('filemanager') || normalized.has('pages') || normalized.has('websitepages');
+            const canProducts = normalized.has('products') || normalized.has('product') || normalized.has('addproduct');
+            const canCategories = normalized.has('categories') || normalized.has('category') || normalized.has('productcategories');
+            const canInventory = normalized.has('inventory') || normalized.has('stock') || normalized.has('productstock');
+
+            if (canProducts || canCategories || canInventory) {
+                try { initializeProducts(); } catch (e) {}
+            }
+
+            if (canFiles) {
+                loadFileTree();
+                loadWebsitePages();
+                loadFiles(currentPath);
+                setupEventListeners();
+                handleUrlParameters();
+            }
+
+            // Note: notifications/reminders are local-only right now; keep disabled unless admin wants more later.
             return;
         }
 
@@ -316,6 +379,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Setup event listeners
 function setupEventListeners() {
+    const role = String(window.__staffContext?.role || '').toLowerCase();
+
     // Search functionality
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
@@ -337,11 +402,14 @@ function setupEventListeners() {
         }
     });
 
-    // Initialize drag and drop
-    initializeDragAndDrop();
-    
-    // Initialize long press to move
-    initializeLongPressMove();
+    // Keep editor UX stable: don't enable draggable layout editing.
+    if (role !== 'editor') {
+        // Initialize drag and drop
+        initializeDragAndDrop();
+        
+        // Initialize long press to move
+        initializeLongPressMove();
+    }
 }
 
 // Initialize drag and drop functionality

@@ -790,6 +790,12 @@
                         <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="categories"> Product Categories</label>
                         <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="inventory"> Inventory</label>
                         <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="blog"> Blog Admin</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="send"> Send Notification/Delivery</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="note"> Notes</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="comment"> Comments</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="analytics"> Product Analytics</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="reviews"> Product Reviews</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="files"> Website Pages / File Manager</label>
                     </div>
                     <small style="color:#666; display:block; margin-top:6px;">Admin can select which widgets an Editor can use.</small>
                 </div>
@@ -1588,7 +1594,7 @@
             document.getElementById('userPassword').value = '';
             document.getElementById('userRole').value = 'user';
             document.getElementById('userStatus').value = 'active';
-            setEditorPermissionsUI('user', ['media', 'products', 'categories', 'inventory', 'blog']);
+            setEditorPermissionsUI('user', ['media', 'products', 'categories', 'blog']);
             document.getElementById('userModal').style.display = 'block';
         }
 
@@ -1627,8 +1633,8 @@
                 roleSelect.addEventListener('change', () => {
                     const role = roleSelect.value;
                     if (String(role).toLowerCase() === 'editor') {
-                        // default: all widget perms enabled
-                        setEditorPermissionsUI(role, ['media', 'products', 'categories', 'inventory', 'blog']);
+                        // default: editor allowed tools only
+                        setEditorPermissionsUI(role, ['media', 'products', 'categories', 'blog']);
                     } else {
                         setEditorPermissionsUI(role, []);
                     }
@@ -1651,6 +1657,11 @@
                 permissions = Array.from(document.querySelectorAll('.editor-perm'))
                     .filter(cb => cb && cb.checked)
                     .map(cb => cb.value);
+            }
+
+            if (String(role).toLowerCase() === 'editor' && permissions.length === 0) {
+                alert('Please assign at least one Editor Widgets Access permission.');
+                return;
             }
 
             console.log('=== SAVE USER DEBUG ===');
