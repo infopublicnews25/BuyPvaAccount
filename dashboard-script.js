@@ -83,9 +83,21 @@ function applyEditorRestrictions(staff) {
         card.style.display = 'none';
     });
 
-    const createPostCard = document.querySelector('.widgets-grid .page-card[data-editor-tool="create-post"]');
-    const blogAdminCard = document.querySelector('.widgets-grid .page-card[data-editor-tool="blog-admin"]');
-    const mediaLibraryCard = document.querySelector('.widgets-grid .page-card[data-editor-tool="media-library"]');
+    // Prefer stable selectors, but fall back to title-based detection if the browser cached an older dashboard.html
+    let createPostCard = document.querySelector('.widgets-grid .page-card[data-editor-tool="create-post"]');
+    let blogAdminCard = document.querySelector('.widgets-grid .page-card[data-editor-tool="blog-admin"]');
+    let mediaLibraryCard = document.querySelector('.widgets-grid .page-card[data-editor-tool="media-library"]');
+
+    if (!createPostCard || !blogAdminCard || !mediaLibraryCard) {
+        const widgetCards = Array.from(document.querySelectorAll('.widgets-grid .page-card'));
+        for (const card of widgetCards) {
+            const t = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
+            if (!createPostCard && t === 'create post') createPostCard = card;
+            // Old placeholder cards we repurpose
+            if (!blogAdminCard && t.includes('create product review')) blogAdminCard = card;
+            if (!mediaLibraryCard && t.includes('reminder')) mediaLibraryCard = card;
+        }
+    }
 
     if (createPostCard && allowed.has('blog')) {
         configureWidgetCard(createPostCard, {
@@ -251,7 +263,19 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Expose context for debugging
+        window.__staffContext = staff;
+
         applyEditorRestrictions(staff);
+
+        const role = String(staff?.role || '').toLowerCase();
+        if (role === 'editor') {
+            // Editor dashboard must stay minimal (no file manager, no drag/drop layout, no admin-only widgets).
+            // Keep product initialization so "Add Product" modal can work.
+            try { initializeProducts(); } catch (e) {}
+            return;
+        }
+
         initializeProducts();
         loadFileTree();
         loadWebsitePages();
