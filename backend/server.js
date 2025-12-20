@@ -1859,6 +1859,11 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Password reset server is running' });
 });
 
+// Backwards-compatible status endpoint (some deploy scripts/UI checks use this)
+app.get('/api/status', (req, res) => {
+    res.json({ status: 'OK', message: 'Server is running' });
+});
+
 // CSRF Token endpoint
 app.get('/api/csrf-token', (req, res) => {
     // Generate a simple session-based CSRF token
