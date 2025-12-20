@@ -60,6 +60,13 @@ function applyEditorRestrictions(staff) {
     const menuToggle = document.querySelector('.menu-toggle');
     if (menuToggle) menuToggle.style.display = 'none';
 
+    // When sidebar is removed, also remove the left offset on main content.
+    // Otherwise the whole dashboard can shift off-screen and appear blank.
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.marginLeft = '0';
+    }
+
     // Hide whole sections that are not in editor scope
     const pagesOverview = document.querySelector('.pages-overview');
     if (pagesOverview) pagesOverview.style.display = 'none';
