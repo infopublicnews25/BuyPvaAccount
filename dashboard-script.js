@@ -25,7 +25,34 @@ function applyEditorRestrictions(staff) {
     const role = String(staff?.role || '').toLowerCase();
     if (role !== 'editor') return;
 
-    const allowed = new Set(Array.isArray(staff?.permissions) ? staff.permissions : []);
+    const rawPermissions = Array.isArray(staff?.permissions) ? staff.permissions : [];
+    const normalizedPermissions = new Set(
+        rawPermissions
+            .map(p => String(p || '').toLowerCase())
+            .map(p => p.replace(/[^a-z0-9]/g, ''))
+            .filter(Boolean)
+    );
+
+    const hasPerm = (key) => {
+        const k = String(key || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (!k) return false;
+        if (normalizedPermissions.has(k)) return true;
+
+        // Accept common UI-label variants (in case permissions were stored as labels)
+        if (k === 'blog') {
+            return normalizedPermissions.has('blogadmin') || normalizedPermissions.has('createpost') || normalizedPermissions.has('posts');
+        }
+        if (k === 'media') {
+            return normalizedPermissions.has('medialibrary') || normalizedPermissions.has('mediafiles');
+        }
+        if (k === 'products') {
+            return normalizedPermissions.has('addproduct') || normalizedPermissions.has('product');
+        }
+        if (k === 'categories') {
+            return normalizedPermissions.has('productcategories') || normalizedPermissions.has('category') || normalizedPermissions.has('categories');
+        }
+        return false;
+    };
 
     // Editor should not see the dashboard sidebar; keep the UI focused.
     const sidebar = document.querySelector('.sidebar');
@@ -99,7 +126,7 @@ function applyEditorRestrictions(staff) {
         }
     }
 
-    if (createPostCard && allowed.has('blog')) {
+    if (createPostCard && hasPerm('blog')) {
         configureWidgetCard(createPostCard, {
             title: 'Create post',
             description: 'Create Post',
@@ -110,7 +137,7 @@ function applyEditorRestrictions(staff) {
         createPostCard.style.display = '';
     }
 
-    if (blogAdminCard && allowed.has('blog')) {
+    if (blogAdminCard && hasPerm('blog')) {
         configureWidgetCard(blogAdminCard, {
             title: 'Blog admin',
             description: 'Manage blog posts',
@@ -121,7 +148,7 @@ function applyEditorRestrictions(staff) {
         blogAdminCard.style.display = '';
     }
 
-    if (mediaLibraryCard && allowed.has('media')) {
+    if (mediaLibraryCard && hasPerm('media')) {
         configureWidgetCard(mediaLibraryCard, {
             title: 'Media library',
             description: 'Upload and manage files',
@@ -136,43 +163,33 @@ function applyEditorRestrictions(staff) {
     document.querySelectorAll('.products-grid .page-card').forEach(card => {
         const key = String(card.getAttribute('data-editor-tool') || '').trim();
         let keep = false;
-        if (key === 'add-product') keep = allowed.has('products');
-        else if (key === 'product-categories') keep = allowed.has('categories');
+        if (key === 'add-product') keep = hasPerm('products');
+        else if (key === 'product-categories') keep = hasPerm('categories');
         // Editor allowed list does NOT include Inventory
         else if (key === 'inventory') keep = false;
         else {
             // Fallback for unexpected markup
             const title = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
-            if (title.includes('add product')) keep = allowed.has('products');
-            else if (title.includes('product categories')) keep = allowed.has('categories');
+            if (title.includes('add product')) keep = hasPerm('products');
+            else if (title.includes('product categories')) keep = hasPerm('categories');
             else if (title === 'inventory') keep = false;
         }
         card.style.display = keep ? '' : 'none';
     });
 
-    // If a section ends up with no visible cards, hide the whole section
-    const hideIfNoVisibleCards = (sectionSelector) => {
-        const section = document.querySelector(sectionSelector);
-        if (!section) return;
-        const cards = Array.from(section.querySelectorAll('.page-card'));
-        const anyVisible = cards.some(c => c && c.style.display !== 'none');
-        if (!anyVisible) section.style.display = 'none';
-    };
-
-    hideIfNoVisibleCards('.widgets-section');
-    hideIfNoVisibleCards('.products-section');
-
-    // Avoid a fully blank dashboard for editors if permissions are missing
+    // Never hide whole sections for editor (prevents "blank" page reports).
+    // If no cards are visible, show a message using the existing section header text.
     const widgetsSection = document.querySelector('.widgets-section');
     const productsSection = document.querySelector('.products-section');
-    const widgetsVisible = widgetsSection && widgetsSection.style.display !== 'none';
-    const productsVisible = productsSection && productsSection.style.display !== 'none';
-    if (!widgetsVisible && !productsVisible) {
-        // Keep the widgets section visible and update its description text
-        if (widgetsSection) {
-            widgetsSection.style.display = '';
-            const p = widgetsSection.querySelector('.section-header p');
-            if (p) p.textContent = 'No access has been assigned to this editor. Please contact admin.';
+    if (widgetsSection) widgetsSection.style.display = '';
+    if (productsSection) productsSection.style.display = '';
+
+    const anyWidgetVisible = Array.from(document.querySelectorAll('.widgets-grid .page-card')).some(c => c.style.display !== 'none');
+    const anyProductVisible = Array.from(document.querySelectorAll('.products-grid .page-card')).some(c => c.style.display !== 'none');
+    if (!anyWidgetVisible && !anyProductVisible) {
+        const p = widgetsSection?.querySelector('.section-header p');
+        if (p) {
+            p.textContent = 'No access has been assigned to this editor (blog/media/products/categories). Please contact admin.';
         }
     }
 }
