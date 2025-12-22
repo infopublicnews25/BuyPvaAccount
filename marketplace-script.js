@@ -308,109 +308,89 @@ function detectLanguage() {
 
     const CATEGORY_DETAILS_HTML = {
       all: `
-        <h1>Buy Premium Accounts Online - Reliability, Instant Delivery, Exclusive Offers</h1>
+        <h1>Buy Premium Accounts Online - Instant Delivery, Flexible Quantities, Trusted Support</h1>
 
-        <p>TrueAccs is one of the first account stores, having operated for over 10 years under the BuyAccs brand. We offer a wide selection of accounts for various services, including <strong>email platforms, social networks, cloud services and much more</strong>. We value every customer, so all these years we have been working to improve our offering and provide only the best solutions, proven by time. The wide range is supplemented with unique accounts that are suitable for commercial, advertising or other activities.</p>
+        <p><strong>BuyPvaAccount</strong> offers a curated selection of accounts across popular services, including <strong>email platforms, social networks, and more</strong>. If you need accounts for testing, outreach, advertising workflows, or day-to-day operations, you can choose the category you want and order in the quantity that fits your project.</p>
 
-        <h2>Why Choose TrueAccs?</h2>
-
-        <p>TrueAccs is a service that thousands of customers already trust. Our advantages:</p>
+        <h2>Why Buy From BuyPvaAccount?</h2>
         <ul>
-          <li><strong>Exclusive offers</strong> - we have accounts that are hard to find in other stores.</li>
-          <li><strong>Flexibility of choice</strong> - from single purchases to wholesale orders.</li>
-          <li><strong>Fast delivery</strong> - instant shipping after payment.</li>
-          <li><strong>Guarantees and support</strong> - we offer fair replacement conditions and are always ready to help.</li>
-          <li><strong>Experience of more than 10 years</strong> - thousands of satisfied customers and reputation of a reliable business partner.</li>
-          <li><strong>Friendly support</strong> - always ready to help with selection and solve all issues.</li>
+          <li><strong>Fast delivery</strong> - quick access after checkout.</li>
+          <li><strong>Bulk-friendly</strong> - buy one account or place a large order.</li>
+          <li><strong>Clear offers</strong> - straightforward listings with details and pricing.</li>
+          <li><strong>Support when needed</strong> - help with order questions and issues.</li>
         </ul>
 
-        <h2>Rare Accounts and Exclusive Offers</h2>
+        <h2>Fresh Stock and Category Variety</h2>
+        <p>We regularly update availability and add new offers so you can find options that match your goals and preferred regions when applicable.</p>
 
-        <p>In our store you will find accounts that are not found on other platforms. We constantly update and maintain the relevance of the range and add unique offers and geo.</p>
+        <h2>Wholesale Options</h2>
+        <p>If you need accounts at scale for marketing teams, agencies, or internal testing, BuyPvaAccount supports bulk orders and repeat purchasing.</p>
 
-        <h2>Flexible Purchase Terms - From One Account to Large Order</h2>
-
-        <p>At TrueAccs you can buy both one account and make a wholesale order. We work with private clients, companies, marketing agencies and businesses that require a large number of accounts for advertising, testing and working with various services. <strong>Our store specializes in wholesale orders and if you need accounts in large volumes, we are ready to help you with this.</strong></p>
-
-        <h2>Quality Guarantees and Customer Support</h2>
-
-        <p>We provide only verified accounts, ready for use. If necessary, we offer replacements, and our support service is always ready to answer your questions and help solve problems.</p>
-
-        <h2>Order Right Now!</h2>
-
-        <p>Choose TrueAccs - a store with a proven reputation that offers some of the best conditions on the market. Buy accounts quickly, conveniently and safely!</p>
+        <h2>Order Now</h2>
+        <p>Select a category to see available products, compare options, and place your order in minutes.</p>
       `,
       gmail: `
-        <h1>Buy Cheap Gmail &amp; Google Accounts - Verified, Aged &amp; Ready to Use</h1>
+        <h1>Buy Gmail &amp; Google Accounts - Ready-to-Use Options for Workflows at Scale</h1>
 
-        <p>Looking for reliable <strong>Gmail or Google accounts</strong> at cheap prices? Whether for marketing, business, or personal use, we offer fully verified accounts with instant delivery. Get aged Gmail accounts, phone-verified (PVA) options, and more at the best prices.</p>
+        <p>Need <strong>Gmail/Google accounts</strong> for campaigns, verification flows, or operational tasks? BuyPvaAccount provides multiple options so you can choose what matches your use case and order size.</p>
 
-        <h2>Available Google &amp; Gmail Accounts</h2>
+        <h2>Common Options You Can Find</h2>
         <ul>
-          <li><strong>Verified Gmail Accounts</strong> - Phone-verified and ready to use.</li>
-          <li><strong>Aged Gmail Accounts</strong> - Older accounts with history and trust.</li>
-          <li><strong>Cheap Gmail Accounts</strong> - Budget-friendly options for bulk or single purchases.</li>
-          <li><strong>Google Accounts with YouTube</strong> - Verified accounts with full YouTube access.</li>
-          <li><strong>Gmail Accounts with Recovery Email</strong> - Extra security for long-term use.</li>
+          <li><strong>Verified accounts</strong> - prepared for immediate login.</li>
+          <li><strong>Aged accounts</strong> - older profiles suited for more natural activity patterns.</li>
+          <li><strong>Bulk-friendly packs</strong> - convenient for large campaigns and teams.</li>
+          <li><strong>Accounts with recovery details</strong> - for longer-term account management.</li>
         </ul>
 
-        <h2>Why Buy from Us?</h2>
+        <h2>Why Order Here?</h2>
         <ul>
-          <li><strong>Verified &amp; Secure</strong> - No additional phone verification required.</li>
-          <li><strong>Instant Access</strong> - Accounts are delivered immediately after purchase.</li>
-          <li><strong>Cheap &amp; High-Quality</strong> - Get the best value for your money.</li>
-          <li><strong>Multiple Options</strong> - Choose aged, fresh, or niche-specific accounts.</li>
+          <li><strong>Fast delivery</strong> - access details after checkout.</li>
+          <li><strong>Choice</strong> - multiple listings for different needs.</li>
+          <li><strong>Support</strong> - help if you face order or access questions.</li>
         </ul>
 
-        <h2>Order Your Gmail &amp; Google Accounts Now</h2>
-        <p>Choose the right <strong>Gmail or Google account</strong>, complete your purchase, and get instant access. No delays, no hassle.</p>
-        <p>Buy cheap Gmail &amp; Google accounts today and start using them right away!</p>
+        <h2>Get Started</h2>
+        <p>Select a Gmail/Google offer from the list, choose quantity, and place your order. Delivery is provided with the credentials and basic usage information.</p>
       `,
       linkedin: `
-        <h1>Buy Bulk LinkedIn Accounts - Aged, Verified &amp; Ready for Networking</h1>
+        <h1>Buy LinkedIn Accounts in Bulk - Suitable for Outreach, Lead Gen, and B2B Work</h1>
 
-        <p>Looking to expand your professional network, boost B2B marketing, or automate LinkedIn outreach? Our store offers a variety of <strong>bulk LinkedIn accounts</strong>, including <strong>aged LinkedIn profiles</strong>, <strong>USA-registered LinkedIn accounts</strong>, and <strong>LinkedIn with connections</strong>. Get verified profiles with a history of activity to strengthen your presence on the world's largest business platform.</p>
+        <p>If you run outreach, recruitment, or B2B campaigns, having the right account type matters. BuyPvaAccount lists different <strong>LinkedIn account options</strong> so you can choose by age, profile type, and quantity.</p>
 
-        <h2>Types of LinkedIn Accounts Available</h2>
-        <p><strong>LinkedIn USA Accounts</strong> - Created with U.S. IPs for seamless networking and outreach.</p>
-        <p><strong>LinkedIn Aged Accounts</strong> - Established profiles with history, ideal for credibility and marketing campaigns.</p>
-        <p><strong>LinkedIn with Connections</strong> - Accounts with existing network connections to enhance authority.</p>
-        <p><strong>LinkedIn UK Accounts</strong> - Registered in the United Kingdom, perfect for targeting the UK market.</p>
-        <p><strong>LinkedIn with Age</strong> - Older accounts that appear more natural and trustworthy.</p>
-        <p><strong>Cheap LinkedIn Accounts</strong> - Buy multiple accounts for automation, lead generation, and advertising.</p>
+        <h2>What You May See in This Category</h2>
+        <ul>
+          <li><strong>Aged profiles</strong> - accounts with history intended for steadier usage.</li>
+          <li><strong>Region-focused accounts</strong> - options aligned to specific markets when offered.</li>
+          <li><strong>Bulk quantities</strong> - for teams and automated workflows.</li>
+        </ul>
 
-        <h2>Why Use Aged LinkedIn Accounts?</h2>
-        <p>New LinkedIn accounts often face restrictions, low visibility, and limitations on messaging. By using <strong>aged and verified LinkedIn accounts</strong>, you bypass these issues, allowing for seamless outreach, increased engagement, and stronger networking opportunities.</p>
+        <h2>Why Many Buyers Prefer Aged Profiles</h2>
+        <p>Fresh profiles can be more sensitive in the early stage. Aged options are often selected for smoother onboarding and more natural-looking activity over time.</p>
 
-        <h2>Instant Delivery &amp; Secure Transactions</h2>
-        <p>Once your order is placed, you'll receive your <strong>LinkedIn accounts instantly</strong>. We ensure a smooth, safe transaction process, so you can focus on growing your business.</p>
-        <p>Choose the best LinkedIn accounts for your needs and start networking like a pro today!</p>
+        <h2>Delivery and Support</h2>
+        <p>After checkout, you receive the account credentials and basic access guidance. If you have questions about your order, support is available.</p>
       `,
       email: `
-        <h1>Buy Email Accounts - Secure, Verified &amp; Affordable</h1>
+        <h1>Buy Email Accounts - IMAP/POP3/SMTP Ready, Single or Bulk</h1>
 
-        <p>Need high-quality email accounts for marketing, business, or personal use? Get ready-to-use <strong>email accounts</strong> with full access, including IMAP, POP3, and SMTP support. Whether you're looking for bulk accounts for campaigns or a single verified email, we offer a variety of platforms to suit your needs.</p>
+        <p>BuyPvaAccount offers <strong>email account listings</strong> suitable for day-to-day communication, testing, and campaign tooling. Many offers support common protocols such as <strong>IMAP</strong>, <strong>POP3</strong>, and <strong>SMTP</strong>, so you can connect them to standard email clients and systems.</p>
 
-        <h2>Available Email Accounts</h2>
+        <h2>Typical Use Cases</h2>
         <ul>
-          <li><strong><em>Yahoo IMAP Emails</em></strong> - Fully verified accounts with IMAP access.</li>
-          <li><strong><em>Outlook.com IMAP &amp; POP3</em></strong> - Trusted Microsoft accounts with full functionality.</li>
-          <li><strong><em>ProtonMail Aged HQ</em></strong> - Secure, high-quality aged accounts.</li>
-          <li><strong><em>GMX &amp; Web.de POP3 Emails</em></strong> - Budget-friendly options for mass use.</li>
-          <li><strong><em>Cheap Email Accounts</em></strong> - Affordable bulk email accounts for marketing and automation.</li>
+          <li><strong>Business operations</strong> - separate inboxes for teams and projects.</li>
+          <li><strong>Testing</strong> - QA, sign-up flows, and verification scenarios.</li>
+          <li><strong>Campaign workflows</strong> - bulk usage where permitted by your tools/platforms.</li>
         </ul>
 
-        <h2>Why Buy Verified Email Accounts?</h2>
+        <h2>What to Expect</h2>
         <ul>
-          <li>Bypass phone verification and restrictions.</li>
-          <li>Use IMAP/POP3 for easy integration with apps.</li>
-          <li>Run automated campaigns without interruptions.</li>
-          <li>Access premium email services at a low cost.</li>
+          <li>Clear product options and quantities.</li>
+          <li>Fast delivery after checkout.</li>
+          <li>Credentials provided with basic access notes.</li>
         </ul>
 
-        <h2>Get Started Instantly</h2>
-        <p>Select the email provider that fits your needs and place your order. Accounts are delivered instantly with full credentials, ensuring you can start using them right away.</p>
-        <p>Order your verified email accounts today and streamline your communication effortlessly!</p>
+        <h2>Choose an Offer and Order</h2>
+        <p>Open the Email category, pick the product that fits your requirements, then select quantity and checkout.</p>
       `,
 
       // Placeholders (edit these to your own text)
