@@ -4183,6 +4183,62 @@ app.post('/api/categories', authenticateStaff, requireStaffPermission('categorie
     }
 });
 
+// Reorder categories (admin/editor with permission)
+// Body: { categories: ["GMAIL", "FACEBOOK", ...] }
+// Notes: Preserves existing category objects and appends any missing categories at the end.
+app.put('/api/categories/reorder', authenticateStaff, requireStaffPermission('categories'), (req, res) => {
+    try {
+        const orderRaw = (req.body && (req.body.categories || req.body.order)) || [];
+        if (!Array.isArray(orderRaw)) {
+            return res.status(400).json({ success: false, message: 'categories must be an array' });
+        }
+
+        const requestedOrder = orderRaw
+            .map(v => String(v || '').trim())
+            .filter(Boolean);
+
+        const categories = readAllCategories();
+        const byName = new Map();
+        (categories || []).forEach(cat => {
+            const key = String(cat?.name || '').trim().toLowerCase();
+            if (key) byName.set(key, cat);
+        });
+
+        const reordered = [];
+        for (const name of requestedOrder) {
+            const key = name.toLowerCase();
+            const existing = byName.get(key);
+            if (existing) {
+                reordered.push(existing);
+                byName.delete(key);
+            }
+        }
+
+        // Append any categories not included in request (keeps their existing relative order)
+        (categories || []).forEach(cat => {
+            const key = String(cat?.name || '').trim().toLowerCase();
+            if (key && byName.has(key)) {
+                reordered.push(cat);
+                byName.delete(key);
+            }
+        });
+
+        const nowIso = new Date().toISOString();
+        reordered.forEach(cat => {
+            if (cat) cat.updatedAt = nowIso;
+        });
+
+        if (writeAllCategories(reordered)) {
+            res.json({ success: true, message: 'Category order updated', categories: reordered.map(c => c.name) });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to save category order' });
+        }
+    } catch (error) {
+        console.error('Error reordering categories:', error);
+        res.status(500).json({ success: false, message: 'Failed to reorder categories' });
+    }
+});
+
 // Update category (admin/editor with permission)
 app.put('/api/categories/:name', authenticateStaff, requireStaffPermission('categories'), (req, res) => {
     try {

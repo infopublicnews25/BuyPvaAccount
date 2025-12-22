@@ -427,6 +427,21 @@
             font-weight: 500;
         }
 
+        .category-tag[draggable="true"] {
+            cursor: grab;
+            user-select: none;
+        }
+
+        .category-tag.dragging {
+            opacity: 0.6;
+            cursor: grabbing;
+        }
+
+        .category-tag.drag-over {
+            outline: 2px dashed #667eea;
+            outline-offset: 2px;
+        }
+
         .category-tag button {
             background: none;
             border: none;
@@ -1836,12 +1851,137 @@
             const cats = await fetchCategoriesFromServer();
             cachedCategories = Array.isArray(cats) ? cats : [];
 
-            document.getElementById('categoriesList').innerHTML = cachedCategories.map(c => {
-                const safeLabel = String(c);
-                return `\n        <span class="category-tag">${safeLabel} <button onclick='deleteCategory(${JSON.stringify(String(c))})'>&times;</button></span>`;
-            }).join('');
+            renderCategoriesList();
 
             populateCategoryDropdown();
+        }
+
+        let categoriesDndInitialized = false;
+        let draggedCategoryName = '';
+
+        function renderCategoriesList() {
+            const listEl = document.getElementById('categoriesList');
+            if (!listEl) return;
+
+            listEl.innerHTML = (cachedCategories || []).map(c => {
+                const label = String(c);
+                const safeLabel = escapeHtml(label);
+                const safeAttr = escapeHtml(label);
+                return `\n        <span class="category-tag" draggable="true" data-category="${safeAttr}">${safeLabel} <button draggable="false" onclick='deleteCategory(${JSON.stringify(String(c))})'>&times;</button></span>`;
+            }).join('');
+
+            setupCategoriesDragAndDrop();
+        }
+
+        function setupCategoriesDragAndDrop() {
+            if (categoriesDndInitialized) return;
+            const listEl = document.getElementById('categoriesList');
+            if (!listEl) return;
+
+            categoriesDndInitialized = true;
+
+            listEl.addEventListener('dragstart', (e) => {
+                const tag = e.target && e.target.closest ? e.target.closest('.category-tag') : null;
+                if (!tag) return;
+                if (e.target && e.target.tagName === 'BUTTON') {
+                    e.preventDefault();
+                    return;
+                }
+
+                draggedCategoryName = String(tag.dataset.category || '').trim();
+                if (!draggedCategoryName) return;
+                tag.classList.add('dragging');
+
+                try {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', draggedCategoryName);
+                } catch {}
+            });
+
+            listEl.addEventListener('dragover', (e) => {
+                if (!draggedCategoryName) return;
+                e.preventDefault();
+
+                const tag = e.target && e.target.closest ? e.target.closest('.category-tag') : null;
+                if (!tag) return;
+                if (String(tag.dataset.category || '').trim().toLowerCase() === draggedCategoryName.toLowerCase()) return;
+
+                tag.classList.add('drag-over');
+                try {
+                    e.dataTransfer.dropEffect = 'move';
+                } catch {}
+            });
+
+            listEl.addEventListener('dragleave', (e) => {
+                const tag = e.target && e.target.closest ? e.target.closest('.category-tag') : null;
+                if (!tag) return;
+                tag.classList.remove('drag-over');
+            });
+
+            listEl.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                const tag = e.target && e.target.closest ? e.target.closest('.category-tag') : null;
+                if (!tag) return;
+
+                const targetName = String(tag.dataset.category || '').trim();
+                const sourceName = String(draggedCategoryName || '').trim();
+                if (!sourceName || !targetName) return;
+                if (targetName.toLowerCase() === sourceName.toLowerCase()) return;
+
+                const arr = Array.isArray(cachedCategories) ? [...cachedCategories] : [];
+                const from = arr.findIndex(c => String(c).toLowerCase() === sourceName.toLowerCase());
+                const to = arr.findIndex(c => String(c).toLowerCase() === targetName.toLowerCase());
+                if (from < 0 || to < 0) return;
+
+                const moved = arr.splice(from, 1)[0];
+                const insertIndex = from < to ? Math.max(0, to - 1) : to;
+                arr.splice(insertIndex, 0, moved);
+
+                cachedCategories = arr;
+                renderCategoriesList();
+                populateCategoryDropdown();
+
+                await saveCategoryOrderToServer(cachedCategories);
+            });
+
+            listEl.addEventListener('dragend', () => {
+                draggedCategoryName = '';
+                listEl.querySelectorAll('.category-tag.drag-over').forEach(el => el.classList.remove('drag-over'));
+                listEl.querySelectorAll('.category-tag.dragging').forEach(el => el.classList.remove('dragging'));
+            });
+        }
+
+        async function saveCategoryOrderToServer(order) {
+            try {
+                const token = localStorage.getItem(AUTH_KEY);
+                if (!token) return;
+
+                const res = await fetch(`${API}/categories/reorder`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ categories: Array.isArray(order) ? order : [] })
+                });
+
+                const raw = await res.text();
+                let data;
+                try {
+                    data = raw ? JSON.parse(raw) : {};
+                } catch {
+                    data = { success: false, message: raw || `Request failed (${res.status})` };
+                }
+
+                if (!res.ok || !data.success) {
+                    console.warn('Failed to save category order:', data);
+                    alert(data.message || 'Failed to save category order');
+                    return;
+                }
+            } catch (err) {
+                console.error('Error saving category order:', err);
+                alert('Failed to save category order');
+            }
         }
 
         async function populateCategoryDropdown(selectedCategory = '') {
