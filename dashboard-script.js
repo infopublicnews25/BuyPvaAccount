@@ -2774,48 +2774,6 @@ function saveDashboardProduct(event) {
     // loadDashboardProducts();
 }
 
-async function clearAllProductsFromServer() {
-    const ok = confirm('Delete ALL products from the catalog? This cannot be undone.');
-    if (!ok) return;
-    const ok2 = prompt('Type DELETE to confirm:');
-    if (String(ok2 || '').trim().toUpperCase() !== 'DELETE') return;
-
-    try {
-        const token = localStorage.getItem('admin_auth_token');
-        if (!token) {
-            showNotification('You are not logged in. Please login again.', 'error');
-            return;
-        }
-
-        const res = await fetch(`${CONFIG.API}/products`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify([])
-        });
-
-        const raw = await res.text();
-        let data;
-        try {
-            data = raw ? JSON.parse(raw) : {};
-        } catch {
-            data = { success: false, message: raw || `Request failed (${res.status})` };
-        }
-
-        if (!res.ok || !data.success) {
-            showNotification(data.message || 'Failed to delete products', 'error');
-            return;
-        }
-
-        localStorage.setItem('admin_products_v1', JSON.stringify([]));
-        showNotification('All products deleted successfully', 'success');
-    } catch (err) {
-        console.error('clearAllProductsFromServer error:', err);
-        showNotification('Failed to delete products', 'error');
-    }
-}
 
 // ========== CATEGORIES MANAGEMENT FUNCTIONS ==========
 
