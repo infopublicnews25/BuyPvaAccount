@@ -1345,6 +1345,10 @@ function navigateToFolder(folder) {
 // Load files for current path
 async function loadFiles(path) {
     const fileList = document.getElementById('file-list');
+    if (!fileList) {
+        // File manager section is not present on this dashboard variant.
+        return;
+    }
     fileList.innerHTML = '<div class="loading"><div class="spinner"></div>Loading files...</div>';
 
     try {
@@ -2167,6 +2171,10 @@ function loadReminders() {
 // Render reminders
 function renderReminders(reminders) {
     const container = document.getElementById('reminders-list');
+    if (!container) {
+        // Reminders widget is not present on this dashboard variant.
+        return;
+    }
 
     if (reminders.length === 0) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-clock"></i><p>No reminders yet</p></div>';

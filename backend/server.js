@@ -610,8 +610,17 @@ app.set('trust proxy', 1);
 // Rate limiting
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.'
+    // Dashboard pages can legitimately make many API calls (staff/me, files, products, etc.)
+    // Keep a rate limit, but set it high enough to avoid locking out admins.
+    max: 1000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            message: 'Too many requests from this IP, please try again later.'
+        });
+    }
 });
 
 const authLimiter = rateLimit({
@@ -642,7 +651,8 @@ app.use('/api/check-user', authLimiter);
 app.use('/api/send-reset-code', authLimiter);
 app.use('/api/reset-password', authLimiter);
 app.use('/api/admin/', adminLimiter);
-app.use(generalLimiter);
+// Apply the general limiter only to API routes (avoid blocking static pages/assets)
+app.use('/api', generalLimiter);
 
 // Security headers
 app.use((req, res, next) => {
