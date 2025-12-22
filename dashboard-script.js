@@ -213,6 +213,7 @@ function applyEditorRestrictions(staff) {
         const key = String(card.getAttribute('data-editor-tool') || '').trim();
         let keep = false;
         if (key === 'add-product') keep = hasPerm('products');
+        else if (key === 'bulk-add-products') keep = hasPerm('products');
         else if (key === 'product-categories') keep = hasPerm('categories');
         else if (key === 'inventory') keep = hasPerm('inventory');
         else if (key === 'product-analytics') keep = hasPerm('analytics');
@@ -221,6 +222,7 @@ function applyEditorRestrictions(staff) {
             // Fallback for unexpected markup
             const title = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
             if (title.includes('add product')) keep = hasPerm('products');
+            else if (title.includes('bulk add')) keep = hasPerm('products');
             else if (title.includes('product categories')) keep = hasPerm('categories');
             else if (title === 'inventory') keep = hasPerm('inventory');
             else if (title.includes('analytics')) keep = hasPerm('analytics');
@@ -2575,6 +2577,288 @@ function openProductModal() {
             qtyEl.value = String(getRandomStockQuantity());
         }
     } catch {}
+}
+
+// Open bulk products modal
+function openBulkProductsModal() {
+    // Keep categories synced (optional UX improvement)
+    try { loadDashboardCategories(); } catch {}
+
+    const status = document.getElementById('bulkProductsStatus');
+    if (status) status.textContent = '';
+
+    const input = document.getElementById('bulkProductsInput');
+    if (input && !String(input.value || '').trim()) {
+        // Provide a tiny starter template
+        input.value = '[\n  {"title":"Sample Product","category":"Gadgets","price":9.99,"quantity":100,"image":"","note":"Short description"}\n]';
+    }
+
+    const format = document.getElementById('bulkProductsFormat');
+    if (format && !String(format.value || '').trim()) format.value = 'json';
+
+    document.getElementById('bulk-products-modal').style.display = 'block';
+    try { input?.focus(); } catch {}
+}
+
+function setBulkStatus(message) {
+    const el = document.getElementById('bulkProductsStatus');
+    if (!el) return;
+    el.textContent = message || '';
+}
+
+function parseNumber(value) {
+    const n = typeof value === 'number' ? value : parseFloat(String(value || '').trim());
+    return Number.isFinite(n) ? n : null;
+}
+
+function parseInteger(value) {
+    const n = typeof value === 'number' ? value : parseInt(String(value || '').trim(), 10);
+    return Number.isFinite(n) ? n : null;
+}
+
+function clampInt(n, min, max) {
+    const nn = parseInteger(n);
+    if (!Number.isFinite(nn)) return null;
+    const a = Number.isFinite(min) ? min : nn;
+    const b = Number.isFinite(max) ? max : nn;
+    return Math.max(a, Math.min(b, nn));
+}
+
+function randomIntBetween(min, max) {
+    const lo = Math.min(min, max);
+    const hi = Math.max(min, max);
+    return Math.floor(lo + Math.random() * (hi - lo + 1));
+}
+
+function splitCsvLine(line) {
+    const out = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                cur += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+            continue;
+        }
+        if (ch === ',' && !inQuotes) {
+            out.push(cur);
+            cur = '';
+            continue;
+        }
+        cur += ch;
+    }
+    out.push(cur);
+    return out.map(s => String(s || '').trim());
+}
+
+function normalizeBulkProduct(raw, defaults, randomQtyCfg) {
+    const errors = [];
+
+    const title = String(raw?.title ?? raw?.name ?? '').trim();
+    const category = String(raw?.category ?? defaults.defaultCategory ?? '').trim();
+    const price = parseNumber(raw?.price);
+
+    let quantity = parseInteger(raw?.quantity);
+    const offerPrice = raw?.offerPrice != null && String(raw.offerPrice).trim() !== '' ? parseNumber(raw.offerPrice) : null;
+    const image = String(raw?.image ?? defaults.defaultImage ?? '').trim();
+
+    const note = String(raw?.note ?? raw?.description ?? '').trim();
+    const title_en = String(raw?.title_en ?? '').trim();
+    const note_en = String(raw?.note_en ?? '').trim();
+    const title_ru = String(raw?.title_ru ?? '').trim();
+    const note_ru = String(raw?.note_ru ?? '').trim();
+    const title_zh = String(raw?.title_zh ?? '').trim();
+    const note_zh = String(raw?.note_zh ?? '').trim();
+    const title_ar = String(raw?.title_ar ?? '').trim();
+    const note_ar = String(raw?.note_ar ?? '').trim();
+
+    if (!title) errors.push('title is required');
+    if (!category) errors.push('category is required (or set Default category)');
+    if (!Number.isFinite(price) || price <= 0) errors.push('price must be a positive number');
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+        if (randomQtyCfg.enabled) {
+            const qMin = randomQtyCfg.min;
+            const qMax = randomQtyCfg.max;
+            if (Number.isFinite(qMin) && Number.isFinite(qMax) && qMin > 0 && qMax > 0) {
+                quantity = randomIntBetween(qMin, qMax);
+            } else {
+                quantity = getRandomStockQuantity();
+            }
+        } else {
+            errors.push('quantity must be a positive integer (or enable Random quantity)');
+        }
+    }
+
+    const product = {
+        title,
+        category,
+        price,
+        quantity,
+        offerPrice,
+        image,
+        note,
+        title_en,
+        note_en,
+        title_ru,
+        note_ru,
+        title_zh,
+        note_zh,
+        title_ar,
+        note_ar
+    };
+
+    // Remove null offerPrice so API doesn't get noisy
+    if (product.offerPrice == null) delete product.offerPrice;
+
+    return { product, errors };
+}
+
+function readBulkProductsFromInput() {
+    const format = String(document.getElementById('bulkProductsFormat')?.value || 'json').toLowerCase();
+    const text = String(document.getElementById('bulkProductsInput')?.value || '').trim();
+    const defaultCategory = String(document.getElementById('bulkDefaultCategory')?.value || '').trim();
+    const defaultImage = String(document.getElementById('bulkDefaultImage')?.value || '').trim();
+
+    const randomEnabled = !!document.getElementById('bulkRandomQty')?.checked;
+    const qMin = clampInt(document.getElementById('bulkQtyMin')?.value, 1, 1000000);
+    const qMax = clampInt(document.getElementById('bulkQtyMax')?.value, 1, 1000000);
+
+    const defaults = { defaultCategory, defaultImage };
+    const randomQtyCfg = {
+        enabled: randomEnabled,
+        min: Number.isFinite(qMin) ? qMin : 50,
+        max: Number.isFinite(qMax) ? qMax : 120
+    };
+
+    if (!text) throw new Error('Please paste products data.');
+
+    let rows = [];
+    if (format === 'json') {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) rows = parsed;
+        else if (parsed && Array.isArray(parsed.products)) rows = parsed.products;
+        else throw new Error('JSON must be an array, or an object with a "products" array.');
+    } else if (format === 'csv') {
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length < 2) throw new Error('CSV must include a header line and at least one data row.');
+        const headers = splitCsvLine(lines[0]).map(h => String(h || '').trim());
+        rows = lines.slice(1).map(line => {
+            const cols = splitCsvLine(line);
+            const obj = {};
+            headers.forEach((h, i) => {
+                if (!h) return;
+                obj[h] = cols[i] ?? '';
+            });
+            return obj;
+        });
+    } else {
+        throw new Error('Unknown format. Use JSON or CSV.');
+    }
+
+    const normalized = [];
+    const problems = [];
+    rows.forEach((raw, idx) => {
+        const { product, errors } = normalizeBulkProduct(raw, defaults, randomQtyCfg);
+        if (errors.length) {
+            problems.push(`Row ${idx + 1}: ${errors.join('; ')}`);
+        } else {
+            normalized.push(product);
+        }
+    });
+
+    return { products: normalized, problems, totalRows: rows.length };
+}
+
+function validateBulkProducts() {
+    try {
+        const { products, problems, totalRows } = readBulkProductsFromInput();
+        if (problems.length) {
+            setBulkStatus(`Found ${problems.length} issue(s). First: ${problems[0]}`);
+            return;
+        }
+        setBulkStatus(`Ready: ${products.length} product(s) validated (from ${totalRows} row(s)).`);
+    } catch (e) {
+        setBulkStatus(String(e?.message || e || 'Validation failed'));
+    }
+}
+
+async function importBulkProducts() {
+    let payload;
+    try {
+        payload = readBulkProductsFromInput();
+    } catch (e) {
+        setBulkStatus(String(e?.message || e || 'Import failed'));
+        return;
+    }
+
+    const { products, problems, totalRows } = payload;
+    if (problems.length) {
+        setBulkStatus(`Fix issues first. Example: ${problems[0]}`);
+        return;
+    }
+    if (!products.length) {
+        setBulkStatus('No valid products to import.');
+        return;
+    }
+
+    const token = localStorage.getItem('admin_auth_token');
+    if (!token) {
+        showNotification('You are not logged in. Please login again.', 'error');
+        return;
+    }
+
+    const importBtn = document.querySelector('#bulk-products-modal .btn.btn-success');
+    const validateBtn = document.querySelector('#bulk-products-modal .btn.btn-primary');
+    if (importBtn) importBtn.disabled = true;
+    if (validateBtn) validateBtn.disabled = true;
+
+    let lastProductsSnapshot = null;
+    try {
+        setBulkStatus(`Importing 0/${products.length}...`);
+        for (let i = 0; i < products.length; i++) {
+            setBulkStatus(`Importing ${i + 1}/${products.length}...`);
+            const res = await fetch(`${CONFIG.API}/products`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(products[i])
+            });
+
+            const raw = await res.text();
+            let data;
+            try { data = raw ? JSON.parse(raw) : {}; }
+            catch { data = { success: false, message: raw || `Request failed (${res.status})` }; }
+
+            if (!res.ok || !data.success) {
+                const name = products[i]?.title ? ` (${products[i].title})` : '';
+                throw new Error(`Failed at item ${i + 1}${name}: ${data.message || 'Request failed'}`);
+            }
+
+            if (Array.isArray(data.products)) lastProductsSnapshot = data.products;
+        }
+
+        if (Array.isArray(lastProductsSnapshot)) {
+            localStorage.setItem('admin_products_v1', JSON.stringify(lastProductsSnapshot));
+        }
+
+        showNotification(`Imported ${products.length} product(s) successfully!`, 'success');
+        setBulkStatus(`Done: imported ${products.length} product(s) (from ${totalRows} row(s)).`);
+    } catch (err) {
+        console.error('importBulkProducts error:', err);
+        showNotification('Bulk import failed', 'error');
+        setBulkStatus(String(err?.message || err || 'Bulk import failed'));
+    } finally {
+        if (importBtn) importBtn.disabled = false;
+        if (validateBtn) validateBtn.disabled = false;
+    }
 }
 
 // Load categories for dashboard product modal
