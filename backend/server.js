@@ -425,10 +425,12 @@ const storage = multer.diskStorage({
     }
 });
 
+const MEDIA_UPLOAD_MAX_BYTES = Number(process.env.MEDIA_UPLOAD_MAX_BYTES || (25 * 1024 * 1024)); // 25MB default
+
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB limit
+        fileSize: MEDIA_UPLOAD_MAX_BYTES
     },
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|webm|avi|mov|mkv|pdf|doc|docx|txt|xls|xlsx|ppt|pptx/;
@@ -442,6 +444,32 @@ const upload = multer({
         }
     }
 });
+
+function uploadSingleMediaFile(req, res, next) {
+    const handler = upload.single('file');
+    handler(req, res, (err) => {
+        if (!err) return next();
+
+        // Multer errors (size limits, etc)
+        if (err && err.name === 'MulterError') {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(413).json({
+                    success: false,
+                    message: `File too large. Max size is ${Math.round(MEDIA_UPLOAD_MAX_BYTES / (1024 * 1024))}MB.`
+                });
+            }
+            return res.status(400).json({ success: false, message: err.message || 'Upload failed' });
+        }
+
+        // Our custom filter error
+        const msg = String(err?.message || 'Upload failed');
+        if (msg.toLowerCase().includes('invalid file type')) {
+            return res.status(415).json({ success: false, message: 'Invalid file type. PNG/JPG/WebP/GIF, MP4/WebM, PDF/DOC/TXT are allowed.' });
+        }
+
+        return res.status(400).json({ success: false, message: msg });
+    });
+}
 
 // Helper to read all media files
 function readAllMedia() {
@@ -4317,7 +4345,7 @@ app.get('/api/media', authenticateStaff, requireStaffPermission('media'), (req, 
 });
 
 // Upload media file (admin/editor with permission)
-app.post('/api/media', authenticateStaff, requireStaffPermission('media'), upload.single('file'), (req, res) => {
+app.post('/api/media', authenticateStaff, requireStaffPermission('media'), uploadSingleMediaFile, (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No file uploaded' });

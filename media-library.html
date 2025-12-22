@@ -781,14 +781,22 @@
                         headers: { 'Authorization': `Bearer ${token}` },
                         body: formData
                     });
-                    const data = await res.json();
-                    if (data.success) {
-                        mediaFiles.push(data.mediaFile);
-                        renderMedia();
-                        updateStats();
-                    } else {
-                        alert('Failed to upload file: ' + (data.message || 'Unknown error'));
+                    const raw = await res.text();
+                    let data;
+                    try {
+                        data = raw ? JSON.parse(raw) : {};
+                    } catch {
+                        data = { success: false, message: raw || `Upload failed (${res.status})` };
                     }
+
+                    if (!res.ok || !data.success) {
+                        alert('Failed to upload file: ' + (data.message || `Upload failed (${res.status})`));
+                        continue;
+                    }
+
+                    mediaFiles.push(data.mediaFile);
+                    renderMedia();
+                    updateStats();
                 } catch (err) {
                     console.error('Upload error:', err);
                     alert('Failed to upload file');
