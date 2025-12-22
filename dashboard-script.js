@@ -3,6 +3,14 @@ let currentPath = '/';
 let fileTree = {};
 let selectedFile = null;
 
+function getApiBase() {
+    // Robust fallback: many dashboard actions rely on CONFIG.API,
+    // but some deployments may omit config.js from dashboard.html.
+    const raw = (window.CONFIG && typeof window.CONFIG.API === 'string') ? window.CONFIG.API : '';
+    const base = String(raw || '').trim();
+    return (base ? base : '/api').replace(/\/+$/, '');
+}
+
 // Helper function to get auth headers
 function getAuthHeaders() {
     const token = localStorage.getItem('admin_auth_token');
@@ -11,10 +19,7 @@ function getAuthHeaders() {
 
 async function getStaffContext() {
     try {
-        const staffMeUrl = (window.CONFIG && typeof window.CONFIG.API === 'string' && window.CONFIG.API.trim())
-            ? window.CONFIG.API.trim().replace(/\/+$/, '') + '/staff/me'
-            : '/api/staff/me';
-        const res = await fetch(staffMeUrl, { headers: { ...getAuthHeaders() } });
+        const res = await fetch(`${getApiBase()}/staff/me`, { headers: { ...getAuthHeaders() } });
         const data = await res.json();
         if (data && data.success && data.user) return data.user;
     } catch (e) {}
@@ -255,7 +260,7 @@ async function initializeProducts() {
     console.log('Initializing products...');
     try {
         // Try to load from API first
-        const response = await fetch('/api/products');
+            const response = await fetch(`${getApiBase()}/products`);
         const data = await response.json();
         if (data.success && Array.isArray(data.products) && data.products.length > 0) {
             localStorage.setItem('admin_products_v1', JSON.stringify(data.products));
@@ -2823,7 +2828,7 @@ async function importBulkProducts() {
         setBulkStatus(`Importing 0/${products.length}...`);
         for (let i = 0; i < products.length; i++) {
             setBulkStatus(`Importing ${i + 1}/${products.length}...`);
-            const res = await fetch(`${CONFIG.API}/products`, {
+            const res = await fetch(`${getApiBase()}/products`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -2866,7 +2871,7 @@ function loadDashboardCategories() {
     (async () => {
         let cats = [];
         try {
-            const res = await fetch(`${CONFIG.API}/categories`, { cache: 'no-store' });
+            const res = await fetch(`${getApiBase()}/categories`, { cache: 'no-store' });
             const data = await res.json();
             if (data && data.success && Array.isArray(data.categories)) {
                 cats = data.categories;
@@ -3019,7 +3024,7 @@ function saveDashboardProduct(event) {
                 return;
             }
 
-            const res = await fetch(`${CONFIG.API}/products`, {
+            const res = await fetch(`${getApiBase()}/products`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
