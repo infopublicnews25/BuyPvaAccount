@@ -1405,7 +1405,7 @@
             }
         }
 
-        function openProductModal() {
+        async function openProductModal() {
             document.getElementById('productModalTitle').textContent = 'Add New Product';
             document.getElementById('productId').value = '';
             document.getElementById('productTitle').value = '';
@@ -1414,11 +1414,11 @@
             document.getElementById('productQuantity').value = '';
             document.getElementById('productNote').value = '';
             document.getElementById('productImage').value = '';
-            populateCategoryDropdown();
+            await populateCategoryDropdown();
             document.getElementById('productModal').style.display = 'block';
         }
 
-        function editProduct(product) {
+        async function editProduct(product) {
             document.getElementById('productModalTitle').textContent = 'Edit Product';
             document.getElementById('productId').value = product.id;
             document.getElementById('productTitle').value = product.title;
@@ -1427,7 +1427,7 @@
             document.getElementById('productQuantity').value = product.quantity;
             document.getElementById('productNote').value = product.note || '';
             document.getElementById('productImage').value = product.image || '';
-            populateCategoryDropdown(product.category);
+            await populateCategoryDropdown(product.category);
             document.getElementById('productModal').style.display = 'block';
         }
 

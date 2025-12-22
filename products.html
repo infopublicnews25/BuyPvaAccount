@@ -501,18 +501,39 @@
             const token = getStaffToken();
             return token ? { Authorization: `Bearer ${token}` } : {};
         }
+
+        function setSelectValueCaseInsensitive(selectEl, value) {
+            if (!selectEl) return;
+            const raw = String(value || '').trim();
+            if (!raw) {
+                selectEl.value = '';
+                return;
+            }
+
+            // First try direct match
+            selectEl.value = raw;
+            if (selectEl.value === raw) return;
+
+            const targetLower = raw.toLowerCase();
+            const options = Array.from(selectEl.options || []);
+            const match = options.find(o => String(o.value || '').toLowerCase() === targetLower);
+            if (match) selectEl.value = match.value;
+        }
         
         // Modal functions
-        function openProductModal(product = null) {
+        async function openProductModal(product = null) {
             console.log('Opening product modal', product);
             const modal = document.getElementById('productModal');
             const form = document.getElementById('productForm');
 
-            // Load categories to ensure dropdown is populated
-            loadCategories();
+            // Load categories first so the selected value won't be overwritten.
+            await loadCategories(product ? (product.category || '') : '');
 
             if (product) {
                 document.getElementById('modalTitle').textContent = 'Edit Product';
+                if (product.id !== undefined && product.id !== null) {
+                    form.dataset.productId = String(product.id);
+                }
                 // Populate form with product data
                 populateForm(product);
             } else {
@@ -530,15 +551,15 @@
 
         function populateForm(product) {
             document.getElementById('productTitle').value = product.title || '';
-            document.getElementById('productCategory').value = product.category || '';
+            setSelectValueCaseInsensitive(document.getElementById('productCategory'), product.category || '');
             document.getElementById('productPrice').value = product.price || '';
             document.getElementById('productQuantity').value = product.quantity || '';
             document.getElementById('productOfferPrice').value = product.offerPrice || '';
             document.getElementById('productImage').value = product.image || '';
 
             // Language fields
-            document.getElementById('titleEn').value = product.title || '';
-            document.getElementById('noteEn').value = product.note || '';
+            document.getElementById('titleEn').value = product.title_en || product.title || '';
+            document.getElementById('noteEn').value = product.note_en || product.note || '';
             document.getElementById('titleRu').value = product.title_ru || '';
             document.getElementById('noteRu').value = product.note_ru || '';
             document.getElementById('titleZh').value = product.title_zh || '';
@@ -550,22 +571,32 @@
         function saveProduct() {
             const form = document.getElementById('productForm');
             const formData = new FormData(form);
+
+            const titleFromBasic = String(formData.get('title') || '').trim();
+            const titleFromEn = String(formData.get('title_en') || '').trim();
+            const noteFromEn = String(formData.get('note_en') || '').trim();
+
+            // Keep legacy title/note in sync with EN fields so marketplace EN updates.
+            const mergedTitle = titleFromEn || titleFromBasic;
+            const mergedNote = noteFromEn;
             
             const product = {
-                title: formData.get('title'),
-                category: formData.get('category'),
+                title: mergedTitle,
+                category: String(formData.get('category') || ''),
                 price: parseFloat(formData.get('price')),
                 quantity: parseInt(formData.get('quantity')),
                 offerPrice: formData.get('offerPrice') ? parseFloat(formData.get('offerPrice')) : null,
                 image: formData.get('image') || '',
                 // Language fields
+                title_en: mergedTitle,
+                note_en: mergedNote,
                 title_ru: formData.get('title_ru') || '',
                 note_ru: formData.get('note_ru') || '',
                 title_zh: formData.get('title_zh') || '',
                 note_zh: formData.get('note_zh') || '',
                 title_ar: formData.get('title_ar') || '',
                 note_ar: formData.get('note_ar') || '',
-                note: formData.get('note_en') || ''
+                note: mergedNote
             };
 
             // Check if editing existing product
@@ -577,6 +608,14 @@
                 const productId = form.dataset.productId;
                 if (productId) {
                     product.id = productId;
+                }
+
+                // Preserve category if async dropdown/click race caused empty value
+                if (!product.category) {
+                    const existing = PRODUCTS_BY_ID.get(String(product.id));
+                    if (existing && existing.category) {
+                        product.category = existing.category;
+                    }
                 }
             } else {
                 product.id = Date.now().toString();
