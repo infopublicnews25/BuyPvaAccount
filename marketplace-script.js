@@ -297,6 +297,147 @@ function detectLanguage() {
     return params.get('category') || 'all';
   }
 
+  function updateCategoryDetails() {
+    const host = document.getElementById('mpCategoryDetails');
+    const titleEl = document.getElementById('mpCategoryDetailsTitle');
+    const bodyEl = document.getElementById('mpCategoryDetailsBody');
+    if (!host || !titleEl || !bodyEl) return;
+
+    const currentCategory = getCurrentCategory();
+    const norm = normalizeCategoryName(currentCategory);
+
+    const CATEGORY_DETAILS_HTML = {
+      gmail: `
+        <h1>Buy Cheap Gmail &amp; Google Accounts - Verified, Aged &amp; Ready to Use</h1>
+
+        <p>Looking for reliable <strong>Gmail or Google accounts</strong> at cheap prices? Whether for marketing, business, or personal use, we offer fully verified accounts with instant delivery. Get aged Gmail accounts, phone-verified (PVA) options, and more at the best prices.</p>
+
+        <h2>Available Google &amp; Gmail Accounts</h2>
+        <ul>
+          <li><strong>Verified Gmail Accounts</strong> - Phone-verified and ready to use.</li>
+          <li><strong>Aged Gmail Accounts</strong> - Older accounts with history and trust.</li>
+          <li><strong>Cheap Gmail Accounts</strong> - Budget-friendly options for bulk or single purchases.</li>
+          <li><strong>Google Accounts with YouTube</strong> - Verified accounts with full YouTube access.</li>
+          <li><strong>Gmail Accounts with Recovery Email</strong> - Extra security for long-term use.</li>
+        </ul>
+
+        <h2>Why Buy from Us?</h2>
+        <ul>
+          <li><strong>Verified &amp; Secure</strong> - No additional phone verification required.</li>
+          <li><strong>Instant Access</strong> - Accounts are delivered immediately after purchase.</li>
+          <li><strong>Cheap &amp; High-Quality</strong> - Get the best value for your money.</li>
+          <li><strong>Multiple Options</strong> - Choose aged, fresh, or niche-specific accounts.</li>
+        </ul>
+
+        <h2>Order Your Gmail &amp; Google Accounts Now</h2>
+        <p>Choose the right <strong>Gmail or Google account</strong>, complete your purchase, and get instant access. No delays, no hassle.</p>
+        <p>Buy cheap Gmail &amp; Google accounts today and start using them right away!</p>
+      `,
+      linkedin: `
+        <h1>Buy Bulk LinkedIn Accounts - Aged, Verified &amp; Ready for Networking</h1>
+
+        <p>Looking to expand your professional network, boost B2B marketing, or automate LinkedIn outreach? Our store offers a variety of <strong>bulk LinkedIn accounts</strong>, including <strong>aged LinkedIn profiles</strong>, <strong>USA-registered LinkedIn accounts</strong>, and <strong>LinkedIn with connections</strong>. Get verified profiles with a history of activity to strengthen your presence on the world's largest business platform.</p>
+
+        <h2>Types of LinkedIn Accounts Available</h2>
+        <p><strong>LinkedIn USA Accounts</strong> - Created with U.S. IPs for seamless networking and outreach.</p>
+        <p><strong>LinkedIn Aged Accounts</strong> - Established profiles with history, ideal for credibility and marketing campaigns.</p>
+        <p><strong>LinkedIn with Connections</strong> - Accounts with existing network connections to enhance authority.</p>
+        <p><strong>LinkedIn UK Accounts</strong> - Registered in the United Kingdom, perfect for targeting the UK market.</p>
+        <p><strong>LinkedIn with Age</strong> - Older accounts that appear more natural and trustworthy.</p>
+        <p><strong>Cheap LinkedIn Accounts</strong> - Buy multiple accounts for automation, lead generation, and advertising.</p>
+
+        <h2>Why Use Aged LinkedIn Accounts?</h2>
+        <p>New LinkedIn accounts often face restrictions, low visibility, and limitations on messaging. By using <strong>aged and verified LinkedIn accounts</strong>, you bypass these issues, allowing for seamless outreach, increased engagement, and stronger networking opportunities.</p>
+
+        <h2>Instant Delivery &amp; Secure Transactions</h2>
+        <p>Once your order is placed, you'll receive your <strong>LinkedIn accounts instantly</strong>. We ensure a smooth, safe transaction process, so you can focus on growing your business.</p>
+        <p>Choose the best LinkedIn accounts for your needs and start networking like a pro today!</p>
+      `,
+      email: `
+        <h1>Buy Email Accounts - Secure, Verified &amp; Affordable</h1>
+
+        <p>Need high-quality email accounts for marketing, business, or personal use? Get ready-to-use <strong>email accounts</strong> with full access, including IMAP, POP3, and SMTP support. Whether you're looking for bulk accounts for campaigns or a single verified email, we offer a variety of platforms to suit your needs.</p>
+
+        <h2>Available Email Accounts</h2>
+        <ul>
+          <li><strong><em>Yahoo IMAP Emails</em></strong> - Fully verified accounts with IMAP access.</li>
+          <li><strong><em>Outlook.com IMAP &amp; POP3</em></strong> - Trusted Microsoft accounts with full functionality.</li>
+          <li><strong><em>ProtonMail Aged HQ</em></strong> - Secure, high-quality aged accounts.</li>
+          <li><strong><em>GMX &amp; Web.de POP3 Emails</em></strong> - Budget-friendly options for mass use.</li>
+          <li><strong><em>Cheap Email Accounts</em></strong> - Affordable bulk email accounts for marketing and automation.</li>
+        </ul>
+
+        <h2>Why Buy Verified Email Accounts?</h2>
+        <ul>
+          <li>Bypass phone verification and restrictions.</li>
+          <li>Use IMAP/POP3 for easy integration with apps.</li>
+          <li>Run automated campaigns without interruptions.</li>
+          <li>Access premium email services at a low cost.</li>
+        </ul>
+
+        <h2>Get Started Instantly</h2>
+        <p>Select the email provider that fits your needs and place your order. Accounts are delivered instantly with full credentials, ensuring you can start using them right away.</p>
+        <p>Order your verified email accounts today and streamline your communication effortlessly!</p>
+      `,
+
+      // Placeholders (edit these to your own text)
+      facebook: '',
+      instagram: '',
+      twitter: '',
+      youtube: '',
+      tiktok: '',
+      telegram: '',
+      other: '',
+      yahoo: '',
+      tender: '',
+      open: ''
+    };
+
+    if (!norm || norm === 'all') {
+      host.hidden = true;
+      safeSetInnerHTML(bodyEl, '', true);
+      titleEl.textContent = '';
+      return;
+    }
+
+    const isGmail = norm === 'gmail' || norm.includes('gmail') || norm.includes('google');
+    const isLinkedIn = norm === 'linkedin' || norm.includes('linkedin');
+    const isEmail = norm === 'email' || norm.includes('email') || ['yahoo', 'outlook', 'proton', 'gmx', 'web', 'hotmail'].some(k => norm.includes(k));
+
+    const key = isGmail ? 'gmail' : isLinkedIn ? 'linkedin' : isEmail ? 'email' : norm;
+    const customHtml = CATEGORY_DETAILS_HTML[key];
+
+    let categoryDescription = '';
+    try {
+      const stored = JSON.parse(localStorage.getItem('product_categories') || '[]');
+      if (Array.isArray(stored)) {
+        const match = stored.find(c => normalizeCategoryName(c && c.name) === norm);
+        if (match && match.description) categoryDescription = String(match.description);
+      }
+    } catch {}
+
+    titleEl.textContent = String(currentCategory || '').toUpperCase();
+
+    if (typeof customHtml === 'string' && customHtml.trim()) {
+      safeSetInnerHTML(bodyEl, customHtml, true);
+      host.hidden = false;
+      return;
+    }
+
+    const fallbackHtml = `
+      <h1>Buy ${String(currentCategory || '').toUpperCase()} Accounts - Verified &amp; Ready</h1>
+      <p>${categoryDescription ? categoryDescription : 'Category details will be added soon.'}</p>
+      <h2>Why buy from us?</h2>
+      <ul>
+        <li><strong>Fast delivery</strong> - Quick access after purchase.</li>
+        <li><strong>Secure</strong> - Reliable accounts and safe checkout.</li>
+        <li><strong>Bulk support</strong> - Suitable for single or bulk orders.</li>
+      </ul>
+    `;
+    safeSetInnerHTML(bodyEl, fallbackHtml, true);
+    host.hidden = false;
+  }
+
   function setCategory(category) {
     const url = new URL(window.location);
     if (category === 'all') {
@@ -425,6 +566,7 @@ function detectLanguage() {
 
   function render() {
     safeSetInnerHTML(rowsHost, '', true);
+    updateCategoryDetails();
     const q = (search?.value || '').toLowerCase().trim();
     const currentCategory = getCurrentCategory();
     const currentCategoryNorm = normalizeCategoryName(currentCategory);

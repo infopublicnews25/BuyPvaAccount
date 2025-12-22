@@ -62,6 +62,42 @@ header a:hover {
   border-color: var(--primary);
 }
 
+/* Category Details Box (Gmail/LinkedIn/Email info) */
+.category-details {
+  margin: 12px 0 18px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.category-details-head {
+  font-weight: 800;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.category-details-body {
+  color: var(--text);
+  line-height: 1.55;
+  font-size: 14px;
+}
+
+.category-details-body h1,
+.category-details-body h2,
+.category-details-body h3 {
+  margin: 12px 0 8px;
+  line-height: 1.25;
+}
+
+.category-details-body h1 { font-size: 18px; }
+.category-details-body h2 { font-size: 15px; }
+.category-details-body h3 { font-size: 14px; }
+
+.category-details-body p { margin: 8px 0; color: var(--text); }
+.category-details-body ul { margin: 6px 0 10px 18px; }
+.category-details-body li { margin: 6px 0; }
+
 .grid {
   display: grid;
   grid-template-columns: 1fr var(--sidebar);
