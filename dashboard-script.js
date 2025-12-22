@@ -2704,6 +2704,96 @@ const CATEGORY_DETAILS_FILE_PATH = '/';
 const CATEGORY_DETAILS_FILE_NAME = 'marketplace-category-details.json';
 let __categoryDetailsOverrides = null;
 
+// Keep a copy of the marketplace default content so the editor can show what's currently live
+// even when no override exists yet.
+const DEFAULT_CATEGORY_DETAILS_HTML = {
+        all: `
+                <h1>Buy Premium Accounts Online - Instant Delivery, Flexible Quantities, Trusted Support</h1>
+
+                <p><strong>BuyPvaAccount</strong> offers a curated selection of accounts across popular services, including <strong>email platforms, social networks, and more</strong>. If you need accounts for testing, outreach, advertising workflows, or day-to-day operations, you can choose the category you want and order in the quantity that fits your project.</p>
+
+                <h2>Why Buy From BuyPvaAccount?</h2>
+                <ul>
+                    <li><strong>Fast delivery</strong> - quick access after checkout.</li>
+                    <li><strong>Bulk-friendly</strong> - buy one account or place a large order.</li>
+                    <li><strong>Clear offers</strong> - straightforward listings with details and pricing.</li>
+                    <li><strong>Support when needed</strong> - help with order questions and issues.</li>
+                </ul>
+
+                <h2>Fresh Stock and Category Variety</h2>
+                <p>We regularly update availability and add new offers so you can find options that match your goals and preferred regions when applicable.</p>
+
+                <h2>Wholesale Options</h2>
+                <p>If you need accounts at scale for marketing teams, agencies, or internal testing, BuyPvaAccount supports bulk orders and repeat purchasing.</p>
+
+                <h2>Order Now</h2>
+                <p>Select a category to see available products, compare options, and place your order in minutes.</p>
+        `,
+        gmail: `
+                <h1>Buy Gmail &amp; Google Accounts - Ready-to-Use Options for Workflows at Scale</h1>
+
+                <p>Need <strong>Gmail/Google accounts</strong> for campaigns, verification flows, or operational tasks? BuyPvaAccount provides multiple options so you can choose what matches your use case and order size.</p>
+
+                <h2>Common Options You Can Find</h2>
+                <ul>
+                    <li><strong>Verified accounts</strong> - prepared for immediate login.</li>
+                    <li><strong>Aged accounts</strong> - older profiles suited for more natural activity patterns.</li>
+                    <li><strong>Bulk-friendly packs</strong> - convenient for large campaigns and teams.</li>
+                    <li><strong>Accounts with recovery details</strong> - for longer-term account management.</li>
+                </ul>
+
+                <h2>Why Order Here?</h2>
+                <ul>
+                    <li><strong>Fast delivery</strong> - access details after checkout.</li>
+                    <li><strong>Choice</strong> - multiple listings for different needs.</li>
+                    <li><strong>Support</strong> - help if you face order or access questions.</li>
+                </ul>
+
+                <h2>Get Started</h2>
+                <p>Select a Gmail/Google offer from the list, choose quantity, and place your order. Delivery is provided with the credentials and basic usage information.</p>
+        `,
+        linkedin: `
+                <h1>Buy LinkedIn Accounts in Bulk - Suitable for Outreach, Lead Gen, and B2B Work</h1>
+
+                <p>If you run outreach, recruitment, or B2B campaigns, having the right account type matters. BuyPvaAccount lists different <strong>LinkedIn account options</strong> so you can choose by age, profile type, and quantity.</p>
+
+                <h2>What You May See in This Category</h2>
+                <ul>
+                    <li><strong>Aged profiles</strong> - accounts with history intended for steadier usage.</li>
+                    <li><strong>Region-focused accounts</strong> - options aligned to specific markets when offered.</li>
+                    <li><strong>Bulk quantities</strong> - for teams and automated workflows.</li>
+                </ul>
+
+                <h2>Why Many Buyers Prefer Aged Profiles</h2>
+                <p>Fresh profiles can be more sensitive in the early stage. Aged options are often selected for smoother onboarding and more natural-looking activity over time.</p>
+
+                <h2>Delivery and Support</h2>
+                <p>After checkout, you receive the account credentials and basic access guidance. If you have questions about your order, support is available.</p>
+        `,
+        email: `
+                <h1>Buy Email Accounts - IMAP/POP3/SMTP Ready, Single or Bulk</h1>
+
+                <p>BuyPvaAccount offers <strong>email account listings</strong> suitable for day-to-day communication, testing, and campaign tooling. Many offers support common protocols such as <strong>IMAP</strong>, <strong>POP3</strong>, and <strong>SMTP</strong>, so you can connect them to standard email clients and systems.</p>
+
+                <h2>Typical Use Cases</h2>
+                <ul>
+                    <li><strong>Business operations</strong> - separate inboxes for teams and projects.</li>
+                    <li><strong>Testing</strong> - QA, sign-up flows, and verification scenarios.</li>
+                    <li><strong>Campaign workflows</strong> - bulk usage where permitted by your tools/platforms.</li>
+                </ul>
+
+                <h2>What to Expect</h2>
+                <ul>
+                    <li>Clear product options and quantities.</li>
+                    <li>Fast delivery after checkout.</li>
+                    <li>Credentials provided with basic access notes.</li>
+                </ul>
+
+                <h2>Choose an Offer and Order</h2>
+                <p>Open the Email category, pick the product that fits your requirements, then select quantity and checkout.</p>
+        `
+};
+
 function normalizeCategoryKey(value) {
     return String(value || '').trim().toLowerCase();
 }
@@ -2811,19 +2901,51 @@ function getDashboardCategoryNames() {
     return ['Gmail', 'Facebook', 'Instagram', 'Twitter', 'LinkedIn', 'YouTube', 'TikTok', 'Telegram', 'WhatsApp', 'Other', 'Open phone'];
 }
 
+async function fetchCategoryNamesFromApi() {
+    try {
+        const res = await fetch('/api/categories');
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.categories)) {
+            return data.categories
+                .map(c => (typeof c === 'string') ? c : (c && (c.name || c.title || c.label)))
+                .filter(Boolean);
+        }
+    } catch (e) {}
+    return [];
+}
+
+async function getCategoryNamesForManager() {
+    const fromLocal = getDashboardCategoryNames();
+    if (Array.isArray(fromLocal) && fromLocal.length) return fromLocal;
+
+    const fromApi = await fetchCategoryNamesFromApi();
+    if (Array.isArray(fromApi) && fromApi.length) return fromApi;
+
+    return ['Gmail', 'Facebook', 'Instagram', 'Twitter', 'LinkedIn', 'YouTube', 'TikTok', 'Telegram', 'WhatsApp', 'Other', 'Open phone'];
+}
+
 function setCategoryDetailsEditorValue(key) {
     const textarea = document.getElementById('cdm-html');
     const status = document.getElementById('cdm-status');
     if (!textarea || !status) return;
 
-    const v = (__categoryDetailsOverrides && typeof __categoryDetailsOverrides[key] === 'string') ? __categoryDetailsOverrides[key] : '';
-    textarea.value = v;
+    const override = (__categoryDetailsOverrides && typeof __categoryDetailsOverrides[key] === 'string') ? __categoryDetailsOverrides[key] : '';
+    const defaultHtml = (DEFAULT_CATEGORY_DETAILS_HTML && typeof DEFAULT_CATEGORY_DETAILS_HTML[key] === 'string') ? DEFAULT_CATEGORY_DETAILS_HTML[key] : '';
 
-    if (v && v.trim()) {
+    if (override && override.trim()) {
+        textarea.value = override;
         status.textContent = `Loaded saved override for "${key}".`;
-    } else {
-        status.textContent = `No override saved for "${key}". Marketplace will use default content.`;
+        return;
     }
+
+    if (defaultHtml && defaultHtml.trim()) {
+        textarea.value = defaultHtml;
+        status.textContent = `Loaded existing marketplace default content for "${key}". Click Save to create an override.`;
+        return;
+    }
+
+    textarea.value = '';
+    status.textContent = `No existing content for "${key}" yet. Add HTML and click Save.`;
 }
 
 async function openCategoryDetailsModal() {
@@ -2837,7 +2959,7 @@ async function openCategoryDetailsModal() {
 
     __categoryDetailsOverrides = await loadCategoryDetailsOverridesFromServer();
 
-    const names = getDashboardCategoryNames();
+    const names = await getCategoryNamesForManager();
     const options = [];
     options.push({ label: 'ALL (Marketplace All)', value: 'all' });
     options.push({ label: 'GMAIL', value: 'gmail' });
