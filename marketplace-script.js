@@ -307,6 +307,39 @@ function detectLanguage() {
     const norm = normalizeCategoryName(currentCategory);
 
     const CATEGORY_DETAILS_HTML = {
+      all: `
+        <h1>Buy Premium Accounts Online - Reliability, Instant Delivery, Exclusive Offers</h1>
+
+        <p>TrueAccs is one of the first account stores, having operated for over 10 years under the BuyAccs brand. We offer a wide selection of accounts for various services, including <strong>email platforms, social networks, cloud services and much more</strong>. We value every customer, so all these years we have been working to improve our offering and provide only the best solutions, proven by time. The wide range is supplemented with unique accounts that are suitable for commercial, advertising or other activities.</p>
+
+        <h2>Why Choose TrueAccs?</h2>
+
+        <p>TrueAccs is a service that thousands of customers already trust. Our advantages:</p>
+        <ul>
+          <li><strong>Exclusive offers</strong> - we have accounts that are hard to find in other stores.</li>
+          <li><strong>Flexibility of choice</strong> - from single purchases to wholesale orders.</li>
+          <li><strong>Fast delivery</strong> - instant shipping after payment.</li>
+          <li><strong>Guarantees and support</strong> - we offer fair replacement conditions and are always ready to help.</li>
+          <li><strong>Experience of more than 10 years</strong> - thousands of satisfied customers and reputation of a reliable business partner.</li>
+          <li><strong>Friendly support</strong> - always ready to help with selection and solve all issues.</li>
+        </ul>
+
+        <h2>Rare Accounts and Exclusive Offers</h2>
+
+        <p>In our store you will find accounts that are not found on other platforms. We constantly update and maintain the relevance of the range and add unique offers and geo.</p>
+
+        <h2>Flexible Purchase Terms - From One Account to Large Order</h2>
+
+        <p>At TrueAccs you can buy both one account and make a wholesale order. We work with private clients, companies, marketing agencies and businesses that require a large number of accounts for advertising, testing and working with various services. <strong>Our store specializes in wholesale orders and if you need accounts in large volumes, we are ready to help you with this.</strong></p>
+
+        <h2>Quality Guarantees and Customer Support</h2>
+
+        <p>We provide only verified accounts, ready for use. If necessary, we offer replacements, and our support service is always ready to answer your questions and help solve problems.</p>
+
+        <h2>Order Right Now!</h2>
+
+        <p>Choose TrueAccs - a store with a proven reputation that offers some of the best conditions on the market. Buy accounts quickly, conveniently and safely!</p>
+      `,
       gmail: `
         <h1>Buy Cheap Gmail &amp; Google Accounts - Verified, Aged &amp; Ready to Use</h1>
 
@@ -393,7 +426,7 @@ function detectLanguage() {
       open: ''
     };
 
-    if (!norm || norm === 'all') {
+    if (!norm) {
       host.hidden = true;
       safeSetInnerHTML(bodyEl, '', true);
       titleEl.textContent = '';
@@ -404,7 +437,7 @@ function detectLanguage() {
     const isLinkedIn = norm === 'linkedin' || norm.includes('linkedin');
     const isEmail = norm === 'email' || norm.includes('email') || ['yahoo', 'outlook', 'proton', 'gmx', 'web', 'hotmail'].some(k => norm.includes(k));
 
-    const key = isGmail ? 'gmail' : isLinkedIn ? 'linkedin' : isEmail ? 'email' : norm;
+    const key = (norm === 'all') ? 'all' : (isGmail ? 'gmail' : isLinkedIn ? 'linkedin' : isEmail ? 'email' : norm);
     const customHtml = CATEGORY_DETAILS_HTML[key];
 
     let categoryDescription = '';
@@ -416,7 +449,7 @@ function detectLanguage() {
       }
     } catch {}
 
-    titleEl.textContent = String(currentCategory || '').toUpperCase();
+    titleEl.textContent = norm === 'all' ? '' : String(currentCategory || '').toUpperCase();
 
     if (typeof customHtml === 'string' && customHtml.trim()) {
       safeSetInnerHTML(bodyEl, customHtml, true);

@@ -73,14 +73,14 @@ header a:hover {
 
 .category-details-head {
   font-weight: 800;
-  font-size: 16px;
+  font-size: 15px;
   margin-bottom: 10px;
 }
 
 .category-details-body {
   color: var(--text);
   line-height: 1.55;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .category-details-body h1,
@@ -90,9 +90,9 @@ header a:hover {
   line-height: 1.25;
 }
 
-.category-details-body h1 { font-size: 18px; }
-.category-details-body h2 { font-size: 15px; }
-.category-details-body h3 { font-size: 14px; }
+.category-details-body h1 { font-size: 16px; }
+.category-details-body h2 { font-size: 14px; }
+.category-details-body h3 { font-size: 13px; }
 
 .category-details-body p { margin: 8px 0; color: var(--text); }
 .category-details-body ul { margin: 6px 0 10px 18px; }
