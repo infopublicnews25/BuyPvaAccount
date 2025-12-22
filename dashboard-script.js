@@ -2567,14 +2567,56 @@ function openProductModal() {
     // Open modal
     document.getElementById('product-modal').style.display = 'block';
     document.getElementById('dashboardProductTitle').focus();
+
+    // Default: set a random quantity so admins don't have to type it
+    try {
+        const qtyEl = document.getElementById('dashboardProductQuantity');
+        if (qtyEl && !String(qtyEl.value || '').trim()) {
+            qtyEl.value = String(getRandomStockQuantity());
+        }
+    } catch {}
 }
 
 // Load categories for dashboard product modal
 function loadDashboardCategories() {
-    const cats = JSON.parse(localStorage.getItem('product_categories') || JSON.stringify(['Gmail', 'Facebook', 'Instagram', 'Twitter', 'LinkedIn', 'YouTube', 'TikTok', 'Telegram', 'WhatsApp', 'Other', 'Open phone']));
-    const select = document.getElementById('dashboardProductCategory');
-    select.innerHTML = '<option value="">Select Category</option>' +
-        cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    (async () => {
+        let cats = [];
+        try {
+            const res = await fetch(`${CONFIG.API}/categories`, { cache: 'no-store' });
+            const data = await res.json();
+            if (data && data.success && Array.isArray(data.categories)) {
+                cats = data.categories;
+            }
+        } catch {}
+
+        // Fallback to localStorage if API isn't available
+        if (!Array.isArray(cats) || cats.length === 0) {
+            try {
+                cats = JSON.parse(localStorage.getItem('product_categories') || '[]');
+            } catch {
+                cats = [];
+            }
+        }
+
+        if (!Array.isArray(cats) || cats.length === 0) {
+            cats = ['Gmail', 'Facebook', 'Instagram', 'Twitter', 'LinkedIn', 'YouTube', 'TikTok', 'Telegram', 'WhatsApp', 'Other'];
+        }
+
+        const select = document.getElementById('dashboardProductCategory');
+        if (!select) return;
+        select.innerHTML = '<option value="">Select Category</option>' +
+            cats.map(c => {
+                const v = String(c);
+                return `<option value="${v}">${v}</option>`;
+            }).join('');
+    })();
+}
+
+function getRandomStockQuantity() {
+    // Keep it simple and consistent with marketplace restock patterns.
+    const min = 50;
+    const max = 120;
+    return Math.floor(min + Math.random() * (max - min + 1));
 }
 
 // Switch product tabs
@@ -2643,7 +2685,7 @@ function saveDashboardProduct(event) {
     const title = document.getElementById('dashboardProductTitle').value.trim();
     const category = document.getElementById('dashboardProductCategory').value;
     const price = parseFloat(document.getElementById('dashboardProductPrice').value);
-    const quantity = parseInt(document.getElementById('dashboardProductQuantity').value);
+    let quantity = parseInt(document.getElementById('dashboardProductQuantity').value);
     const offerPrice = document.getElementById('dashboardProductOfferPrice').value ? parseFloat(document.getElementById('dashboardProductOfferPrice').value) : null;
     const image = document.getElementById('dashboardProductImage').value.trim();
     
@@ -2658,20 +2700,23 @@ function saveDashboardProduct(event) {
     const noteAr = document.getElementById('dashboardNoteAr').value.trim();
     
     // Validation
-    if (!title || !category || !price || !quantity) {
+    if (!title || !category || !price) {
         showNotification('Please fill in all required fields', 'error');
         return;
     }
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+        quantity = getRandomStockQuantity();
+    }
     
-    // Create product object
+    // Create product object (server will assign id if missing)
     const product = {
-        id: Date.now(),
-        title: title,
-        category: category,
-        price: price,
-        quantity: quantity,
-        offerPrice: offerPrice,
-        image: image,
+        title,
+        category,
+        price,
+        quantity,
+        offerPrice,
+        image,
         title_en: titleEn,
         note_en: noteEn,
         title_ru: titleRu,
@@ -2679,21 +2724,97 @@ function saveDashboardProduct(event) {
         title_zh: titleZh,
         note_zh: noteZh,
         title_ar: titleAr,
-        note_ar: noteAr,
-        createdAt: new Date().toISOString()
+        note_ar: noteAr
     };
-    
-    // Save to localStorage (in production, this would be sent to server)
-    const products = JSON.parse(localStorage.getItem('admin_products_v1') || '[]');
-    products.push(product);
-    localStorage.setItem('admin_products_v1', JSON.stringify(products));
-    
-    // Close modal and show success
-    closeModal('product-modal');
-    showNotification('Product added successfully!', 'success');
+
+    (async () => {
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            if (!token) {
+                showNotification('You are not logged in. Please login again.', 'error');
+                return;
+            }
+
+            const res = await fetch(`${CONFIG.API}/products`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(product)
+            });
+
+            const raw = await res.text();
+            let data;
+            try {
+                data = raw ? JSON.parse(raw) : {};
+            } catch {
+                data = { success: false, message: raw || `Request failed (${res.status})` };
+            }
+
+            if (!res.ok || !data.success) {
+                showNotification(data.message || 'Failed to add product', 'error');
+                return;
+            }
+
+            // Keep local cache in sync for immediate UI consistency
+            if (Array.isArray(data.products)) {
+                localStorage.setItem('admin_products_v1', JSON.stringify(data.products));
+            }
+
+            closeModal('product-modal');
+            showNotification('Product added successfully!', 'success');
+        } catch (err) {
+            console.error('saveDashboardProduct error:', err);
+            showNotification('Failed to add product', 'error');
+        }
+    })();
     
     // Optional: Refresh products display if there's a products list on the dashboard
     // loadDashboardProducts();
+}
+
+async function clearAllProductsFromServer() {
+    const ok = confirm('Delete ALL products from the catalog? This cannot be undone.');
+    if (!ok) return;
+    const ok2 = prompt('Type DELETE to confirm:');
+    if (String(ok2 || '').trim().toUpperCase() !== 'DELETE') return;
+
+    try {
+        const token = localStorage.getItem('admin_auth_token');
+        if (!token) {
+            showNotification('You are not logged in. Please login again.', 'error');
+            return;
+        }
+
+        const res = await fetch(`${CONFIG.API}/products`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify([])
+        });
+
+        const raw = await res.text();
+        let data;
+        try {
+            data = raw ? JSON.parse(raw) : {};
+        } catch {
+            data = { success: false, message: raw || `Request failed (${res.status})` };
+        }
+
+        if (!res.ok || !data.success) {
+            showNotification(data.message || 'Failed to delete products', 'error');
+            return;
+        }
+
+        localStorage.setItem('admin_products_v1', JSON.stringify([]));
+        showNotification('All products deleted successfully', 'success');
+    } catch (err) {
+        console.error('clearAllProductsFromServer error:', err);
+        showNotification('Failed to delete products', 'error');
+    }
 }
 
 // ========== CATEGORIES MANAGEMENT FUNCTIONS ==========
