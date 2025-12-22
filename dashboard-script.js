@@ -2698,6 +2698,243 @@ function saveDashboardProduct(event) {
 
 // ========== CATEGORIES MANAGEMENT FUNCTIONS ==========
 
+// ========== MARKETPLACE CATEGORY DETAILS MANAGER ==========
+
+const CATEGORY_DETAILS_FILE_PATH = '/';
+const CATEGORY_DETAILS_FILE_NAME = 'marketplace-category-details.json';
+let __categoryDetailsOverrides = null;
+
+function normalizeCategoryKey(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+function canonicalCategoryDetailsKey(rawCategory) {
+    const norm = normalizeCategoryKey(rawCategory);
+    if (!norm) return '';
+    if (norm === 'all') return 'all';
+
+    const isGmail = norm === 'gmail' || norm.includes('gmail') || norm.includes('google');
+    const isLinkedIn = norm === 'linkedin' || norm.includes('linkedin');
+    const isEmail = norm === 'email' || norm.includes('email') || ['yahoo', 'outlook', 'proton', 'gmx', 'web', 'hotmail'].some(k => norm.includes(k));
+
+    return isGmail ? 'gmail' : isLinkedIn ? 'linkedin' : isEmail ? 'email' : norm;
+}
+
+async function readDashboardFile(path, filename) {
+    const response = await fetch(`/api/dashboard/files/read?path=${encodeURIComponent(path)}&file=${encodeURIComponent(filename)}`, {
+        headers: getAuthHeaders()
+    });
+    const data = await response.json();
+    return data;
+}
+
+async function saveDashboardFile(path, filename, content) {
+    const response = await fetch('/api/dashboard/files/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+            path,
+            filename,
+            content
+        })
+    });
+    return response.json();
+}
+
+async function ensureDashboardFileExists(path, filename) {
+    try {
+        const existing = await readDashboardFile(path, filename);
+        if (existing && existing.success) return true;
+    } catch (e) {}
+
+    try {
+        const createRes = await fetch('/api/dashboard/files/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
+            body: JSON.stringify({
+                path,
+                name: filename,
+                type: 'file'
+            })
+        });
+        const createData = await createRes.json();
+        if (!createData || !createData.success) {
+            // If it already exists, it's fine.
+        }
+    } catch (e) {}
+
+    // Write an initial JSON object
+    try {
+        const init = {
+            _meta: {
+                note: 'Overrides for marketplace category details box. Values must be HTML strings. Empty or missing values will use default marketplace content.',
+                updatedAt: new Date().toISOString()
+            }
+        };
+        await saveDashboardFile(path, filename, JSON.stringify(init, null, 2));
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function loadCategoryDetailsOverridesFromServer() {
+    const ok = await ensureDashboardFileExists(CATEGORY_DETAILS_FILE_PATH, CATEGORY_DETAILS_FILE_NAME);
+    if (!ok) return {};
+
+    try {
+        const data = await readDashboardFile(CATEGORY_DETAILS_FILE_PATH, CATEGORY_DETAILS_FILE_NAME);
+        if (data && data.success && typeof data.content === 'string') {
+            const parsed = JSON.parse(data.content);
+            if (parsed && typeof parsed === 'object') return parsed;
+        }
+    } catch (e) {}
+    return {};
+}
+
+function getDashboardCategoryNames() {
+    try {
+        const stored = JSON.parse(localStorage.getItem('product_categories') || '[]');
+        if (Array.isArray(stored)) {
+            return stored
+                .map(c => (typeof c === 'string') ? c : (c && c.name))
+                .filter(Boolean);
+        }
+    } catch (e) {}
+
+    return ['Gmail', 'Facebook', 'Instagram', 'Twitter', 'LinkedIn', 'YouTube', 'TikTok', 'Telegram', 'WhatsApp', 'Other', 'Open phone'];
+}
+
+function setCategoryDetailsEditorValue(key) {
+    const textarea = document.getElementById('cdm-html');
+    const status = document.getElementById('cdm-status');
+    if (!textarea || !status) return;
+
+    const v = (__categoryDetailsOverrides && typeof __categoryDetailsOverrides[key] === 'string') ? __categoryDetailsOverrides[key] : '';
+    textarea.value = v;
+
+    if (v && v.trim()) {
+        status.textContent = `Loaded saved override for "${key}".`;
+    } else {
+        status.textContent = `No override saved for "${key}". Marketplace will use default content.`;
+    }
+}
+
+async function openCategoryDetailsModal() {
+    const modal = document.getElementById('category-details-manager-modal');
+    const select = document.getElementById('cdm-category');
+    const status = document.getElementById('cdm-status');
+    if (!modal || !select) return;
+
+    modal.style.display = 'block';
+    if (status) status.textContent = 'Loading…';
+
+    __categoryDetailsOverrides = await loadCategoryDetailsOverridesFromServer();
+
+    const names = getDashboardCategoryNames();
+    const options = [];
+    options.push({ label: 'ALL (Marketplace All)', value: 'all' });
+    options.push({ label: 'GMAIL', value: 'gmail' });
+    options.push({ label: 'LINKEDIN', value: 'linkedin' });
+    options.push({ label: 'EMAIL', value: 'email' });
+
+    names.forEach(n => {
+        const key = canonicalCategoryDetailsKey(n);
+        if (!key) return;
+        if (['all', 'gmail', 'linkedin', 'email'].includes(key)) return;
+        options.push({ label: String(n).toUpperCase(), value: key });
+    });
+
+    // De-dupe options by value
+    const seen = new Set();
+    const html = options
+        .filter(o => {
+            if (seen.has(o.value)) return false;
+            seen.add(o.value);
+            return true;
+        })
+        .map(o => `<option value="${o.value}">${o.label}</option>`)
+        .join('');
+
+    select.innerHTML = html;
+
+    select.onchange = () => {
+        const key = String(select.value || '');
+        setCategoryDetailsEditorValue(key);
+    };
+
+    // Default selection
+    select.value = 'all';
+    setCategoryDetailsEditorValue('all');
+}
+
+async function saveCategoryDetailsOverride() {
+    const select = document.getElementById('cdm-category');
+    const textarea = document.getElementById('cdm-html');
+    const status = document.getElementById('cdm-status');
+    if (!select || !textarea) return;
+
+    const key = String(select.value || '').trim();
+    if (!key) {
+        showNotification('Please select a category', 'error');
+        return;
+    }
+
+    const html = String(textarea.value || '').trim();
+    if (!__categoryDetailsOverrides || typeof __categoryDetailsOverrides !== 'object') {
+        __categoryDetailsOverrides = {};
+    }
+
+    if (!html) {
+        delete __categoryDetailsOverrides[key];
+    } else {
+        __categoryDetailsOverrides[key] = html;
+    }
+
+    // Keep meta updated
+    const meta = (__categoryDetailsOverrides._meta && typeof __categoryDetailsOverrides._meta === 'object') ? __categoryDetailsOverrides._meta : {};
+    __categoryDetailsOverrides._meta = {
+        ...meta,
+        updatedAt: new Date().toISOString()
+    };
+
+    const res = await saveDashboardFile(CATEGORY_DETAILS_FILE_PATH, CATEGORY_DETAILS_FILE_NAME, JSON.stringify(__categoryDetailsOverrides, null, 2));
+    if (res && res.success) {
+        showNotification('Category details saved', 'success');
+        if (status) status.textContent = html ? `Saved override for "${key}".` : `Removed override for "${key}".`;
+    } else {
+        showNotification('Failed to save category details', 'error');
+        if (status) status.textContent = (res && res.message) ? String(res.message) : 'Save failed.';
+    }
+}
+
+async function deleteCategoryDetailsOverride() {
+    const select = document.getElementById('cdm-category');
+    const textarea = document.getElementById('cdm-html');
+    if (!select || !textarea) return;
+
+    const key = String(select.value || '').trim();
+    if (!key) return;
+
+    if (!confirm(`Delete override for "${key}"? The marketplace will fall back to default content.`)) {
+        return;
+    }
+
+    if (!__categoryDetailsOverrides || typeof __categoryDetailsOverrides !== 'object') {
+        __categoryDetailsOverrides = {};
+    }
+
+    delete __categoryDetailsOverrides[key];
+    textarea.value = '';
+    await saveCategoryDetailsOverride();
+}
+
 // Open category view modal
 function openCategoryViewModal() {
     loadViewCategories();

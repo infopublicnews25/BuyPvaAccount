@@ -228,6 +228,21 @@
                                 </button>
                             </div>
                         </div>
+
+                        <div class="page-card" data-editor-tool="category-details" onclick="openCategoryDetailsModal()" style="cursor: pointer;">
+                            <div class="page-icon" style="color: #16a085">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>Category details</h4>
+                                <p>Manage marketplace details box</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="openCategoryDetailsModal(); event.stopPropagation();" class="view-btn" title="Manage Category Details">
+                                    <i class="fas fa-edit"></i> Manage
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -760,6 +775,34 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('category-view-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Details Manager Modal -->
+    <div id="category-details-manager-modal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-layer-group"></i> Category Details Manager</h3>
+                <span class="close" onclick="closeModal('category-details-manager-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 14px;">
+                    <label style="display:block;margin-bottom:8px;font-weight:600;color:#333;">Category</label>
+                    <select id="cdm-category" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;"></select>
+                    <small style="display:block;margin-top:6px;color:#666;font-size:12px;">Saved here will show in the marketplace details box for all visitors.</small>
+                </div>
+
+                <div style="margin-bottom: 8px;">
+                    <label style="display:block;margin-bottom:8px;font-weight:600;color:#333;">Content (HTML allowed)</label>
+                    <textarea id="cdm-html" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;min-height:260px;font-size:13px;box-sizing:border-box;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;" placeholder="Write HTML for this category... (e.g., &lt;h2&gt;...&lt;/h2&gt; &lt;p&gt;...&lt;/p&gt;)"></textarea>
+                    <div id="cdm-status" style="margin-top:8px;color:#666;font-size:12px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="deleteCategoryDetailsOverride()" class="danger">Delete Override</button>
+                <button onclick="saveCategoryDetailsOverride()" class="primary">Save</button>
+                <button onclick="closeModal('category-details-manager-modal')">Close</button>
             </div>
         </div>
     </div>

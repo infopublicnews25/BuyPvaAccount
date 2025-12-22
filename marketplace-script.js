@@ -297,6 +297,22 @@ function detectLanguage() {
     return params.get('category') || 'all';
   }
 
+  // Optional server-side overrides (managed via dashboard)
+  let CATEGORY_DETAILS_OVERRIDES = null;
+
+  async function loadCategoryDetailsOverrides() {
+    try {
+      const res = await fetch('/marketplace-category-details.json', { cache: 'no-cache' });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json && typeof json === 'object') {
+        CATEGORY_DETAILS_OVERRIDES = json;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   function updateCategoryDetails() {
     const host = document.getElementById('mpCategoryDetails');
     const titleEl = document.getElementById('mpCategoryDetailsTitle');
@@ -420,6 +436,8 @@ function detectLanguage() {
     const key = (norm === 'all') ? 'all' : (isGmail ? 'gmail' : isLinkedIn ? 'linkedin' : isEmail ? 'email' : norm);
     const customHtml = CATEGORY_DETAILS_HTML[key];
 
+    const overrideHtml = CATEGORY_DETAILS_OVERRIDES && (CATEGORY_DETAILS_OVERRIDES[key] ?? CATEGORY_DETAILS_OVERRIDES[norm]);
+
     let categoryDescription = '';
     try {
       const stored = JSON.parse(localStorage.getItem('product_categories') || '[]');
@@ -430,6 +448,12 @@ function detectLanguage() {
     } catch {}
 
     titleEl.textContent = norm === 'all' ? '' : String(currentCategory || '').toUpperCase();
+
+    if (typeof overrideHtml === 'string' && overrideHtml.trim()) {
+      safeSetInnerHTML(bodyEl, overrideHtml, true);
+      host.hidden = false;
+      return;
+    }
 
     if (typeof customHtml === 'string' && customHtml.trim()) {
       safeSetInnerHTML(bodyEl, customHtml, true);
@@ -779,6 +803,7 @@ function detectLanguage() {
   (async () => {
     const lang = detectLanguage();
     applyStaticTranslations(lang);
+    await loadCategoryDetailsOverrides();
     await renderCategoryTabs();
     render();
   })();

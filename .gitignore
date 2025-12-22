@@ -26,3 +26,6 @@ backend/admin-credentials.json
 backend/admin-credentials.local.json
 backend/email-config.json
 
+# Marketplace runtime-managed content (edited via dashboard)
+marketplace-category-details.json
+
