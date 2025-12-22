@@ -10,7 +10,7 @@ function sendNotificationRequest(event) {
 
   // Also persist on backend to trigger admin bell badge (non-blocking)
   try {
-    fetch(`${CONFIG.API}/account-requests`, {
+    fetch(`${getApiBase()}/account-requests`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accountType, quantity, email })
@@ -100,6 +100,14 @@ function detectLanguage() {
     }
   } catch {}
   return 'en';
+}
+
+function getApiBase() {
+  try {
+    const apiBase = (window.CONFIG && typeof window.CONFIG.API === 'string') ? window.CONFIG.API.trim() : '';
+    if (apiBase) return apiBase.replace(/\/+$/, '');
+  } catch (e) {}
+  return '/api';
 }
 
 // Main Marketplace Logic
@@ -513,18 +521,17 @@ function detectLanguage() {
   }
 
   const PRODUCTS = await (async () => {
-    // First try to load fresh data from API (admin.html's source of truth)
+    // Prefer the backend API as source of truth so marketplace reflects edits instantly.
     try {
-      const response = await fetch(`${CONFIG.API}/products`);
+      const response = await fetch(`${getApiBase()}/products`);
       const data = await response.json();
-      if (data.success && Array.isArray(data.products) && data.products.length > 0) {
-        console.log(`✅ Loaded ${data.products.length} products from API (admin.html sync)`);
-        // Update localStorage with fresh API data
-        localStorage.setItem('admin_products_v1', JSON.stringify(data.products));
+      if (data && data.success && Array.isArray(data.products)) {
+        console.log(`✅ Loaded ${data.products.length} products from API`);
+        try { localStorage.setItem('admin_products_v1', JSON.stringify(data.products)); } catch (e) {}
         return data.products;
       }
     } catch (e) {
-      console.error('❌ Error loading products from API:', e);
+      console.warn('❌ Error loading products from API, falling back to local cache:', e);
     }
 
     // Fallback to localStorage if API fails
@@ -562,15 +569,20 @@ function detectLanguage() {
     if (changed) localStorage.setItem('admin_products_v1', JSON.stringify(PRODUCTS));
   }
 
-  setInterval(() => {
-    updateStockRandomSubset();
-    render();
-  }, 15 * 60 * 1000); // 15 minutes
+  // The marketplace should not randomly mutate stock when API is available.
+  // Keep the demo stock behavior only when we don't have an API base.
+  const __mpHasApi = Boolean(getApiBase());
+  if (!__mpHasApi) {
+    setInterval(() => {
+      updateStockRandomSubset();
+      render();
+    }, 15 * 60 * 1000); // 15 minutes
+  }
 
   // Check for inventory updates from admin.html every 30 seconds
   setInterval(async () => {
     try {
-      const response = await fetch(`${CONFIG.API}/products`);
+      const response = await fetch(`${getApiBase()}/products`);
       const data = await response.json();
       if (data.success && Array.isArray(data.products)) {
         const apiProductsStr = JSON.stringify(data.products);
