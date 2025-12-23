@@ -118,6 +118,99 @@
             background: #f8f9fa;
         }
 
+        .products-table tr.dragging {
+            opacity: 0.6;
+        }
+
+        .products-table tr.drag-over {
+            outline: 2px dashed #3498db;
+            outline-offset: -6px;
+        }
+
+        .drag-handle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            margin-right: 8px;
+            color: #7f8c8d;
+            cursor: grab;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .products-filters {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .products-filters-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .products-search {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #ecf0f1;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 240px;
+            background: #f8f9fa;
+        }
+
+        .products-search i {
+            color: #7f8c8d;
+        }
+
+        .products-search input {
+            border: none;
+            outline: none;
+            width: 100%;
+            background: transparent;
+            font-size: 14px;
+        }
+
+        .filters-meta {
+            color: #7f8c8d;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .category-filter {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .category-chip {
+            border: 1px solid #ecf0f1;
+            background: #f8f9fa;
+            color: #2c3e50;
+            padding: 7px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 13px;
+            user-select: none;
+        }
+
+        .category-chip.active {
+            border-color: #3498db;
+            color: #3498db;
+            background: white;
+            font-weight: 600;
+        }
+
         .status-badge {
             padding: 5px 10px;
             border-radius: 20px;
@@ -343,6 +436,17 @@
             </div>
         </div>
 
+        <div class="products-filters">
+            <div class="products-filters-row">
+                <div class="products-search">
+                    <i class="fas fa-search"></i>
+                    <input id="productSearchInput" type="text" placeholder="Search products (title, id, category...)" autocomplete="off">
+                </div>
+                <div id="productsFilterMeta" class="filters-meta"></div>
+            </div>
+            <div id="categoryFilter" class="category-filter"></div>
+        </div>
+
         <div id="productsTab" class="tab-content active">
             <div class="products-table-container">
                 <table class="products-table">
@@ -481,6 +585,14 @@
 
         const PRODUCTS_BY_ID = new Map();
 
+        let ALL_PRODUCTS = [];
+        let ACTIVE_CATEGORY = '';
+        let SEARCH_QUERY = '';
+
+        let VIEW_PRODUCTS = [];
+
+        let DRAG_SOURCE_ID = '';
+
         function getApiBase() {
             try {
                 const apiBase = (window.CONFIG && typeof window.CONFIG.API === 'string') ? window.CONFIG.API.trim() : '';
@@ -518,6 +630,238 @@
             const options = Array.from(selectEl.options || []);
             const match = options.find(o => String(o.value || '').toLowerCase() === targetLower);
             if (match) selectEl.value = match.value;
+        }
+
+        function normalizeText(value) {
+            return String(value || '').toLowerCase().trim();
+        }
+
+        function productMatchesSearch(product, query) {
+            const q = normalizeText(query);
+            if (!q) return true;
+
+            const haystack = [
+                product && product.id,
+                product && product.category,
+                product && product.title,
+                product && product.note,
+                product && product.title_en,
+                product && product.note_en,
+                product && product.title_ru,
+                product && product.note_ru,
+                product && product.title_zh,
+                product && product.note_zh,
+                product && product.title_ar,
+                product && product.note_ar
+            ].map(normalizeText).join(' | ');
+
+            // Support multi-word search: all tokens must match.
+            const tokens = q.split(/\s+/).filter(Boolean);
+            return tokens.every(t => haystack.includes(t));
+        }
+
+        function productMatchesCategory(product, category) {
+            const active = normalizeText(category);
+            if (!active) return true;
+            return normalizeText(product && product.category) === active;
+        }
+
+        function applyProductFilters() {
+            const filtered = (ALL_PRODUCTS || []).filter(p => {
+                return productMatchesCategory(p, ACTIVE_CATEGORY) && productMatchesSearch(p, SEARCH_QUERY);
+            });
+
+            VIEW_PRODUCTS = filtered;
+
+            const meta = document.getElementById('productsFilterMeta');
+            if (meta) {
+                const total = (ALL_PRODUCTS || []).length;
+                const shown = filtered.length;
+                const catLabel = ACTIVE_CATEGORY ? ACTIVE_CATEGORY : 'All categories';
+                meta.textContent = `${shown} / ${total} shown • ${catLabel}`;
+            }
+
+            renderProductsTable(filtered);
+        }
+
+        function reorderSubsetInAll(allProducts, subsetIdsInOrder) {
+            const all = Array.isArray(allProducts) ? allProducts : [];
+            const subset = Array.isArray(subsetIdsInOrder) ? subsetIdsInOrder.map(v => String(v || '')) : [];
+            const subsetSet = new Set(subset);
+            if (!subset.length) return all;
+
+            const byId = new Map();
+            all.forEach(p => {
+                const id = String(p?.id ?? '');
+                if (id) byId.set(id, p);
+            });
+
+            const queue = subset.slice();
+            const result = [];
+            for (const p of all) {
+                const id = String(p?.id ?? '');
+                if (id && subsetSet.has(id)) {
+                    const nextId = queue.shift();
+                    const replacement = byId.get(nextId);
+                    result.push(replacement || p);
+                } else {
+                    result.push(p);
+                }
+            }
+            return result;
+        }
+
+        async function persistProductOrder(idsInOrder) {
+            const meta = document.getElementById('productsFilterMeta');
+            const prevMeta = meta ? meta.textContent : '';
+            if (meta) meta.textContent = 'Saving order...';
+
+            try {
+                const res = await fetch(`${getApiBase()}/products/reorder`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify({ order: idsInOrder })
+                });
+                const data = await res.json().catch(() => null);
+                if (!res.ok || !data || !data.success) {
+                    throw new Error((data && data.message) || 'Failed to save order');
+                }
+
+                // Use server response as the source of truth.
+                ALL_PRODUCTS = Array.isArray(data.products) ? data.products : ALL_PRODUCTS;
+                applyProductFilters();
+            } catch (e) {
+                console.error('Failed to persist product order:', e);
+                alert('Failed to save product order. Please try again.');
+                // Reload from server to avoid UI mismatch.
+                await loadProducts();
+            } finally {
+                if (meta) meta.textContent = prevMeta;
+            }
+        }
+
+        function setupProductsDragAndDrop() {
+            const tbody = document.getElementById('productsTable');
+            if (!tbody) return;
+
+            // Use event delegation.
+            tbody.addEventListener('dragstart', (e) => {
+                const row = e.target && e.target.closest ? e.target.closest('tr[data-product-id]') : null;
+                if (!row) return;
+
+                DRAG_SOURCE_ID = row.getAttribute('data-product-id') || '';
+                row.classList.add('dragging');
+
+                // Required for Firefox.
+                try {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', DRAG_SOURCE_ID);
+                } catch (_) {}
+            });
+
+            tbody.addEventListener('dragend', (e) => {
+                const row = e.target && e.target.closest ? e.target.closest('tr[data-product-id]') : null;
+                if (row) row.classList.remove('dragging');
+                tbody.querySelectorAll('tr.drag-over').forEach(r => r.classList.remove('drag-over'));
+                DRAG_SOURCE_ID = '';
+            });
+
+            tbody.addEventListener('dragover', (e) => {
+                const overRow = e.target && e.target.closest ? e.target.closest('tr[data-product-id]') : null;
+                if (!overRow) return;
+                if (!DRAG_SOURCE_ID) return;
+                e.preventDefault();
+                overRow.classList.add('drag-over');
+            });
+
+            tbody.addEventListener('dragleave', (e) => {
+                const overRow = e.target && e.target.closest ? e.target.closest('tr[data-product-id]') : null;
+                if (!overRow) return;
+                overRow.classList.remove('drag-over');
+            });
+
+            tbody.addEventListener('drop', async (e) => {
+                const targetRow = e.target && e.target.closest ? e.target.closest('tr[data-product-id]') : null;
+                if (!targetRow) return;
+                if (!DRAG_SOURCE_ID) return;
+                e.preventDefault();
+
+                const targetId = targetRow.getAttribute('data-product-id') || '';
+                if (!targetId || targetId === DRAG_SOURCE_ID) return;
+
+                // Reorder ALL_PRODUCTS based on DOM order after moving rows.
+                const sourceRow = Array.from(tbody.querySelectorAll('tr[data-product-id]'))
+                    .find(r => (r.getAttribute('data-product-id') || '') === DRAG_SOURCE_ID);
+                if (!sourceRow) return;
+
+                const rect = targetRow.getBoundingClientRect();
+                const dropAfter = (e.clientY - rect.top) > (rect.height / 2);
+                if (dropAfter) {
+                    tbody.insertBefore(sourceRow, targetRow.nextSibling);
+                } else {
+                    tbody.insertBefore(sourceRow, targetRow);
+                }
+
+                tbody.querySelectorAll('tr.drag-over').forEach(r => r.classList.remove('drag-over'));
+
+                const idsInViewOrder = Array.from(tbody.querySelectorAll('tr[data-product-id]'))
+                    .map(r => r.getAttribute('data-product-id') || '')
+                    .filter(Boolean);
+
+                // If filtered, reorder only the subset within ALL_PRODUCTS (stable for others).
+                const viewSet = new Set(idsInViewOrder);
+                const isFiltered = (ALL_PRODUCTS || []).length !== viewSet.size;
+
+                if (isFiltered) {
+                    ALL_PRODUCTS = reorderSubsetInAll(ALL_PRODUCTS, idsInViewOrder);
+                    await persistProductOrder((ALL_PRODUCTS || []).map(p => String(p?.id ?? '')).filter(Boolean));
+                } else {
+                    await persistProductOrder(idsInViewOrder);
+                }
+            });
+        }
+
+        function setActiveCategory(category) {
+            ACTIVE_CATEGORY = String(category || '');
+            document.querySelectorAll('.category-chip').forEach(btn => {
+                const btnCat = btn.getAttribute('data-category') || '';
+                const isActive = normalizeText(btnCat) === normalizeText(ACTIVE_CATEGORY);
+                btn.classList.toggle('active', isActive);
+            });
+            applyProductFilters();
+        }
+
+        function renderCategoryFilters(categories) {
+            const container = document.getElementById('categoryFilter');
+            if (!container) return;
+
+            const unique = Array.from(new Set((categories || []).map(c => String(c || '').trim()).filter(Boolean)));
+
+            container.innerHTML = '';
+
+            const allBtn = document.createElement('button');
+            allBtn.type = 'button';
+            allBtn.className = 'category-chip';
+            allBtn.textContent = 'All';
+            allBtn.setAttribute('data-category', '');
+            allBtn.addEventListener('click', () => setActiveCategory(''));
+            container.appendChild(allBtn);
+
+            unique.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'category-chip';
+                btn.textContent = cat;
+                btn.setAttribute('data-category', cat);
+                btn.addEventListener('click', () => setActiveCategory(cat));
+                container.appendChild(btn);
+            });
+
+            // Keep current selection highlighted (default to All)
+            setActiveCategory(ACTIVE_CATEGORY);
         }
         
         // Modal functions
@@ -689,7 +1033,8 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success) {
-                        renderProductsTable(data.products);
+                        ALL_PRODUCTS = Array.isArray(data.products) ? data.products : [];
+                        applyProductFilters();
                     }
                 } else {
                     console.error('Failed to load products');
@@ -715,8 +1060,13 @@
                 const statusClass = product.quantity > 10 ? 'status-in-stock' : product.quantity > 0 ? 'status-low-stock' : 'status-out-of-stock';
                 
                 const row = document.createElement('tr');
+                row.setAttribute('draggable', 'true');
+                row.setAttribute('data-product-id', String(product.id));
                 row.innerHTML = `
-                    <td style="font-weight: 500;">${product.title}</td>
+                    <td style="font-weight: 500;">
+                        <span class="drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></span>
+                        ${product.title}
+                    </td>
                     <td>${product.category || 'N/A'}</td>
                     <td>$${product.price}</td>
                     <td>${product.quantity}</td>
@@ -768,7 +1118,7 @@
         }
 
         // Load categories from API (fallback to localStorage)
-        async function loadCategories() {
+        async function loadCategories(selectedValue = '') {
             const categorySelect = document.getElementById('productCategory');
             if (!categorySelect) return;
 
@@ -779,6 +1129,8 @@
                 if (cats && cats.length) {
                     categorySelect.innerHTML = '<option value="">Select Category</option>' +
                         cats.map(c => `<option value="${c}">${c}</option>`).join('');
+                    setSelectValueCaseInsensitive(categorySelect, selectedValue);
+                    renderCategoryFilters(cats);
                     return;
                 }
             } catch (e) {}
@@ -786,15 +1138,40 @@
             const fallback = JSON.parse(localStorage.getItem(CATEGORIES_KEY) || JSON.stringify(DEFAULT_CATEGORIES));
             categorySelect.innerHTML = '<option value="">Select Category</option>' +
                 fallback.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            setSelectValueCaseInsensitive(categorySelect, selectedValue);
+            renderCategoryFilters(fallback);
+        }
+
+        function initSearchBox() {
+            const input = document.getElementById('productSearchInput');
+            if (!input) return;
+
+            let t = null;
+            input.addEventListener('input', () => {
+                const next = input.value;
+                if (t) clearTimeout(t);
+                t = setTimeout(() => {
+                    SEARCH_QUERY = String(next || '');
+                    applyProductFilters();
+                }, 120);
+            });
         }
 
 
 
         // Check URL parameters on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('Page loaded, checking URL parameters');
-            loadCategories(); // Load categories on page load
-            loadProducts(); // Load products on page load
+            initSearchBox();
+
+            // Load categories and render filter chips first.
+            await loadCategories();
+
+            // Load products after filters are ready.
+            await loadProducts();
+
+            setupProductsDragAndDrop();
             
             const urlParams = new URLSearchParams(window.location.search);
             const action = urlParams.get('action');

@@ -4173,6 +4173,57 @@ app.put('/api/products', authenticateStaff, requireStaffPermission('products'), 
     }
 });
 
+// Reorder products (admin/editor with permission)
+// Body: { order: ["id1", "id2", ...] } OR { products: [...] }
+// Notes: Preserves existing product objects and appends any missing products at the end.
+app.put('/api/products/reorder', authenticateStaff, requireStaffPermission('products'), (req, res) => {
+    try {
+        const orderRaw = (req.body && (req.body.order || req.body.products || req.body.ids)) || [];
+        if (!Array.isArray(orderRaw)) {
+            return res.status(400).json({ success: false, message: 'order must be an array' });
+        }
+
+        const requestedOrder = orderRaw
+            .map(v => String(v === null || v === undefined ? '' : v).trim())
+            .filter(Boolean);
+
+        const products = readAllProducts();
+        const byId = new Map();
+        (products || []).forEach(p => {
+            const key = String(p?.id ?? '').trim();
+            if (key) byId.set(key, p);
+        });
+
+        const reordered = [];
+        for (const id of requestedOrder) {
+            const existing = byId.get(id);
+            if (existing) {
+                reordered.push(existing);
+                byId.delete(id);
+            }
+        }
+
+        // Append any products not included in request (keeps their existing relative order)
+        (products || []).forEach(p => {
+            const key = String(p?.id ?? '').trim();
+            if (key && byId.has(key)) {
+                reordered.push(p);
+                byId.delete(key);
+            }
+        });
+
+        if (writeAllProducts(reordered)) {
+            logAdminAction('reorder_products', { count: reordered.length }, req.adminUser || 'admin');
+            res.json({ success: true, message: 'Product order updated', products: reordered });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to save product order' });
+        }
+    } catch (error) {
+        console.error('Error reordering products:', error);
+        res.status(500).json({ success: false, message: 'Failed to reorder products' });
+    }
+});
+
 // Get all product categories (public endpoint)
 app.get('/api/categories', (req, res) => {
     try {
