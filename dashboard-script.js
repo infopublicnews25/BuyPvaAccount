@@ -218,6 +218,7 @@ function applyEditorRestrictions(staff) {
         const key = String(card.getAttribute('data-editor-tool') || '').trim();
         let keep = false;
         if (key === 'add-product') keep = hasPerm('products');
+        else if (key === 'products-page') keep = hasPerm('products') || hasPerm('categories') || hasPerm('inventory');
         else if (key === 'bulk-add-products') keep = hasPerm('products');
         else if (key === 'product-categories') keep = hasPerm('categories');
         else if (key === 'inventory') keep = hasPerm('inventory');
@@ -227,6 +228,7 @@ function applyEditorRestrictions(staff) {
             // Fallback for unexpected markup
             const title = (card.querySelector('h4')?.textContent || '').trim().toLowerCase();
             if (title.includes('add product')) keep = hasPerm('products');
+            else if (title.includes('products manager')) keep = hasPerm('products') || hasPerm('categories') || hasPerm('inventory');
             else if (title.includes('bulk add')) keep = hasPerm('products');
             else if (title.includes('product categories')) keep = hasPerm('categories');
             else if (title === 'inventory') keep = hasPerm('inventory');
