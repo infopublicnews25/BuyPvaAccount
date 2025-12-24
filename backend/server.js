@@ -735,16 +735,16 @@ const authenticateAdmin = async (req, res, next) => {
 // Page guard variant: redirects instead of JSON
 const authenticateAdminPage = async (req, res, next) => {
     const token = getAuthTokenFromRequest(req);
-    if (!token) return res.redirect('/admin.html');
+    if (!token) return res.redirect('/admin');
     try {
         const result = await verifyToken(token);
-        if (!result.success) return res.redirect('/admin.html');
+        if (!result.success) return res.redirect('/admin');
         req.user = result.user;
         const role = String(req.user?.role || '').toLowerCase();
         if (role !== 'admin') return res.status(403).send('Access Denied');
         return next();
     } catch (e) {
-        return res.redirect('/admin.html');
+        return res.redirect('/admin');
     }
 };
 
@@ -877,38 +877,38 @@ function verifyTOTPServer(secretBase32, code, windowSteps = 1) {
     return false;
 }
 
-// Protected route for admin.html (must come before static middleware)
-app.get('/admin.html', authenticateAdmin, (req, res) => {
+// Admin page (includes its own login UI; must be reachable without a token)
+// Keep a clean canonical URL and let the page handle login.
+app.get('/admin.html', (req, res) => {
+    return res.redirect(301, '/admin');
+});
+
+app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin.html'));
 });
 
-// Clean URL for admin (protected)
-app.get('/admin', authenticateAdmin, (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin.html'));
+// Legacy alias
+app.get('/dashboard', (req, res) => {
+    return res.redirect(302, '/admin');
 });
 
-// Add a less obvious admin route as well
-app.get('/dashboard', authenticateAdmin, (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin.html'));
-});
-
-// Protected route for media-library.html
-app.get('/media-library.html', authenticateAdmin, (req, res) => {
+// Protected route for media-library.html (redirects to /admin when not logged in)
+app.get('/media-library.html', authenticateAdminPage, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'media-library.html'));
 });
 
 // Clean URL for media library (protected)
-app.get('/media-library', authenticateAdmin, (req, res) => {
+app.get('/media-library', authenticateAdminPage, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'media-library.html'));
 });
 
-// Protected route for categories.html
-app.get('/categories.html', authenticateAdmin, (req, res) => {
+// Protected route for categories.html (redirects to /admin when not logged in)
+app.get('/categories.html', authenticateAdminPage, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'categories.html'));
 });
 
 // Clean URL for categories (protected)
-app.get('/categories', authenticateAdmin, (req, res) => {
+app.get('/categories', authenticateAdminPage, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'categories.html'));
 });
 
