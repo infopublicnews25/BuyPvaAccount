@@ -7,12 +7,80 @@ const USERS_FILE = path.join(__dirname, '../admin_users.json');
 
 const { statements } = require('./db');
 
+function normalizePermissionKey(input) {
+    const raw = String(input || '').trim().toLowerCase();
+    if (!raw) return '';
+
+    const key = raw.replace(/[^a-z0-9]/g, '');
+    if (!key) return '';
+
+    // Canonical permission keys used across frontend + backend
+    // Keep this mapping tolerant to legacy/stored labels.
+    if (key === 'media' || key === 'medialibrary' || key === 'mediafiles') return 'media';
+    if (key === 'blog' || key === 'blogadmin' || key === 'createpost' || key === 'posts') return 'blog';
+
+    if (
+        key === 'products' ||
+        key === 'product' ||
+        key === 'addproduct' ||
+        key === 'productspage' ||
+        key === 'productsmanager' ||
+        key === 'productshtml' ||
+        key === 'producthtml'
+    ) return 'products';
+
+    if (
+        key === 'categories' ||
+        key === 'category' ||
+        key === 'productcategories'
+    ) return 'categories';
+
+    if (key === 'inventory' || key === 'stock' || key === 'productstock') return 'inventory';
+    if (key === 'analytics' || key === 'productanalytics') return 'analytics';
+    if (key === 'reviews' || key === 'productreviews') return 'reviews';
+
+    if (
+        key === 'files' ||
+        key === 'filemanager' ||
+        key === 'pages' ||
+        key === 'websitepages'
+    ) return 'files';
+
+    // Send Notification/Delivery tool
+    if (
+        key === 'send' ||
+        key === 'sendnotification' ||
+        key === 'senddelivery' ||
+        key === 'delivery' ||
+        key === 'notification'
+    ) return 'send';
+
+    // Extra module keys (used in admin UI)
+    if (key === 'orders' || key === 'order' || key === 'ordermanagement') return 'orders';
+    if (key === 'notifications' || key === 'accountrequests') return 'notifications';
+    if (key === 'payments' || key === 'paymentsettings' || key === 'promocodes' || key === 'promo') return 'payments';
+    if (key === 'users' || key === 'usermanagement') return 'users';
+    if (key === 'backup' || key === 'sitebackup') return 'backup';
+
+    // Legacy / optional tools
+    if (key === 'note' || key === 'notes' || key === 'createnote') return 'note';
+    if (key === 'comment' || key === 'comments' || key === 'createcomment') return 'comment';
+
+    return key;
+}
+
 function normalizePermissions(perms) {
     if (!Array.isArray(perms)) return [];
-    return perms
-        .map(p => String(p || '').trim())
-        .filter(Boolean)
-        .slice(0, 50);
+    const out = [];
+    const seen = new Set();
+    for (const p of perms) {
+        const k = normalizePermissionKey(p);
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+        out.push(k);
+        if (out.length >= 50) break;
+    }
+    return out;
 }
 
 async function verifyAdmin(username, password) {
@@ -62,6 +130,10 @@ async function verifyToken(token) {
             return { success: false, message: 'Token is required' };
         }
 
+        // Allow a brief grace period for the previous token to avoid
+        // immediate logouts from double-login or multiple tabs.
+        const PREV_TOKEN_GRACE_MS = 5 * 60 * 1000; // 5 minutes
+
         // Check admin token first
         const adminTokenFile = path.join(__dirname, 'admin-token.json');
         if (fs.existsSync(adminTokenFile)) {
@@ -76,13 +148,34 @@ async function verifyToken(token) {
                         return { success: false, message: 'Token expired' };
                     }
                 }
+
+                // Grace period for previous admin token
+                if (
+                    adminTokenData.prevToken === token &&
+                    adminTokenData.username === credentials.username &&
+                    typeof adminTokenData.prevTokenTimestamp === 'number' &&
+                    (Date.now() - adminTokenData.prevTokenTimestamp) < PREV_TOKEN_GRACE_MS
+                ) {
+                    return { success: true, user: { username: credentials.username, role: 'admin' } };
+                }
             }
         }
 
         // Check regular users for token
         if (fs.existsSync(USERS_FILE)) {
             const users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-            const user = users.find(u => u.token === token);
+            const user = users.find(u => {
+                if (!u) return false;
+                if (u.token === token) return true;
+                if (
+                    u.prevToken === token &&
+                    typeof u.prevTokenTimestamp === 'number' &&
+                    (Date.now() - u.prevTokenTimestamp) < PREV_TOKEN_GRACE_MS
+                ) {
+                    return true;
+                }
+                return false;
+            });
             if (user) {
                 return { success: true, user: { ...user, permissions: normalizePermissions(user.permissions) } };
             }
@@ -102,7 +195,32 @@ async function storeUserToken(username, token) {
             if (username === credentials.username) {
                 // For admin, we'll store in a separate file or use a different approach
                 const adminTokenFile = path.join(__dirname, 'admin-token.json');
-                fs.writeFileSync(adminTokenFile, JSON.stringify({ username, token, timestamp: Date.now() }));
+                let prevToken = null;
+                let prevTokenTimestamp = null;
+                try {
+                    if (fs.existsSync(adminTokenFile)) {
+                        const existing = JSON.parse(fs.readFileSync(adminTokenFile, 'utf8'));
+                        prevToken = existing && existing.token ? existing.token : null;
+                        prevTokenTimestamp = Date.now();
+                    }
+                } catch (e) {
+                    // ignore
+                }
+
+                fs.writeFileSync(
+                    adminTokenFile,
+                    JSON.stringify(
+                        {
+                            username,
+                            token,
+                            timestamp: Date.now(),
+                            prevToken,
+                            prevTokenTimestamp
+                        },
+                        null,
+                        2
+                    )
+                );
                 return { success: true };
             }
         }
@@ -113,6 +231,11 @@ async function storeUserToken(username, token) {
             const needle = String(username || '').toLowerCase();
             const user = users.find(u => String(u.username || '').toLowerCase() === needle || String(u.email || '').toLowerCase() === needle);
             if (user) {
+                // Preserve previous token briefly to prevent immediate logout
+                if (user.token && user.token !== token) {
+                    user.prevToken = user.token;
+                    user.prevTokenTimestamp = Date.now();
+                }
                 user.token = token;
                 fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
                 return { success: true };

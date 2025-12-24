@@ -806,6 +806,11 @@
                         <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="inventory"> Inventory</label>
                         <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="blog"> Blog Admin</label>
                         <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="send"> Send Notification/Delivery</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="orders"> Order Management</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="notifications"> Account Requests / Notifications</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="payments"> Payment Settings / Promo Codes</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="users"> User Management</label>
+                        <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="backup"> Site Backup</label>
                         <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="note"> Notes</label>
                         <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="comment"> Comments</label>
                         <label style="display:flex; gap:8px; align-items:center; font-weight:500; color:#333;"><input type="checkbox" class="editor-perm" value="analytics"> Product Analytics</label>
@@ -1635,9 +1640,35 @@
             const isEditor = String(role || '').toLowerCase() === 'editor';
             if (group) group.style.display = isEditor ? 'block' : 'none';
 
-            const perms = Array.isArray(permissions) ? permissions.map(p => String(p || '').trim()) : [];
+            const normalizePermissionKey = (input) => {
+                const raw = String(input || '').trim().toLowerCase();
+                if (!raw) return '';
+                const key = raw.replace(/[^a-z0-9]/g, '');
+                if (!key) return '';
+
+                if (key === 'media' || key === 'medialibrary' || key === 'mediafiles') return 'media';
+                if (key === 'blog' || key === 'blogadmin' || key === 'createpost' || key === 'posts') return 'blog';
+                if (key === 'products' || key === 'product' || key === 'addproduct' || key === 'productspage' || key === 'productsmanager' || key === 'productshtml' || key === 'producthtml') return 'products';
+                if (key === 'categories' || key === 'category' || key === 'productcategories') return 'categories';
+                if (key === 'inventory' || key === 'stock' || key === 'productstock') return 'inventory';
+                if (key === 'analytics' || key === 'productanalytics') return 'analytics';
+                if (key === 'reviews' || key === 'productreviews') return 'reviews';
+                if (key === 'files' || key === 'filemanager' || key === 'pages' || key === 'websitepages') return 'files';
+                if (key === 'send' || key === 'sendnotification' || key === 'senddelivery' || key === 'delivery' || key === 'notification') return 'send';
+                if (key === 'orders' || key === 'order' || key === 'ordermanagement') return 'orders';
+                if (key === 'notifications' || key === 'accountrequests') return 'notifications';
+                if (key === 'payments' || key === 'paymentsettings' || key === 'promocodes' || key === 'promo') return 'payments';
+                if (key === 'users' || key === 'usermanagement') return 'users';
+                if (key === 'backup' || key === 'sitebackup') return 'backup';
+                if (key === 'note' || key === 'notes' || key === 'createnote') return 'note';
+                if (key === 'comment' || key === 'comments' || key === 'createcomment') return 'comment';
+                return key;
+            };
+
+            const perms = Array.isArray(permissions) ? permissions : [];
+            const normalized = new Set(perms.map(normalizePermissionKey).filter(Boolean));
             document.querySelectorAll('.editor-perm').forEach(cb => {
-                cb.checked = isEditor ? perms.includes(cb.value) : false;
+                cb.checked = isEditor ? normalized.has(normalizePermissionKey(cb.value)) : false;
             });
         }
 

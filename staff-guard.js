@@ -1,4 +1,41 @@
 (function () {
+  function normalizePermissionKey(input) {
+    const raw = String(input || '').trim().toLowerCase();
+    if (!raw) return '';
+    const key = raw.replace(/[^a-z0-9]/g, '');
+    if (!key) return '';
+
+    if (key === 'media' || key === 'medialibrary' || key === 'mediafiles') return 'media';
+    if (key === 'blog' || key === 'blogadmin' || key === 'createpost' || key === 'posts') return 'blog';
+
+    if (
+      key === 'products' ||
+      key === 'product' ||
+      key === 'addproduct' ||
+      key === 'productspage' ||
+      key === 'productsmanager' ||
+      key === 'productshtml' ||
+      key === 'producthtml'
+    ) return 'products';
+
+    if (key === 'categories' || key === 'category' || key === 'productcategories') return 'categories';
+    if (key === 'inventory' || key === 'stock' || key === 'productstock') return 'inventory';
+    if (key === 'analytics' || key === 'productanalytics') return 'analytics';
+    if (key === 'reviews' || key === 'productreviews') return 'reviews';
+    if (key === 'files' || key === 'filemanager' || key === 'pages' || key === 'websitepages') return 'files';
+
+    if (key === 'send' || key === 'sendnotification' || key === 'senddelivery' || key === 'delivery' || key === 'notification') return 'send';
+    if (key === 'orders' || key === 'order' || key === 'ordermanagement') return 'orders';
+    if (key === 'notifications' || key === 'accountrequests') return 'notifications';
+    if (key === 'payments' || key === 'paymentsettings' || key === 'promocodes' || key === 'promo') return 'payments';
+    if (key === 'users' || key === 'usermanagement') return 'users';
+    if (key === 'backup' || key === 'sitebackup') return 'backup';
+    if (key === 'note' || key === 'notes' || key === 'createnote') return 'note';
+    if (key === 'comment' || key === 'comments' || key === 'createcomment') return 'comment';
+
+    return key;
+  }
+
   function getStaffMeUrl() {
     try {
       const apiBase = (window.CONFIG && typeof window.CONFIG.API === 'string') ? window.CONFIG.API.trim() : '';
@@ -26,6 +63,18 @@
     } catch (e) {
       return { ok: false, reason: 'network_error' };
     }
+  }
+
+  async function fetchStaffMeWithRetry() {
+    const first = await fetchStaffMe();
+    if (first.ok) return first;
+    // If the backend is briefly unavailable (Live Server refresh, slow startup, etc.),
+    // a short retry avoids wiping a valid token.
+    if (first.reason === 'network_error') {
+      await new Promise(r => setTimeout(r, 350));
+      return await fetchStaffMe();
+    }
+    return first;
   }
 
   function clearStaffAuth() {
@@ -71,8 +120,16 @@
       return;
     }
 
-    const me = await fetchStaffMe();
+    const me = await fetchStaffMeWithRetry();
     if (!me.ok) {
+      // Important: don't clear a token on transient network/CORS/backend issues.
+      // When using Live Server, a refresh can happen right as backend writes JSON
+      // (triggering auto-reload) and a single failed request should not log out.
+      if (me.reason === 'network_error') {
+        if (allowAnonymous) return;
+        showAccessDenied('Cannot reach the backend server. Make sure the backend is running on http://localhost:3000.');
+        return;
+      }
       clearStaffAuth();
       window.location.href = loginPage;
       return;
@@ -97,7 +154,8 @@
 
     if (anyOfPermissions && role !== 'admin') {
       const perms = Array.isArray(me.user?.permissions) ? me.user.permissions : [];
-      const ok = anyOfPermissions.some(p => perms.includes(p));
+      const normalized = new Set(perms.map(normalizePermissionKey).filter(Boolean));
+      const ok = anyOfPermissions.some(p => normalized.has(normalizePermissionKey(p)));
       if (!ok) {
         showAccessDenied('You do not have permission to use this feature.');
         setTimeout(() => {
