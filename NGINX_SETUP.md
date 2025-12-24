@@ -38,10 +38,16 @@ server {
     # Static Files (Frontend)
     location / {
         root /home/username/buypvaaccount;
-        try_files $uri $uri/ /marketplace.html;
+        # Clean URLs:
+        # - /contact -> /contact.html
+        # - /marketplace -> /marketplace.html
+        try_files $uri $uri.html $uri/ /marketplace.html;
         expires 1d;
         add_header Cache-Control "public, max-age=86400";
     }
+
+    # Redirect explicit .html URLs to clean URLs
+    rewrite ^/(.*)\.html$ /$1 permanent;
 
     # API Reverse Proxy (Node.js Backend)
     location /api/ {

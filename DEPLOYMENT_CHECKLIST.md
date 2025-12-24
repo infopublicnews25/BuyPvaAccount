@@ -145,6 +145,10 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
+    # Optional: redirect explicit .html URLs to clean URLs
+    # Example: /contact.html -> /contact
+    rewrite ^/(.*)\.html$ /$1 permanent;
+
     # File uploads
     location /uploads/ {
         alias /var/www/buypvaaccount/uploads/;

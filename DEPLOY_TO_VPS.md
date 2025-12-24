@@ -79,6 +79,56 @@ curl https://buypvaaccount.com/index.html
 
 ---
 
+## ✅ Clean URL Update (Hide .html)
+
+This update makes URLs look like `/contact` instead of `/contact.html`.
+
+### 1) Update code on VPS
+```bash
+cd /path/to/BuyPvaAccount
+git pull origin main
+
+# If you run backend via PM2, ensure deps are installed
+npm install
+```
+
+### 2) Restart backend (PM2)
+Your repo includes an `ecosystem.config.js`. Restart using that:
+```bash
+pm2 start ecosystem.config.js
+pm2 restart buypvaaccount
+pm2 save
+```
+
+### 3) Update Nginx to support clean URLs
+Edit your Nginx site file (example: `/etc/nginx/sites-available/buypvaaccount`) and ensure your **frontend** `location /` has `try_files` with `$uri.html`, plus a rewrite to redirect `.html` to clean URLs:
+
+```nginx
+location / {
+  # Clean URLs: /contact -> /contact.html
+  try_files $uri $uri.html $uri/ /marketplace.html;
+}
+
+# Redirect explicit .html URLs to clean URLs
+rewrite ^/(.*)\.html$ /$1 permanent;
+```
+
+Then test and reload:
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 4) Quick test
+```bash
+curl -I https://yourdomain.com/contact
+curl -I https://yourdomain.com/contact.html
+```
+
+Expected: `/contact.html` should return **301** to `/contact`.
+
+---
+
 ## 📝 Files Changed in This Update
 
 ### Frontend Files (Auto-deployed with Nginx/Apache)

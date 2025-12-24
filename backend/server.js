@@ -882,6 +882,11 @@ app.get('/admin.html', authenticateAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin.html'));
 });
 
+// Clean URL for admin (protected)
+app.get('/admin', authenticateAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'admin.html'));
+});
+
 // Add a less obvious admin route as well
 app.get('/dashboard', authenticateAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin.html'));
@@ -892,14 +897,41 @@ app.get('/media-library.html', authenticateAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'media-library.html'));
 });
 
+// Clean URL for media library (protected)
+app.get('/media-library', authenticateAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'media-library.html'));
+});
+
 // Protected route for categories.html
 app.get('/categories.html', authenticateAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'categories.html'));
+});
+
+// Clean URL for categories (protected)
+app.get('/categories', authenticateAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'categories.html'));
 });
 
 // Protected route for ordermanagement.html (admin-only)
 app.get('/ordermanagement.html', authenticateAdminPage, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'ordermanagement.html'));
+});
+
+// Clean URL for order management (protected)
+app.get('/ordermanagement', authenticateAdminPage, (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'ordermanagement.html'));
+});
+
+// Redirect any direct *.html page requests to clean URLs (keeps URLs pretty)
+// (Skip /api/* so API endpoints with .html in path are not affected.)
+app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    if (req.path.startsWith('/api/')) return next();
+    if (!req.path.endsWith('.html')) return next();
+
+    const withoutExtension = req.path.slice(0, -'.html'.length);
+    if (!withoutExtension) return next();
+    return res.redirect(301, withoutExtension);
 });
 
 // Serve static files from the parent directory (where admin.html is located)
@@ -909,6 +941,29 @@ app.use(express.static(path.join(__dirname, '..')));
 // Redirect root to marketplace
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'marketplace.html'));
+});
+
+// Extensionless public pages: /contact -> contact.html (if it exists)
+// Protected pages are handled explicitly above.
+app.get('*', (req, res, next) => {
+    if (req.path === '/' || req.path.startsWith('/api/')) return next();
+
+    // If URL already has an extension (e.g., .js, .css, .png), ignore.
+    const lastSegment = String(req.path || '').split('/').filter(Boolean).pop() || '';
+    if (!lastSegment || lastSegment.includes('.')) return next();
+
+    const protectedBasenames = new Set(['admin', 'dashboard', 'media-library', 'categories', 'ordermanagement']);
+    if (protectedBasenames.has(lastSegment)) return next();
+
+    const relativePath = req.path.startsWith('/') ? req.path.slice(1) : req.path;
+    const candidateHtmlFile = path.join(__dirname, '..', `${relativePath}.html`);
+
+    try {
+        if (!fs.existsSync(candidateHtmlFile)) return next();
+        return res.sendFile(candidateHtmlFile);
+    } catch (e) {
+        return next();
+    }
 });
 
 // Admin login endpoint
@@ -936,7 +991,7 @@ app.post('/api/admin-login', async (req, res) => {
             const token = crypto.randomBytes(32).toString('hex');
 
             // Store token for the user
-            await storeUserToken(username, token);
+            await storeUserToken(loginUsername, token);
 
             // Also set HttpOnly cookie so server-side page protection can work (Nginx can proxy HTML routes)
             res.cookie('admin_auth_token', token, {
