@@ -893,12 +893,12 @@ app.get('/dashboard', (req, res) => {
 });
 
 // Protected route for media-library.html (redirects to /admin when not logged in)
-app.get('/media-library.html', authenticateAdminPage, (req, res) => {
+// Allow editors with 'media' permission to access media-library
+app.get('/media-library.html', authenticateStaff, requireStaffPermission('media'), (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'media-library.html'));
 });
 
-// Clean URL for media library (protected)
-app.get('/media-library', authenticateAdminPage, (req, res) => {
+app.get('/media-library', authenticateStaff, requireStaffPermission('media'), (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'media-library.html'));
 });
 
