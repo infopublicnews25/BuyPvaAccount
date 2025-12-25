@@ -597,13 +597,13 @@
             // Try to fetch from backend API first
             const token = localStorage.getItem(AUTH_KEY);
             const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-            fetch('/api/account-requests', { headers })
+            fetch('/api/tickets', { headers })
                 .then(res => res.json())
                 .then(data => {
-                    if (data && data.success && Array.isArray(data.requests)) {
+                    if (data && data.success && Array.isArray(data.tickets)) {
                         // Show support tickets from API data
-                        loadSupportTicketsFromAPI(data.requests);
-                        updateTicketCounts(data.requests);
+                        loadSupportTicketsFromAPI(data.tickets);
+                        updateTicketCounts(data.tickets);
                     } else {
                         // Fallback to localStorage if API fails
                         loadSupportTickets();
@@ -617,15 +617,15 @@
                 });
         }
 
-        function loadSupportTicketsFromAPI(requests) {
-            const supportTickets = requests.filter(r => r.category && r.subject);
+        function loadSupportTicketsFromAPI(tickets) {
+            const supportTickets = tickets.filter(t => t.category && t.subject);
 
             const container = document.getElementById('supportTicketsList');
             container.innerHTML = '';
 
             let filteredTickets = supportTickets;
             if (currentFilter !== 'all') {
-                filteredTickets = supportTickets.filter(r => r.status === currentFilter);
+                filteredTickets = supportTickets.filter(t => t.status === currentFilter);
             }
 
             if (filteredTickets.length === 0) {
@@ -638,8 +638,10 @@
                 container.appendChild(div);
             });
 
-            updateTicketCounts(requests);
+            updateTicketCounts(tickets);
         }
+
+        function loadSupportTickets() {
             const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
             const supportTickets = requests.filter(r => r.category && r.subject);
 
@@ -668,7 +670,7 @@
         function createSupportTicketItem(ticket, index) {
             const div = document.createElement('div');
             div.className = `notification-item ${ticket.status || 'new'}`;
-            const rid = ticket && (ticket.id || ticket.requestId) ? String(ticket.id || ticket.requestId) : '';
+            const rid = ticket && (ticket.id || ticket.trackingId) ? String(ticket.id || ticket.trackingId) : '';
             if (rid) {
                 div.dataset.requestId = rid;
             }

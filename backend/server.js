@@ -3615,6 +3615,17 @@ BuyPvaAccount Support Team`
     }
 });
 
+// Admin: get all support tickets
+app.get('/api/tickets', authenticateAdmin, (req, res) => {
+    try {
+        const tickets = readJsonArrayFile(TICKETS_FILE);
+        return res.json({ success: true, tickets });
+    } catch (err) {
+        console.error('Error fetching tickets:', err);
+        return res.status(500).json({ success: false, message: 'Failed to fetch tickets' });
+    }
+});
+
 // Endpoint to reset a user's password (updates registered_users.json)
 app.post('/api/reset-password', async (req, res) => {
     try {
