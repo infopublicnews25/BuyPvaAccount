@@ -564,12 +564,18 @@
         }
 
         // Create secure link for ticket
-        function createSecureLink(trackingId) {
+        function createSecureLink(ticket) {
+            // If ticket already has a token, use it
+            if (ticket.token) {
+                return `support-ticket.html?token=${ticket.token}`;
+            }
+
+            // Otherwise generate a new token for legacy tickets
             const token = generateSecureToken();
             const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
 
             // Store the mapping
-            secureLinks[token] = trackingId;
+            secureLinks[token] = ticket.trackingId;
             localStorage.setItem(SECURE_LINKS_KEY, JSON.stringify(secureLinks));
 
             return `support-ticket.html?token=${token}`;
@@ -721,7 +727,7 @@
                         </div>
                     </div>
                     <div class="notification-actions">
-                        <a href="${createSecureLink(ticket.trackingId)}" class="btn btn-primary">
+                        <a href="${createSecureLink(ticket)}" class="btn btn-primary">
                             👁️ View Details
                         </a>
                         <button class="btn ${ticket.status === 'new' ? 'btn-primary' : 'btn-outline-primary'}"
