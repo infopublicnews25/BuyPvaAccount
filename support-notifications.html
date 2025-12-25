@@ -565,17 +565,11 @@
 
         // Create secure link for ticket
         function createSecureLink(ticket) {
-            console.log('createSecureLink called with ticket:', ticket);
-            console.log('ticket.token:', ticket.token);
-            console.log('ticket.trackingId:', ticket.trackingId);
-
             // If ticket already has a token, use it
             if (ticket.token) {
-                console.log('Using existing token:', ticket.token);
                 return `support-ticket.html?token=${ticket.token}`;
             }
 
-            console.log('No token found, generating new one');
             // Otherwise generate a new token for legacy tickets
             const token = generateSecureToken();
             const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
@@ -606,32 +600,23 @@
 
         // Support ticket functions
         function loadNotifications() {
-            console.log('loadNotifications called');
             // Try to fetch from backend API first
             const token = localStorage.getItem(AUTH_KEY);
             const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-            console.log('Fetching from /api/tickets with headers:', headers);
             fetch('/api/tickets', { headers })
-                .then(res => {
-                    console.log('API response status:', res.status);
-                    return res.json();
-                })
+                .then(res => res.json())
                 .then(data => {
-                    console.log('API response data:', data);
                     if (data && data.success && Array.isArray(data.tickets)) {
-                        console.log('Loading tickets from API, count:', data.tickets.length);
                         // Show support tickets from API data
                         loadSupportTicketsFromAPI(data.tickets);
                         updateTicketCounts(data.tickets);
                     } else {
-                        console.log('API returned invalid data, falling back to localStorage');
                         // Fallback to localStorage if API fails
                         loadSupportTickets();
                         updateTicketCounts();
                     }
                 })
-                .catch((error) => {
-                    console.log('API call failed, falling back to localStorage:', error);
+                .catch(() => {
                     // Fallback to localStorage if API fails
                     loadSupportTickets();
                     updateTicketCounts();

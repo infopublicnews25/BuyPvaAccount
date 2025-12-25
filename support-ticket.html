@@ -632,7 +632,6 @@
             try {
                 const res = await fetch(`${CONFIG.API}/ticket/${encodeURIComponent(token)}`);
                 if (!res.ok) {
-                    console.log('API call failed, trying localStorage fallback');
                     loadTicketFromLocalStorage(token);
                     return;
                 }
@@ -650,12 +649,10 @@
                     }
                     displayTicketDetails(data.ticket);
                 } else {
-                    console.log('API returned invalid data, trying localStorage fallback');
                     loadTicketFromLocalStorage(token);
                 }
             } catch (err) {
                 console.error('Error fetching ticket from API:', err);
-                console.log('Trying localStorage fallback');
                 loadTicketFromLocalStorage(token);
             }
         }
@@ -836,7 +833,6 @@
                 });
                 
                 if (response.ok) {
-                    console.log('✅ Ticket completion email sent to:', ticket.email);
                 } else {
                     console.error('Failed to send completion email');
                 }
@@ -1028,7 +1024,7 @@
                         }
                     }
                 } catch (storageErr) {
-                    console.log('Failed to update localStorage:', storageErr);
+                    // ignore localStorage update errors
                 }
 
                 clearReplyForm();
