@@ -3,72 +3,78 @@
     "name": "GMAIL",
     "description": "Google Gmail accounts",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-08T00:00:00.000Z"
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   },
   {
-    "name": "FACEBOOK",
-    "description": "Facebook social media accounts",
-    "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-08T00:00:00.000Z"
+    "name": "EMAIL",
+    "description": "Category for Email products and services",
+    "createdAt": "2025-12-22T12:05:39.904Z",
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   },
   {
     "name": "INSTAGRAM",
     "description": "Instagram social media accounts",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-08T00:00:00.000Z"
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   },
   {
     "name": "TWITTER",
     "description": "Twitter/X social media accounts",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-08T00:00:00.000Z"
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   },
   {
     "name": "LINKEDIN",
     "description": "LinkedIn professional networking accounts",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-08T00:00:00.000Z"
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   },
   {
     "name": "YOUTUBE",
     "description": "YouTube video platform accounts",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-08T00:00:00.000Z"
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   },
   {
     "name": "TIKTOK",
     "description": "TikTok short video platform accounts",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-08T00:00:00.000Z"
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   },
   {
     "name": "TELEGRAM",
     "description": "Telegram messaging platform accounts",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-08T00:00:00.000Z"
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   },
   {
     "name": "OTHER",
     "description": "Other miscellaneous accounts and services",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-08T00:00:00.000Z"
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   },
   {
     "name": "YAHOO",
     "description": "Category for YAHOO products and services",
     "createdAt": "2025-12-08T11:11:20.928Z",
-    "updatedAt": "2025-12-08T11:11:20.928Z"
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   },
   {
     "name": "TENDER",
     "description": "Category for TENDER products and services",
     "createdAt": "2025-12-08T11:16:23.337Z",
-    "updatedAt": "2025-12-08T11:16:23.337Z"
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   },
   {
     "name": "OPEN",
     "description": "Category for OPEN products and services",
     "createdAt": "2025-12-08T11:23:19.336Z",
-    "updatedAt": "2025-12-08T11:23:19.336Z"
+    "updatedAt": "2025-12-22T12:17:43.020Z"
+  },
+  {
+    "name": "FACEBOOK",
+    "description": "Facebook social media accounts",
+    "createdAt": "2025-12-08T00:00:00.000Z",
+    "updatedAt": "2025-12-22T12:17:43.020Z"
   }
 ]

@@ -29,3 +29,6 @@ backend/email-config.json
 # Marketplace runtime-managed content (edited via dashboard)
 marketplace-category-details.json
 
+# VPS sync backups (local-only)
+.vps-sync-backup/
+
