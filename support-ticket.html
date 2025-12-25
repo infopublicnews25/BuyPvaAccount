@@ -8,7 +8,29 @@
     <script src="config.js"></script>
     <script src="staff-guard.js"></script>
     <script>
+        // Custom authentication for support ticket viewing
+        // Allow access for users with valid tokens OR admins
         (async function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            // If user has a token parameter, allow access (will validate token later)
+            if (token) {
+                // Still check if user is admin for additional features
+                try {
+                    await window.StaffGuard.require({
+                        allowAnonymous: true, // Allow anonymous access
+                        role: 'admin',
+                        loginPage: 'admin.html',
+                        redirectOnDeny: false // Don't redirect, just check
+                    });
+                } catch (e) {
+                    // Not admin, but that's OK for token-based access
+                }
+                return;
+            }
+
+            // No token, require admin access
             try {
                 await window.StaffGuard.require({
                     allowAnonymous: false,
@@ -16,7 +38,9 @@
                     loginPage: 'admin.html',
                     redirectOnDeny: 'dashboard.html'
                 });
-            } catch (e) {}
+            } catch (e) {
+                // Will redirect to admin.html
+            }
         })();
     </script>
     <style>
