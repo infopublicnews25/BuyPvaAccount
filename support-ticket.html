@@ -622,24 +622,8 @@
                 return;
             }
 
-            // Extract tracking ID from token (it's in format: tk_timestamp_randomstring_TRACKINGID)
-            // Or try to get it from localStorage first, then fallback to API
-            
-            // Try localStorage first
-            const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
-            let trackingId = secureLinks[token];
-
-            if (trackingId) {
-                // Found in localStorage, load from there
-                const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
-                const ticket = requests.find(r => r.trackingId === trackingId && r.category && r.subject);
-                if (ticket) {
-                    displayTicketDetails(ticket);
-                    return;
-                }
-            }
-
-            // If not in localStorage, try API endpoint
+            // For token-based access (users), always try API first to get latest data
+            // Only use localStorage as fallback if API fails
             fetchTicketFromBackend(token);
         }
 
@@ -648,7 +632,8 @@
             try {
                 const res = await fetch(`${CONFIG.API}/ticket/${encodeURIComponent(token)}`);
                 if (!res.ok) {
-                    showNoTicket();
+                    console.log('API call failed, trying localStorage fallback');
+                    loadTicketFromLocalStorage(token);
                     return;
                 }
                 const data = await res.json();
@@ -665,12 +650,31 @@
                     }
                     displayTicketDetails(data.ticket);
                 } else {
-                    showNoTicket();
+                    console.log('API returned invalid data, trying localStorage fallback');
+                    loadTicketFromLocalStorage(token);
                 }
             } catch (err) {
-                console.error('Error fetching ticket:', err);
-                showNoTicket();
+                console.error('Error fetching ticket from API:', err);
+                console.log('Trying localStorage fallback');
+                loadTicketFromLocalStorage(token);
             }
+        }
+
+        // Load ticket from localStorage (fallback)
+        function loadTicketFromLocalStorage(token) {
+            const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
+            const trackingId = secureLinks[token];
+
+            if (trackingId) {
+                const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+                const ticket = requests.find(r => r.trackingId === trackingId && r.category && r.subject);
+                if (ticket) {
+                    displayTicketDetails(ticket);
+                    return;
+                }
+            }
+
+            showNoTicket();
         }
 
         // Display ticket details
@@ -1010,6 +1014,23 @@
 
                 currentTicket = data.ticket;
                 displayReplies(currentTicket);
+
+                // Update localStorage with the latest ticket data
+                try {
+                    const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
+                    const trackingId = secureLinks[token] || data.ticket.trackingId;
+                    if (trackingId) {
+                        const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+                        const ticketIndex = requests.findIndex(r => r.trackingId === trackingId);
+                        if (ticketIndex !== -1) {
+                            requests[ticketIndex] = data.ticket;
+                            localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+                        }
+                    }
+                } catch (storageErr) {
+                    console.log('Failed to update localStorage:', storageErr);
+                }
+
                 clearReplyForm();
                 showStatusMessage(adminToken ? 'Reply posted successfully!' : 'Message sent successfully!', 'success');
                 return;
