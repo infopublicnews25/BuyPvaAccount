@@ -607,7 +607,9 @@
         // Notification functions
         function loadNotifications() {
             // Try to fetch from backend API first
-            fetch('/api/account-requests')
+            const token = localStorage.getItem(AUTH_KEY);
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            fetch('/api/account-requests', { headers })
                 .then(res => res.json())
                 .then(data => {
                     if (data && data.success && Array.isArray(data.requests)) {

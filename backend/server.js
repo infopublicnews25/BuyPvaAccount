@@ -1325,6 +1325,17 @@ app.post('/api/account-requests', (req, res) => {
     }
 });
 
+// Admin: get all account purchase requests
+app.get('/api/account-requests', authenticateAdmin, (req, res) => {
+    try {
+        const requests = readAccountRequests();
+        return res.json({ success: true, requests });
+    } catch (err) {
+        console.error('Error fetching account requests:', err);
+        return res.status(500).json({ success: false, message: 'Failed to fetch requests' });
+    }
+});
+
 // ========== PROMO CODES ==========
 
 // Validate a promo code (public). If promo is memberOnly, it requires a valid client Bearer token.
