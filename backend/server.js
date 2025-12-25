@@ -1336,6 +1336,43 @@ app.get('/api/account-requests', authenticateAdmin, (req, res) => {
     }
 });
 
+// Admin: update account purchase request status
+app.put('/api/account-requests/:id', authenticateAdmin, (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!id || !status) {
+            return res.status(400).json({ success: false, message: 'Request ID and status are required' });
+        }
+
+        const requests = readAccountRequests();
+        const requestIndex = requests.findIndex(r => r.id === id);
+
+        if (requestIndex === -1) {
+            return res.status(404).json({ success: false, message: 'Request not found' });
+        }
+
+        // If deleting, remove the request
+        if (status === 'delete') {
+            requests.splice(requestIndex, 1);
+        } else {
+            // Update status
+            requests[requestIndex].status = status;
+            requests[requestIndex].updatedAt = new Date().toISOString();
+        }
+
+        if (!writeAccountRequests(requests)) {
+            return res.status(500).json({ success: false, message: 'Failed to update request' });
+        }
+
+        return res.json({ success: true, message: 'Request updated successfully' });
+    } catch (err) {
+        console.error('Error updating account request:', err);
+        return res.status(500).json({ success: false, message: 'Failed to update request' });
+    }
+});
+
 // ========== PROMO CODES ==========
 
 // Validate a promo code (public). If promo is memberOnly, it requires a valid client Bearer token.

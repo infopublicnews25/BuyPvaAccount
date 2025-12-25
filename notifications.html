@@ -704,19 +704,19 @@
                     </div>
                     <div class="notification-actions">
                         <button class="btn ${request.status === 'new' ? 'btn-primary' : 'btn-outline-primary'}"
-                            onclick="event.stopPropagation(); updateRequestStatus(${index}, 'new')"
+                            onclick="updateRequestStatus(event, 'new')"
                             ${request.status === 'new' ? 'disabled' : ''}>New</button>
                         <button class="btn ${request.status === 'read' ? 'btn-info' : 'btn-outline-info'}"
-                            onclick="event.stopPropagation(); updateRequestStatus(${index}, 'read')"
+                            onclick="updateRequestStatus(event, 'read')"
                             ${request.status === 'read' ? 'disabled' : ''}>Read</button>
                         <button class="btn ${request.status === 'processing' ? 'btn-warning' : 'btn-outline-warning'}"
-                            onclick="event.stopPropagation(); updateRequestStatus(${index}, 'processing')"
+                            onclick="updateRequestStatus(event, 'processing')"
                             ${request.status === 'processing' ? 'disabled' : ''}>Processing</button>
                         <button class="btn ${request.status === 'complete' ? 'btn-success' : 'btn-outline-success'}"
-                            onclick="event.stopPropagation(); updateRequestStatus(${index}, 'complete')"
+                            onclick="updateRequestStatus(event, 'complete')"
                             ${request.status === 'complete' ? 'disabled' : ''}>Complete</button>
                         <button class="btn ${request.status === 'delete' ? 'btn-danger' : 'btn-outline-danger'}"
-                            onclick="event.stopPropagation(); updateRequestStatus(${index}, 'delete')"
+                            onclick="updateRequestStatus(event, 'delete')"
                             ${request.status === 'delete' ? 'disabled' : ''}>Delete</button>
                     </div>
                 </div>
@@ -744,18 +744,54 @@
             loadNotifications();
         }
 
-        function updateRequestStatus(index, newStatus) {
-            const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
-            if (index >= 0 && index < requests.length) {
-                requests[index].status = newStatus;
-                // If it's being deleted, remove it
-                if (newStatus === 'delete' && confirm('Are you sure you want to delete this notification?')) {
-                    requests.splice(index, 1);
-                }
-                localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
-                loadNotifications();
-                // updateNotificationCounts() is called in loadNotifications()
+        function updateRequestStatus(event, newStatus) {
+            event.stopPropagation();
+            
+            // Get the request ID from the clicked element's data attribute
+            const button = event.target;
+            const notificationItem = button.closest('.notification-item');
+            const requestId = notificationItem.getAttribute('data-request-id');
+
+            if (!requestId) {
+                console.error('Request ID not found');
+                return;
             }
+
+            // If deleting, confirm first
+            if (newStatus === 'delete' && !confirm('Are you sure you want to delete this notification?')) {
+                return;
+            }
+
+            // Get admin token
+            const token = localStorage.getItem(AUTH_KEY);
+            if (!token) {
+                alert('Admin authentication required. Please login again.');
+                window.location.href = 'admin.html';
+                return;
+            }
+
+            // Make API call to update status
+            fetch(`/api/account-requests/${requestId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload notifications to reflect changes
+                    loadNotifications();
+                } else {
+                    alert('Failed to update request: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                console.error('Error updating request:', err);
+                alert('Error updating request. Please try again.');
+            });
         }
 
         function updateNotificationCounts(requests) {
