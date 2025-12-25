@@ -1087,9 +1087,9 @@ This helps us resolve your issue faster!"></textarea>
             console.log('✅ Email sent successfully:', emailResult);
 
             // Only save ticket AFTER email is sent successfully
-            const tickets = JSON.parse(localStorage.getItem('support_tickets') || '[]');
+            const tickets = JSON.parse(localStorage.getItem('account_requests') || '[]');
             tickets.push(formData);
-            localStorage.setItem('support_tickets', JSON.stringify(tickets));
+            localStorage.setItem('account_requests', JSON.stringify(tickets));
 
             // Also save ticket to backend API
             try {

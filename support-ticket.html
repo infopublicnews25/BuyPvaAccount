@@ -1152,7 +1152,44 @@
             if (replyForm) {
                 replyForm.addEventListener('submit', handleReplySubmission);
             }
+
+            // Auto-refresh ticket data every 30 seconds for real-time messaging
+            setInterval(() => {
+                if (currentTicket) {
+                    refreshTicketData();
+                }
+            }, 30000);
         });
+
+        // Function to refresh ticket data without reloading the page
+        async function refreshTicketData() {
+            const token = getTicketToken();
+            if (!token) return;
+
+            try {
+                const res = await fetch(`${CONFIG.API}/ticket/${encodeURIComponent(token)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.ticket) {
+                        // Update current ticket
+                        currentTicket = data.ticket;
+                        // Update replies display
+                        displayReplies(currentTicket);
+                        // Update status if changed
+                        const statusElement = document.getElementById('ticketStatus');
+                        if (statusElement.textContent !== data.ticket.status) {
+                            statusElement.textContent = data.ticket.status || 'new';
+                            statusElement.className = `status-badge ${data.ticket.status || 'new'}`;
+                            updateSolveButtons(data.ticket.status || 'new');
+                        }
+                        // Update updated date
+                        document.getElementById('updatedDate').textContent = new Date(data.ticket.updatedAt || data.ticket.timestamp).toLocaleString();
+                    }
+                }
+            } catch (err) {
+                console.log('Auto-refresh failed, will retry later');
+            }
+        }
     </script>
 </body>
 </html>

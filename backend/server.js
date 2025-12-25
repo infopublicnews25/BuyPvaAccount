@@ -1325,54 +1325,6 @@ app.post('/api/account-requests', (req, res) => {
     }
 });
 
-// Admin: get all account purchase requests
-app.get('/api/account-requests', authenticateAdmin, (req, res) => {
-    try {
-        const requests = readAccountRequests();
-        return res.json({ success: true, requests });
-    } catch (err) {
-        console.error('Error fetching account requests:', err);
-        return res.status(500).json({ success: false, message: 'Failed to fetch requests' });
-    }
-});
-
-// Admin: update account purchase request status
-app.put('/api/account-requests/:id', authenticateAdmin, (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-
-        if (!id || !status) {
-            return res.status(400).json({ success: false, message: 'Request ID and status are required' });
-        }
-
-        const requests = readAccountRequests();
-        const requestIndex = requests.findIndex(r => r.id === id);
-
-        if (requestIndex === -1) {
-            return res.status(404).json({ success: false, message: 'Request not found' });
-        }
-
-        // If deleting, remove the request
-        if (status === 'delete') {
-            requests.splice(requestIndex, 1);
-        } else {
-            // Update status
-            requests[requestIndex].status = status;
-            requests[requestIndex].updatedAt = new Date().toISOString();
-        }
-
-        if (!writeAccountRequests(requests)) {
-            return res.status(500).json({ success: false, message: 'Failed to update request' });
-        }
-
-        return res.json({ success: true, message: 'Request updated successfully' });
-    } catch (err) {
-        console.error('Error updating account request:', err);
-        return res.status(500).json({ success: false, message: 'Failed to update request' });
-    }
-});
-
 // ========== PROMO CODES ==========
 
 // Validate a promo code (public). If promo is memberOnly, it requires a valid client Bearer token.
@@ -3612,54 +3564,6 @@ BuyPvaAccount Support Team`
             message: 'Failed to send ticket completion email',
             error: error.message
         });
-    }
-});
-
-// Admin: get all support tickets
-app.get('/api/tickets', authenticateAdmin, (req, res) => {
-    try {
-        const tickets = readJsonArrayFile(TICKETS_FILE);
-        return res.json({ success: true, tickets });
-    } catch (err) {
-        console.error('Error fetching tickets:', err);
-        return res.status(500).json({ success: false, message: 'Failed to fetch tickets' });
-    }
-});
-
-// Admin: update ticket status
-app.put('/api/ticket/:token/status', authenticateAdmin, (req, res) => {
-    try {
-        const { token } = req.params;
-        const { status } = req.body;
-
-        if (!token || !status) {
-            return res.status(400).json({ success: false, message: 'Token and status are required' });
-        }
-
-        const tickets = readJsonArrayFile(TICKETS_FILE);
-        const ticketIndex = tickets.findIndex(t => t && (t.token === token || t.trackingId === token));
-
-        if (ticketIndex === -1) {
-            return res.status(404).json({ success: false, message: 'Ticket not found' });
-        }
-
-        // If deleting, remove the ticket
-        if (status === 'delete') {
-            tickets.splice(ticketIndex, 1);
-        } else {
-            // Update status
-            tickets[ticketIndex].status = status;
-            tickets[ticketIndex].updatedAt = new Date().toISOString();
-        }
-
-        if (!writeJsonArrayFile(TICKETS_FILE, tickets)) {
-            return res.status(500).json({ success: false, message: 'Failed to update ticket' });
-        }
-
-        return res.json({ success: true, message: 'Ticket updated successfully' });
-    } catch (err) {
-        console.error('Error updating ticket:', err);
-        return res.status(500).json({ success: false, message: 'Failed to update ticket' });
     }
 });
 
