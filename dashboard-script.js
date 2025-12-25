@@ -2790,35 +2790,141 @@ function readBulkProductsFromInput() {
     return { products: normalized, problems, totalRows: rows.length };
 }
 
+function handleCsvFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showNotification('Please select a CSV file', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const csvContent = e.target.result;
+        document.getElementById('bulkProductsInput').value = csvContent;
+        document.getElementById('bulkProductsFormat').value = 'csv';
+        setBulkStatus('CSV file loaded. Click "Validate" to check the data.');
+        showNotification('CSV file loaded successfully', 'success');
+    };
+    reader.onerror = function() {
+        showNotification('Error reading CSV file', 'error');
+    };
+    reader.readAsText(file, 'UTF-8');
+}
+
 function validateBulkProducts() {
+    const format = String(document.getElementById('bulkProductsFormat')?.value || 'json').toLowerCase();
+    const text = String(document.getElementById('bulkProductsInput')?.value || '').trim();
+
+    if (!text) {
+        setBulkStatus('Please enter products data first.');
+        return;
+    }
+
     try {
-        const { products, problems, totalRows } = readBulkProductsFromInput();
-        if (problems.length) {
-            setBulkStatus(`Found ${problems.length} issue(s). First: ${problems[0]}`);
+        let products = [];
+        let errorMessage = '';
+
+        if (format === 'json') {
+            try {
+                const parsed = JSON.parse(text);
+                products = Array.isArray(parsed) ? parsed : (parsed.products || []);
+            } catch (e) {
+                errorMessage = 'Invalid JSON format';
+            }
+        } else if (format === 'csv') {
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            if (lines.length < 2) {
+                errorMessage = 'CSV must contain at least header and one data row';
+            } else {
+                const headers = splitCsvLine(lines[0]);
+                const requiredFields = ['title', 'category', 'price', 'quantity'];
+
+                const missingFields = requiredFields.filter(field => !headers.includes(field));
+                if (missingFields.length > 0) {
+                    errorMessage = `Required fields missing: ${missingFields.join(', ')}`;
+                } else {
+                    products = lines.slice(1).map(line => {
+                        const values = splitCsvLine(line);
+                        const obj = {};
+                        headers.forEach((h, i) => {
+                            obj[h] = values[i] || '';
+                        });
+                        return obj;
+                    });
+                }
+            }
+        } else {
+            errorMessage = 'Unknown format. Use JSON or CSV.';
+        }
+
+        if (errorMessage) {
+            setBulkStatus(`Validation failed: ${errorMessage}`);
             return;
         }
-        setBulkStatus(`Ready: ${products.length} product(s) validated (from ${totalRows} row(s)).`);
+
+        if (products.length === 0) {
+            setBulkStatus('No products found in data');
+            return;
+        }
+
+        // Basic validation
+        let validCount = 0;
+        let errorCount = 0;
+
+        products.forEach((product, index) => {
+            const errors = [];
+
+            if (!product.title || String(product.title).trim() === '') {
+                errors.push('missing title');
+            }
+
+            if (!product.category || String(product.category).trim() === '') {
+                errors.push('missing category');
+            }
+
+            const price = parseFloat(product.price);
+            if (isNaN(price) || price <= 0) {
+                errors.push('invalid price');
+            }
+
+            const quantity = parseInt(product.quantity);
+            if (isNaN(quantity) || quantity < 0) {
+                errors.push('invalid quantity');
+            }
+
+            if (!product.image || String(product.image).trim() === '') {
+                errors.push('missing image');
+            }
+
+            if (errors.length === 0) {
+                validCount++;
+            } else {
+                errorCount++;
+                if (errorCount <= 3) { // Show only first few errors
+                    console.warn(`Row ${index + 1}: ${errors.join(', ')}`);
+                }
+            }
+        });
+
+        if (errorCount === 0) {
+            setBulkStatus(`✅ Ready to upload: ${validCount} valid product(s)`);
+        } else {
+            setBulkStatus(`⚠️ Found ${errorCount} issue(s) in ${products.length} rows. Check console for details.`);
+        }
+
     } catch (e) {
-        setBulkStatus(String(e?.message || e || 'Validation failed'));
+        setBulkStatus(`Validation error: ${e.message}`);
     }
 }
 
 async function importBulkProducts() {
-    let payload;
-    try {
-        payload = readBulkProductsFromInput();
-    } catch (e) {
-        setBulkStatus(String(e?.message || e || 'Import failed'));
-        return;
-    }
+    const format = String(document.getElementById('bulkProductsFormat')?.value || 'json').toLowerCase();
+    const text = String(document.getElementById('bulkProductsInput')?.value || '').trim();
 
-    const { products, problems, totalRows } = payload;
-    if (problems.length) {
-        setBulkStatus(`Fix issues first. Example: ${problems[0]}`);
-        return;
-    }
-    if (!products.length) {
-        setBulkStatus('No valid products to import.');
+    if (!text) {
+        setBulkStatus('Please enter products data first.');
         return;
     }
 
@@ -2833,43 +2939,57 @@ async function importBulkProducts() {
     if (importBtn) importBtn.disabled = true;
     if (validateBtn) validateBtn.disabled = true;
 
-    let lastProductsSnapshot = null;
     try {
-        setBulkStatus(`Importing 0/${products.length}...`);
-        for (let i = 0; i < products.length; i++) {
-            setBulkStatus(`Importing ${i + 1}/${products.length}...`);
-            const res = await fetch(`${getApiBase()}/products`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(products[i])
-            });
+        setBulkStatus('Uploading products...');
 
-            const raw = await res.text();
-            let data;
-            try { data = raw ? JSON.parse(raw) : {}; }
-            catch { data = { success: false, message: raw || `Request failed (${res.status})` }; }
+        const res = await fetch(`${getApiBase()}/products/bulk-upload`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                format: format,
+                data: text
+            })
+        });
 
-            if (!res.ok || !data.success) {
-                const name = products[i]?.title ? ` (${products[i].title})` : '';
-                throw new Error(`Failed at item ${i + 1}${name}: ${data.message || 'Request failed'}`);
+        const raw = await res.text();
+        let data;
+        try {
+            data = raw ? JSON.parse(raw) : {};
+        } catch {
+            data = { success: false, message: raw || `Request failed (${res.status})` };
+        }
+
+        if (!res.ok || !data.success) {
+            if (data.errors && data.errors.length > 0) {
+                setBulkStatus(`Upload failed: ${data.errors[0]}`);
+                showNotification(`Bulk upload failed: ${data.errors[0]}`, 'error');
+            } else {
+                setBulkStatus(`Upload failed: ${data.message || 'Unknown error'}`);
+                showNotification(`Bulk upload failed: ${data.message || 'Unknown error'}`, 'error');
             }
-
-            if (Array.isArray(data.products)) lastProductsSnapshot = data.products;
+            return;
         }
 
-        if (Array.isArray(lastProductsSnapshot)) {
-            localStorage.setItem('admin_products_v1', JSON.stringify(lastProductsSnapshot));
+        // Update local storage with new products
+        if (Array.isArray(data.products)) {
+            const existingProducts = JSON.parse(localStorage.getItem('admin_products_v1') || '[]');
+            const mergedProducts = [...existingProducts, ...data.products];
+            localStorage.setItem('admin_products_v1', JSON.stringify(mergedProducts));
         }
 
-        showNotification(`Imported ${products.length} product(s) successfully!`, 'success');
-        setBulkStatus(`Done: imported ${products.length} product(s) (from ${totalRows} row(s)).`);
+        showNotification(data.message || `Successfully uploaded ${data.products?.length || 0} products!`, 'success');
+        setBulkStatus(`Success: ${data.message || 'Products uploaded'}`);
+
+        // Clear the input after successful upload
+        document.getElementById('bulkProductsInput').value = '';
+
     } catch (err) {
-        console.error('importBulkProducts error:', err);
-        showNotification('Bulk import failed', 'error');
-        setBulkStatus(String(err?.message || err || 'Bulk import failed'));
+        console.error('Bulk upload error:', err);
+        showNotification('Bulk upload failed due to network error', 'error');
+        setBulkStatus(`Network error: ${err.message}`);
     } finally {
         if (importBtn) importBtn.disabled = false;
         if (validateBtn) validateBtn.disabled = false;

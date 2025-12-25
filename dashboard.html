@@ -1080,6 +1080,22 @@
                     </a>
                 </div>
 
+                <!-- File Upload Option -->
+                <div style="margin-bottom: 16px; padding: 16px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px;">
+                    <label style="display:block;margin-bottom:8px;font-weight:600;color:#333;">
+                        <i class="fas fa-file-upload"></i> Upload CSV File Directly
+                    </label>
+                    <input type="file" id="bulkCsvFileInput" accept=".csv" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;" onchange="handleCsvFileUpload(event)" />
+                    <small style="display:block;margin-top:6px;color:#666;font-size:12px;">
+                        Select a CSV file to automatically load into the text area below
+                    </small>
+                </div>
+
+                <div style="text-align: center; margin: 16px 0; color: #666; font-size: 14px; position: relative;">
+                    <span style="background: white; padding: 0 16px;">OR PASTE DATA BELOW</span>
+                    <hr style="border: none; border-top: 1px solid #e9ecef; margin: 0;">
+                </div>
+
                 <div style="margin-bottom: 12px; color: #666; font-size: 13px;">
                     <strong>Required columns:</strong> title, category, price, quantity, image<br>
                     <strong>Optional:</strong> offerPrice, title_en/note_en, title_ru/note_ru, title_zh/note_zh, title_ar/note_ar, note, id

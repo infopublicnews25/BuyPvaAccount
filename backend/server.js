@@ -4259,146 +4259,170 @@ app.delete('/api/products/:id', authenticateStaff, requireStaffPermission('produ
     }
 });
 
-// Bulk update products (admin/editor with permission) - for saving all products at once
-app.put('/api/products', authenticateStaff, requireStaffPermission('products'), (req, res) => {
-    const products = req.body;
-
-    if (!Array.isArray(products)) {
-        return res.status(400).json({ success: false, message: 'Products must be an array' });
-    }
-
+// Bulk upload products from CSV or JSON (admin/editor with permission)
+app.post('/api/products/bulk-upload', authenticateStaff, requireStaffPermission('products'), (req, res) => {
     try {
-        if (writeAllProducts(products)) {
-            logAdminAction('bulk_update_products', { count: products.length }, req.adminUser || 'admin');
-            res.json({ success: true, products });
-        } else {
-            res.status(500).json({ success: false, message: 'Failed to save products' });
-        }
-    } catch (error) {
-        console.error('Error saving products:', error);
-        res.status(500).json({ success: false, message: 'Failed to save products' });
-    }
-});
+        const { format, data } = req.body;
 
-// Bulk upload products from CSV (admin/editor with permission)
-app.post('/api/products/bulk-upload', authenticateStaff, requireStaffPermission('products'), upload.single('csvFile'), (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: 'No CSV file uploaded' });
+        if (!data || typeof data !== 'string') {
+            return res.status(400).json({ success: false, message: 'No data provided' });
         }
 
-        const csvContent = req.file.buffer.toString('utf8');
-        const lines = csvContent.split('\n').filter(line => line.trim());
+        let products = [];
 
-        if (lines.length < 2) {
-            return res.status(400).json({ success: false, message: 'CSV file must contain at least header and one data row' });
-        }
-
-        // Parse header
-        const headers = parseCSVLine(lines[0]);
-        const requiredFields = ['title', 'category', 'price', 'quantity', 'image'];
-
-        // Check required fields
-        for (const field of requiredFields) {
-            if (!headers.includes(field)) {
-                return res.status(400).json({ success: false, message: `Required field '${field}' is missing from CSV headers` });
-            }
-        }
-
-        // Parse products
-        const products = [];
-        const errors = [];
-
-        for (let i = 1; i < lines.length; i++) {
+        if (format === 'json') {
             try {
-                const values = parseCSVLine(lines[i]);
-                if (values.length === 0) continue; // Skip empty lines
-
-                const product = {};
-
-                headers.forEach((header, index) => {
-                    let value = values[index] || '';
-
-                    // Clean up quotes
-                    if (value.startsWith('"') && value.endsWith('"')) {
-                        value = value.slice(1, -1);
-                    }
-
-                    // Convert to appropriate types
-                    if (header === 'price' || header === 'offerPrice') {
-                        value = value ? parseFloat(value) : null;
-                    } else if (header === 'quantity') {
-                        value = value ? parseInt(value) : 0;
-                    } else if (header === 'id' && !value) {
-                        // Generate ID if not provided
-                        value = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-                    }
-
-                    product[header] = value;
-                });
-
-                // Validate required fields
-                for (const field of requiredFields) {
-                    if (!product[field] && product[field] !== 0) {
-                        errors.push(`Row ${i + 1}: Missing required field '${field}'`);
-                        continue;
-                    }
-                }
-
-                // Validate price and quantity
-                if (product.price <= 0) {
-                    errors.push(`Row ${i + 1}: Price must be greater than 0`);
-                    continue;
-                }
-
-                if (product.quantity < 0) {
-                    errors.push(`Row ${i + 1}: Quantity cannot be negative`);
-                    continue;
-                }
-
-                products.push(product);
-
-            } catch (error) {
-                errors.push(`Row ${i + 1}: Failed to parse - ${error.message}`);
+                const parsed = JSON.parse(data);
+                products = Array.isArray(parsed) ? parsed : (parsed.products || []);
+            } catch (e) {
+                return res.status(400).json({ success: false, message: 'Invalid JSON format' });
             }
+        } else if (format === 'csv') {
+            const lines = data.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            if (lines.length < 2) {
+                return res.status(400).json({ success: false, message: 'CSV must contain at least header and one data row' });
+            }
+
+            const headers = parseCSVLine(lines[0]);
+            const requiredFields = ['title', 'category', 'price', 'quantity'];
+
+            // Check required fields
+            const missingFields = requiredFields.filter(field => !headers.includes(field));
+            if (missingFields.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Required fields missing: ${missingFields.join(', ')}`
+                });
+            }
+
+            // Parse products
+            for (let i = 1; i < lines.length; i++) {
+                try {
+                    const values = parseCSVLine(lines[i]);
+                    if (values.length === 0) continue;
+
+                    const product = {};
+                    headers.forEach((header, index) => {
+                        let value = values[index] || '';
+
+                        // Convert to appropriate types
+                        if (header === 'price' || header === 'offerPrice') {
+                            value = value && !isNaN(value) ? parseFloat(value) : null;
+                        } else if (header === 'quantity') {
+                            value = value && !isNaN(value) ? parseInt(value) : 0;
+                        }
+
+                        product[header] = value;
+                    });
+
+                    products.push(product);
+                } catch (error) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Error parsing row ${i + 1}: ${error.message}`
+                    });
+                }
+            }
+        } else {
+            return res.status(400).json({ success: false, message: 'Invalid format. Use "json" or "csv"' });
         }
+
+        if (products.length === 0) {
+            return res.status(400).json({ success: false, message: 'No products found in data' });
+        }
+
+        // Validate products
+        const errors = [];
+        const validProducts = [];
+
+        products.forEach((product, index) => {
+            const productErrors = [];
+
+            if (!product.title || typeof product.title !== 'string' || product.title.trim() === '') {
+                productErrors.push('title is required');
+            }
+
+            if (!product.category || typeof product.category !== 'string' || product.category.trim() === '') {
+                productErrors.push('category is required');
+            }
+
+            if (!product.price || isNaN(product.price) || product.price <= 0) {
+                productErrors.push('price must be a positive number');
+            }
+
+            if (!product.quantity || isNaN(product.quantity) || product.quantity < 0) {
+                productErrors.push('quantity must be a non-negative number');
+            }
+
+            if (!product.image || typeof product.image !== 'string' || product.image.trim() === '') {
+                productErrors.push('image URL is required');
+            }
+
+            if (productErrors.length === 0) {
+                // Clean up the product data
+                const cleanProduct = {
+                    title: product.title.trim(),
+                    category: product.category.trim(),
+                    price: parseFloat(product.price),
+                    quantity: parseInt(product.quantity),
+                    image: product.image.trim(),
+                    id: product.id || Date.now().toString() + Math.random().toString(36).substr(2, 9)
+                };
+
+                // Add optional fields
+                if (product.offerPrice && !isNaN(product.offerPrice)) {
+                    cleanProduct.offerPrice = parseFloat(product.offerPrice);
+                }
+
+                if (product.note) cleanProduct.note = product.note;
+                if (product.title_en) cleanProduct.title_en = product.title_en;
+                if (product.note_en) cleanProduct.note_en = product.note_en;
+                if (product.title_ru) cleanProduct.title_ru = product.title_ru;
+                if (product.note_ru) cleanProduct.note_ru = product.note_ru;
+                if (product.title_zh) cleanProduct.title_zh = product.title_zh;
+                if (product.note_zh) cleanProduct.note_zh = product.note_zh;
+                if (product.title_ar) cleanProduct.title_ar = product.title_ar;
+                if (product.note_ar) cleanProduct.note_ar = product.note_ar;
+
+                validProducts.push(cleanProduct);
+            } else {
+                errors.push(`Row ${index + 1}: ${productErrors.join(', ')}`);
+            }
+        });
 
         if (errors.length > 0) {
             return res.status(400).json({
                 success: false,
-                message: 'CSV validation failed',
+                message: 'Validation failed',
                 errors: errors.slice(0, 10), // Limit errors shown
                 totalErrors: errors.length
             });
         }
 
-        if (products.length === 0) {
-            return res.status(400).json({ success: false, message: 'No valid products found in CSV' });
-        }
-
         // Read existing products and merge
         const existingProducts = readAllProducts();
-        const mergedProducts = [...existingProducts, ...products];
+        const mergedProducts = [...existingProducts, ...validProducts];
 
         // Save all products
         if (writeAllProducts(mergedProducts)) {
-            logAdminAction('bulk_upload_products_csv', {
-                count: products.length,
-                fileName: req.file.originalname
+            logAdminAction('bulk_upload_products', {
+                count: validProducts.length,
+                format: format,
+                source: 'dashboard'
             }, req.adminUser || 'admin');
 
             res.json({
                 success: true,
-                message: `Successfully uploaded ${products.length} products`,
-                products: products
+                message: `Successfully uploaded ${validProducts.length} products`,
+                products: validProducts
             });
         } else {
-            res.status(500).json({ success: false, message: 'Failed to save products to database' });
+            res.status(500).json({ success: false, message: 'Failed to save products' });
         }
 
     } catch (error) {
-        console.error('Error processing CSV upload:', error);
-        res.status(500).json({ success: false, message: 'Failed to process CSV file' });
+        console.error('Bulk upload error:', error);
+        res.status(500).json({ success: false, message: 'Server error during bulk upload' });
     }
 });
 
@@ -4434,6 +4458,8 @@ function parseCSVLine(line) {
 
     return result;
 }
+
+// Get all product categories (public endpoint)
 app.get('/api/categories', (req, res) => {
     try {
         const categories = readAllCategories();
@@ -5189,6 +5215,42 @@ function getFileType(filename) {
     if (docExts.includes(ext)) return 'document';
     return 'other';
 }
+
+// Update marketplace help section
+app.post('/api/update-help-section', authenticateStaff, (req, res) => {
+    try {
+        const { title, label, linkText, linkUrl } = req.body;
+        
+        if (!title || !label || !linkText || !linkUrl) {
+            return res.status(400).json({ success: false, message: 'All fields are required' });
+        }
+        
+        // Read marketplace.html
+        const marketplacePath = path.join(__dirname, '..', 'marketplace.html');
+        let html = fs.readFileSync(marketplacePath, 'utf8');
+        
+        // Create the new help section HTML
+        const newHelpSection = `          <!-- Help Section -->
+          <div class="side">
+            <h3>${title}</h3>
+            <div class="muted">${label} <a href="${linkUrl}" style="color: #007bff;">${linkText}</a></div>
+          </div>`;
+        
+        // Replace the old help section
+        const oldHelpSectionRegex = /<!-- Help Section -->\s*<div class="side">\s*<h3>Need help\?<\/h3>\s*<div class="muted">CONTACTS: <a href="support\.html" style="color: #007bff;">support\.html<\/a><\/div>\s*<\/div>/;
+        html = html.replace(oldHelpSectionRegex, newHelpSection);
+        
+        // Write back to file
+        fs.writeFileSync(marketplacePath, html);
+        
+        logAdminAction('update_help_section', { title, label, linkText, linkUrl }, req.adminUser || 'admin');
+        
+        res.json({ success: true, message: 'Help section updated successfully' });
+    } catch (error) {
+        console.error('Error updating help section:', error);
+        res.status(500).json({ success: false, message: 'Failed to update help section' });
+    }
+});
 
 // Start server
 app.listen(PORT, () => {
