@@ -864,54 +864,29 @@
             background: #d0d0d0;
         }
 
-        .notification-alert {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
-            color: white;
-            padding: 12px 20px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-            display: none;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .notification-alert:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
-        }
-
-        .notification-alert::before {
-            content: '';
+        .notification-indicator {
             position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            animation: shimmer 2s infinite;
+            top: -5px;
+            right: -5px;
+            width: 12px;
+            height: 12px;
+            background: #dc3545;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+            display: none;
+            animation: pulse-red 2s infinite;
         }
 
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-
-        .notification-alert-icon {
-            font-size: 16px;
-            margin-right: 8px;
-            animation: bell 1s ease-in-out infinite;
-        }
-
-        @keyframes bell {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-10deg); }
-            75% { transform: rotate(10deg); }
+        @keyframes pulse-red {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+            }
+            50% {
+                transform: scale(1.2);
+                box-shadow: 0 4px 8px rgba(220, 53, 69, 0.5);
+            }
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
@@ -952,6 +927,7 @@
                     <button class="sidebar-menu-item" onclick="showTab('notifications')">
                         🔔 Notifications
                         <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+                        <div id="notificationIndicator" class="notification-indicator"></div>
                     </button>
                     <button class="sidebar-menu-item" onclick="showTab('orders')">
                         📦 Order History
@@ -969,11 +945,6 @@
                         🚪 Logout
                     </button>
                 </div>
-            </div>
-
-            <div id="notificationAlert" class="notification-alert" onclick="showTab('notifications')" style="display: none;">
-                <span class="notification-alert-icon">🔔</span>
-                You have new notifications! Click here to view them.
             </div>
 
             <div style="flex: 1; overflow-y: auto;">
@@ -1684,26 +1655,10 @@
                 }
             }
 
-            // Show/hide notification alert bar
-            const alertBar = document.getElementById('notificationAlert');
-            if (alertBar) {
-                if (unreadCount > 0) {
-                    alertBar.style.display = 'block';
-                    // Update alert text with count and translation
-                    const lang = (window.LanguageUtils && window.LanguageUtils.getLanguage) ? window.LanguageUtils.getLanguage() : 'en';
-                    const T = {
-                        en: { newNotifications: 'You have {count} new notification{plural}! Click here to view them.' },
-                        ru: { newNotifications: 'У вас {count} новое уведомление{plural}! Нажмите здесь, чтобы просмотреть.' },
-                        zh: { newNotifications: '您有 {count} 个新通知{plural}！点击此处查看。' },
-                        ar: { newNotifications: 'لديك {count} إشعار{plural} جديد{plural}! انقر هنا لعرضها.' }
-                    };
-                    const t = T[lang] || T.en;
-                    const plural = unreadCount > 1 ? 's' : '';
-                    const text = t.newNotifications.replace('{count}', unreadCount).replace('{plural}', plural);
-                    alertBar.innerHTML = `<span class="notification-alert-icon">🔔</span>${text}`;
-                } else {
-                    alertBar.style.display = 'none';
-                }
+            // Show/hide notification indicator dot
+            const indicator = document.getElementById('notificationIndicator');
+            if (indicator) {
+                indicator.style.display = unreadCount > 0 ? 'block' : 'none';
             }
 
             const notificationsHTML = visibleNotifications.map(notif => {
@@ -1777,10 +1732,10 @@
                     }
                 }
 
-                // Hide alert bar if no unread notifications left
-                const alertBar = document.getElementById('notificationAlert');
-                if (alertBar && (parseInt(badge.textContent) || 0) <= 0) {
-                    alertBar.style.display = 'none';
+                // Hide indicator if no unread notifications left
+                const indicator = document.getElementById('notificationIndicator');
+                if (indicator && (parseInt(badge.textContent) || 0) <= 0) {
+                    indicator.style.display = 'none';
                 }
             }
         }
@@ -1834,10 +1789,10 @@
             
             alert('? All notifications marked as read!');
 
-            // Hide notification alert bar
-            const alertBar = document.getElementById('notificationAlert');
-            if (alertBar) {
-                alertBar.style.display = 'none';
+            // Hide notification indicator
+            const indicator = document.getElementById('notificationIndicator');
+            if (indicator) {
+                indicator.style.display = 'none';
             }
         }
 
@@ -2393,7 +2348,6 @@
                         notifTitle: 'Notifications',
                         notifSubtitle: 'Stay updated with your orders and messages',
                         markAllRead: '✅ Mark All Read',
-                        newNotifications: 'You have {count} new notification{plural}! Click here to view them.',
                         myOrders: 'My Orders',
                         trackingTitle: 'Order Tracking',
                         downloadsTitle: 'Downloads',
@@ -2421,7 +2375,6 @@
                         notifTitle: 'Уведомления',
                         notifSubtitle: 'Следите за заказами и сообщениями',
                         markAllRead: '✅ Отметить всё прочитанным',
-                        newNotifications: 'У вас {count} новое уведомление{plural}! Нажмите здесь, чтобы просмотреть.',
                         myOrders: 'Мои заказы',
                         trackingTitle: 'Отслеживание заказа',
                         downloadsTitle: 'Загрузки',
@@ -2449,7 +2402,6 @@
                         notifTitle: '通知',
                         notifSubtitle: '及时了解您的订单和消息',
                         markAllRead: '✅ 全部标为已读',
-                        newNotifications: '您有 {count} 个新通知{plural}！点击此处查看。',
                         myOrders: '我的订单',
                         trackingTitle: '订单追踪',
                         downloadsTitle: '下载',
@@ -2477,7 +2429,6 @@
                         notifTitle: 'الإشعارات',
                         notifSubtitle: 'ابقَ على اطلاع بطلباتك ورسائلك',
                         markAllRead: '✅ تحديد الكل كمقروء',
-                        newNotifications: 'لديك {count} إشعار{plural} جديد{plural}! انقر هنا لعرضها.',
                         myOrders: 'طلباتي',
                         trackingTitle: 'تتبع الطلب',
                         downloadsTitle: 'التنزيلات',
