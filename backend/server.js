@@ -4234,8 +4234,8 @@ app.put('/api/products/:id', authenticateStaff, requireStaffPermission('products
     }
 });
 
-// Delete product (no authentication required)
-app.delete('/api/products/:id', (req, res) => {
+// Delete product (admin/editor with permission)
+app.delete('/api/products/:id', authenticateStaff, requireStaffPermission('products'), (req, res) => {
     const { id } = req.params;
 
     try {
@@ -4248,6 +4248,7 @@ app.delete('/api/products/:id', (req, res) => {
         }
 
         if (writeAllProducts(filtered)) {
+            logAdminAction('delete_product', { productId: id, title: removed?.title }, req.adminUser || 'admin');
             res.json({ success: true, message: 'Product deleted successfully', product: removed, products: filtered });
         } else {
             res.status(500).json({ success: false, message: 'Failed to delete product' });

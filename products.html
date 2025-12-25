@@ -1045,8 +1045,8 @@
         }
 
         function deleteProduct(id) {
-            alert('DELETE BUTTON CLICKED! ID: ' + id); // Simple test alert
             console.log('🗑️ DELETE BUTTON CLICKED! ID:', id);
+            if (!refreshAuthIfNeeded()) return;
 
             if (confirm('Are you sure you want to delete this product?')) {
                 // Debug: Log authentication details
@@ -1066,15 +1066,9 @@
                 .then(response => {
                     console.log('📥 Response Status:', response.status);
                     console.log('📥 Response Headers:', Object.fromEntries(response.headers.entries()));
-                    if (response.status === 401) {
-                        alert('Your session has expired. Please login again.');
-                        window.location.href = 'admin.html';
-                        return;
-                    }
                     return response.json();
                 })
                 .then(data => {
-                    if (!data) return; // If redirected, data is undefined
                     console.log('📋 Response Data:', data);
                     if (data.success) {
                         alert('Product deleted successfully!');
