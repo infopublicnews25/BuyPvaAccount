@@ -608,6 +608,11 @@
             color: white;
         }
 
+        .badge-support {
+            background: #28a745;
+            color: white;
+        }
+
         .badge-system {
             background: #00f2fe;
             color: white;
@@ -893,6 +898,20 @@
                 box-shadow: 0 4px 8px rgba(220, 53, 69, 0.5);
             }
         }
+
+        .notification-icons {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 8px;
+            min-height: 20px;
+        }
+
+        .notification-icon {
+            font-size: 16px;
+            opacity: 0.8;
+            animation: pulse-red 1.5s infinite;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="config.js"></script>
@@ -926,6 +945,7 @@
                 </div>
 
                 <div class="sidebar-menu">
+                    <div id="notificationIcons" class="notification-icons"></div>
                     <button class="sidebar-menu-item" onclick="showTab('dashboard')">
                         🏠 Dashboard
                     </button>
@@ -1608,6 +1628,35 @@
                 });
             });
 
+            // Generate support ticket notifications for unread admin replies
+            const supportNotifications = [];
+            const supportTickets = JSON.parse(localStorage.getItem('support_tickets') || '[]');
+            const userSupportTickets = supportTickets.filter(ticket => {
+                const ticketEmail = ticket.email || ticket.customerEmail;
+                return ticketEmail && emailLower && String(ticketEmail).toLowerCase() === emailLower;
+            });
+
+            userSupportTickets.forEach(ticket => {
+                if (ticket.replies && Array.isArray(ticket.replies)) {
+                    const unreadReplies = ticket.replies.filter(reply => 
+                        reply.from !== 'customer' && reply.from !== ticket.email && !reply.read
+                    );
+                    
+                    if (unreadReplies.length > 0) {
+                        const latestReply = unreadReplies[unreadReplies.length - 1];
+                        supportNotifications.push({
+                            id: `support-${ticket.id}-reply-${latestReply.timestamp || Date.now()}`,
+                            icon: '🎫',
+                            title: `Support Ticket Reply`,
+                            message: `New reply on ticket #${ticket.id}: ${latestReply.message.substring(0, 100)}${latestReply.message.length > 100 ? '...' : ''}`,
+                            date: latestReply.timestamp || ticket.lastUpdated || new Date().toISOString(),
+                            type: 'support',
+                            ticketId: ticket.id
+                        });
+                    }
+                }
+            });
+
             // Combine all notifications
             const allNotifications = [
                 ...userAdminNotifs.map(n => ({
@@ -1620,7 +1669,8 @@
                     read: n.read || false
                 })),
                 ...historyNotifications,
-                ...orderNotifications
+                ...orderNotifications,
+                ...supportNotifications
             ];
 
             // Get deleted notifications for this user
@@ -1666,6 +1716,30 @@
                 indicator.style.display = unreadCount > 0 ? 'block' : 'none';
             }
 
+            // Update notification icons above the button
+            const iconsContainer = document.getElementById('notificationIcons');
+            if (iconsContainer) {
+                const unreadNotifications = visibleNotifications.filter(n => !readNotifications.includes(n.id));
+                const iconTypes = {};
+                
+                unreadNotifications.forEach(notif => {
+                    if (notif.type === 'order') {
+                        iconTypes.order = (iconTypes.order || 0) + 1;
+                    } else if (notif.type === 'admin') {
+                        iconTypes.admin = (iconTypes.admin || 0) + 1;
+                    } else if (notif.type === 'support') {
+                        iconTypes.support = (iconTypes.support || 0) + 1;
+                    }
+                });
+                
+                let iconsHTML = '';
+                if (iconTypes.order) iconsHTML += '<span class="notification-icon">📦</span>';
+                if (iconTypes.admin) iconsHTML += '<span class="notification-icon">📢</span>';
+                if (iconTypes.support) iconsHTML += '<span class="notification-icon">🎫</span>';
+                
+                iconsContainer.innerHTML = iconsHTML;
+            }
+
             const notificationsHTML = visibleNotifications.map(notif => {
                 const isRead = readNotifications.includes(notif.id);
                 let badgeClass = 'badge-system';
@@ -1677,6 +1751,9 @@
                 } else if (notif.type === 'order') {
                     badgeClass = 'badge-order';
                     badgeText = 'Order Update';
+                } else if (notif.type === 'support') {
+                    badgeClass = 'badge-support';
+                    badgeText = 'Support';
                 }
 
                 return `<div class="notification-item ${isRead ? 'read' : 'unread'}" onclick="markAsRead(this, '${notif.id}')">
@@ -1694,6 +1771,10 @@
                                 </button>
                                 <button class="notif-action-btn secondary" onclick="event.stopPropagation(); showTab('orders')">
                                     📋 View Orders
+                                </button>
+                                ` : notif.ticketId ? `
+                                <button class="notif-action-btn primary" onclick="event.stopPropagation(); window.open('support-ticket.html?token=${encodeURIComponent(btoa(JSON.stringify({email: userEmail, ticketId: notif.ticketId})))}', '_blank')">
+                                    🎫 View Ticket
                                 </button>
                                 ` : ''}
                                 <span class="notification-time">${getTimeAgo(notif.date)}</span>
@@ -1742,6 +1823,9 @@
                 if (indicator && (parseInt(badge.textContent) || 0) <= 0) {
                     indicator.style.display = 'none';
                 }
+
+                // Refresh icons and everything
+                loadNotifications();
             }
         }
 
