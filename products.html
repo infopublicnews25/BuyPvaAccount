@@ -616,28 +616,8 @@
                 return false;
             }
 
-            try {
-                // Basic JWT validation - check if token has 3 parts
-                const parts = token.split('.');
-                if (parts.length !== 3) {
-                    console.warn('⚠️ Invalid token format');
-                    return false;
-                }
-
-                // Decode payload to check expiration
-                const payload = JSON.parse(atob(parts[1]));
-                const now = Date.now() / 1000;
-
-                if (payload.exp && payload.exp < now) {
-                    console.warn('⚠️ Token expired');
-                    return false;
-                }
-
-                return true;
-            } catch (e) {
-                console.warn('⚠️ Token validation error:', e);
-                return false;
-            }
+            // Token exists - let server handle expiration validation
+            return true;
         }
 
         function refreshAuthIfNeeded() {
