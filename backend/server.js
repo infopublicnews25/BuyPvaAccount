@@ -5037,6 +5037,42 @@ function getFileType(filename) {
     return 'other';
 }
 
+// Update marketplace help section
+app.post('/api/update-help-section', authenticateStaff, (req, res) => {
+    try {
+        const { title, label, linkText, linkUrl } = req.body;
+        
+        if (!title || !label || !linkText || !linkUrl) {
+            return res.status(400).json({ success: false, message: 'All fields are required' });
+        }
+        
+        // Read marketplace.html
+        const marketplacePath = path.join(__dirname, '..', 'marketplace.html');
+        let html = fs.readFileSync(marketplacePath, 'utf8');
+        
+        // Create the new help section HTML
+        const newHelpSection = `          <!-- Help Section -->
+          <div class="side">
+            <h3>${title}</h3>
+            <div class="muted">${label} <a href="${linkUrl}" style="color: #007bff;">${linkText}</a></div>
+          </div>`;
+        
+        // Replace the old help section
+        const oldHelpSectionRegex = /<!-- Help Section -->\s*<div class="side">\s*<h3>Need help\?<\/h3>\s*<div class="muted">CONTACTS: <a href="support\.html" style="color: #007bff;">support\.html<\/a><\/div>\s*<\/div>/;
+        html = html.replace(oldHelpSectionRegex, newHelpSection);
+        
+        // Write back to file
+        fs.writeFileSync(marketplacePath, html);
+        
+        logAdminAction('update_help_section', { title, label, linkText, linkUrl }, req.adminUser || 'admin');
+        
+        res.json({ success: true, message: 'Help section updated successfully' });
+    } catch (error) {
+        console.error('Error updating help section:', error);
+        res.status(500).json({ success: false, message: 'Failed to update help section' });
+    }
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log(`🚀 Password reset server running on http://localhost:${PORT}`);

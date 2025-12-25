@@ -244,6 +244,21 @@
                                 </button>
                             </div>
                         </div>
+
+                        <div class="page-card" data-editor-tool="help-section" onclick="openHelpSectionModal()" style="cursor: pointer;">
+                            <div class="page-icon" style="color: #e74c3c">
+                                <i class="fas fa-question-circle"></i>
+                            </div>
+                            <div class="page-info">
+                                <h4>Help Section</h4>
+                                <p>Manage marketplace help/support section</p>
+                            </div>
+                            <div class="page-actions">
+                                <button onclick="openHelpSectionModal(); event.stopPropagation();" class="view-btn" title="Manage Help Section">
+                                    <i class="fas fa-edit"></i> Manage
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -839,6 +854,49 @@
         </div>
     </div>
 
+    <!-- Help Section Manager Modal -->
+    <div id="help-section-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-question-circle"></i> Manage Help Section</h3>
+                <span class="close" onclick="closeModal('help-section-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Help Section Title:</label>
+                    <input type="text" id="helpSectionTitle" placeholder="Need help?" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 16px;">
+                    
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Contact Label:</label>
+                    <input type="text" id="helpSectionLabel" placeholder="CONTACTS:" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 16px;">
+                    
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Link Text:</label>
+                    <input type="text" id="helpSectionLinkText" placeholder="support.html" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 16px;">
+                    
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Link URL:</label>
+                    <input type="text" id="helpSectionLinkUrl" placeholder="support.html" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 16px;">
+                    
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Background Image (optional):</label>
+                    <input type="file" id="helpSectionImage" accept="image/*" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 16px;">
+                    
+                    <div id="helpSectionPreview" style="margin-top: 16px; padding: 16px; border: 1px solid #eee; border-radius: 8px; background: #f9f9f9;">
+                        <h4>Preview:</h4>
+                        <div style="margin-top: 8px; padding: 12px; background: white; border-radius: 4px; border: 1px solid #ddd;">
+                            <h3 id="previewTitle" style="margin: 0 0 8px 0; color: #333;">Need help?</h3>
+                            <div style="color: #666;">
+                                <span id="previewLabel">CONTACTS:</span> 
+                                <a id="previewLink" href="#" style="color: #007bff;">support.html</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="saveHelpSection()" class="primary">Save Changes</button>
+                <button onclick="closeModal('help-section-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Inventory View Modal -->
     <div id="inventory-view-modal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
@@ -1119,3 +1177,107 @@
     </div>
 
     <script src="dashboard-script.js?v=20251222b"></script>
+    
+    <script>
+        // Help Section Management Functions
+        function openHelpSectionModal() {
+            // Load current help section data
+            loadHelpSectionData();
+            document.getElementById('help-section-modal').style.display = 'block';
+        }
+
+        function loadHelpSectionData() {
+            // Load from localStorage or set defaults
+            const helpData = JSON.parse(localStorage.getItem('marketplace_help_section') || '{}');
+            
+            document.getElementById('helpSectionTitle').value = helpData.title || 'Need help?';
+            document.getElementById('helpSectionLabel').value = helpData.label || 'CONTACTS:';
+            document.getElementById('helpSectionLinkText').value = helpData.linkText || 'support.html';
+            document.getElementById('helpSectionLinkUrl').value = helpData.linkUrl || 'support.html';
+            
+            // Update preview
+            updateHelpSectionPreview();
+        }
+
+        function updateHelpSectionPreview() {
+            const title = document.getElementById('helpSectionTitle').value || 'Need help?';
+            const label = document.getElementById('helpSectionLabel').value || 'CONTACTS:';
+            const linkText = document.getElementById('helpSectionLinkText').value || 'support.html';
+            
+            document.getElementById('previewTitle').textContent = title;
+            document.getElementById('previewLabel').textContent = label;
+            document.getElementById('previewLink').textContent = linkText;
+            document.getElementById('previewLink').href = document.getElementById('helpSectionLinkUrl').value || '#';
+        }
+
+        // Add event listeners for live preview
+        document.addEventListener('DOMContentLoaded', function() {
+            ['helpSectionTitle', 'helpSectionLabel', 'helpSectionLinkText', 'helpSectionLinkUrl'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', updateHelpSectionPreview);
+                }
+            });
+        });
+
+        async function saveHelpSection() {
+            const helpData = {
+                title: document.getElementById('helpSectionTitle').value || 'Need help?',
+                label: document.getElementById('helpSectionLabel').value || 'CONTACTS:',
+                linkText: document.getElementById('helpSectionLinkText').value || 'support.html',
+                linkUrl: document.getElementById('helpSectionLinkUrl').value || 'support.html'
+            };
+
+            // Handle image upload if provided
+            const imageFile = document.getElementById('helpSectionImage').files[0];
+            if (imageFile) {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', imageFile);
+                    
+                    const uploadResponse = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken') || localStorage.getItem('staffToken')}`
+                        },
+                        body: formData
+                    });
+                    
+                    if (uploadResponse.ok) {
+                        const uploadData = await uploadResponse.json();
+                        helpData.image = uploadData.url;
+                    }
+                } catch (error) {
+                    console.error('Image upload failed:', error);
+                    alert('Image upload failed, but other settings will be saved.');
+                }
+            }
+
+            try {
+                // Save to server
+                const response = await fetch('/api/update-help-section', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken') || localStorage.getItem('staffToken')}`
+                    },
+                    body: JSON.stringify(helpData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Save to localStorage as backup
+                    localStorage.setItem('marketplace_help_section', JSON.stringify(helpData));
+                    
+                    alert('Help section updated successfully!');
+                    closeModal('help-section-modal');
+                } else {
+                    alert('Failed to update help section: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error saving help section:', error);
+                alert('Error saving help section. Please try again.');
+            }
+        }
+    </script>
