@@ -606,13 +606,27 @@
 
         // Notification functions
         function loadNotifications() {
-            const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
-
-            // Load only account requests
-            loadAccountRequests(requests.filter(r => !r.category || !r.subject));
-
-            // Update notification counts
-            updateNotificationCounts();
+            // Try to fetch from backend API first
+            fetch('/api/account-requests')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.success && Array.isArray(data.requests)) {
+                        // Show only account requests (not support tickets)
+                        loadAccountRequests(data.requests.filter(r => !r.category || !r.subject));
+                        updateNotificationCounts(data.requests);
+                    } else {
+                        // Fallback to localStorage if API fails
+                        const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+                        loadAccountRequests(requests.filter(r => !r.category || !r.subject));
+                        updateNotificationCounts(requests);
+                    }
+                })
+                .catch(() => {
+                    // Fallback to localStorage if API fails
+                    const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+                    loadAccountRequests(requests.filter(r => !r.category || !r.subject));
+                    updateNotificationCounts(requests);
+                });
         }
 
         function loadAccountRequests(requests) {
@@ -742,8 +756,11 @@
             }
         }
 
-        function updateNotificationCounts() {
-            const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+        function updateNotificationCounts(requests) {
+            // requests: array of all account requests (from API or localStorage)
+            if (!Array.isArray(requests)) {
+                requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+            }
             const accountRequests = requests.filter(r => !r.category || !r.subject);
 
             // Update account request filter counts
