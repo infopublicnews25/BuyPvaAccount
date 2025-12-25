@@ -552,6 +552,7 @@
 
     <script>
         // Configuration
+        const AUTH_KEY = 'admin_auth_token';
         const REQUESTS_KEY = 'account_requests';
         const SECURE_LINKS_KEY = 'secure_ticket_links';
 
@@ -589,8 +590,56 @@
         function getPriorityIndicator(priority) {
             const priorityClass = priority.toLowerCase();
             return `<span class="priority-indicator ${priorityClass}"></span>${priority}`;
-        }        // Support ticket functions
-        function loadSupportTickets() {
+        }
+
+        // Support ticket functions
+        function loadNotifications() {
+            // Try to fetch from backend API first
+            const token = localStorage.getItem(AUTH_KEY);
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            fetch('/api/account-requests', { headers })
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.success && Array.isArray(data.requests)) {
+                        // Show support tickets from API data
+                        loadSupportTicketsFromAPI(data.requests);
+                        updateTicketCounts(data.requests);
+                    } else {
+                        // Fallback to localStorage if API fails
+                        loadSupportTickets();
+                        updateTicketCounts();
+                    }
+                })
+                .catch(() => {
+                    // Fallback to localStorage if API fails
+                    loadSupportTickets();
+                    updateTicketCounts();
+                });
+        }
+
+        function loadSupportTicketsFromAPI(requests) {
+            const supportTickets = requests.filter(r => r.category && r.subject);
+
+            const container = document.getElementById('supportTicketsList');
+            container.innerHTML = '';
+
+            let filteredTickets = supportTickets;
+            if (currentFilter !== 'all') {
+                filteredTickets = supportTickets.filter(r => r.status === currentFilter);
+            }
+
+            if (filteredTickets.length === 0) {
+                container.innerHTML = '<div class="no-notifications">No support tickets found in this category</div>';
+                return;
+            }
+
+            filteredTickets.forEach((ticket, index) => {
+                const div = createSupportTicketItem(ticket, index);
+                container.appendChild(div);
+            });
+
+            updateTicketCounts(requests);
+        }
             const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
             const supportTickets = requests.filter(r => r.category && r.subject);
 
@@ -613,12 +662,16 @@
                 container.appendChild(div);
             });
 
-            updateTicketCounts();
+            updateTicketCounts(requests);
         }
 
         function createSupportTicketItem(ticket, index) {
             const div = document.createElement('div');
             div.className = `notification-item ${ticket.status || 'new'}`;
+            const rid = ticket && (ticket.id || ticket.requestId) ? String(ticket.id || ticket.requestId) : '';
+            if (rid) {
+                div.dataset.requestId = rid;
+            }
 
             const date = new Date(ticket.timestamp);
             const formattedDate = date.toLocaleString();
@@ -670,19 +723,19 @@
                             👁️ View Details
                         </a>
                         <button class="btn ${ticket.status === 'new' ? 'btn-primary' : 'btn-outline-primary'}"
-                            onclick="event.stopPropagation(); updateTicketStatus(${index}, 'new')"
+                            onclick="updateTicketStatus(event, 'new')"
                             ${ticket.status === 'new' ? 'disabled' : ''}>New</button>
                         <button class="btn ${ticket.status === 'read' ? 'btn-info' : 'btn-outline-info'}"
-                            onclick="event.stopPropagation(); updateTicketStatus(${index}, 'read')"
+                            onclick="updateTicketStatus(event, 'read')"
                             ${ticket.status === 'read' ? 'disabled' : ''}>Read</button>
                         <button class="btn ${ticket.status === 'processing' ? 'btn-warning' : 'btn-outline-warning'}"
-                            onclick="event.stopPropagation(); updateTicketStatus(${index}, 'processing')"
+                            onclick="updateTicketStatus(event, 'processing')"
                             ${ticket.status === 'processing' ? 'disabled' : ''}>Processing</button>
                         <button class="btn ${ticket.status === 'complete' ? 'btn-success' : 'btn-outline-success'}"
-                            onclick="event.stopPropagation(); updateTicketStatus(${index}, 'complete')"
+                            onclick="updateTicketStatus(event, 'complete')"
                             ${ticket.status === 'complete' ? 'disabled' : ''}>Complete</button>
                         <button class="btn ${ticket.status === 'delete' ? 'btn-danger' : 'btn-outline-danger'}"
-                            onclick="event.stopPropagation(); updateTicketStatus(${index}, 'delete')"
+                            onclick="updateTicketStatus(event, 'delete')"
                             ${ticket.status === 'delete' ? 'disabled' : ''}>Delete</button>
                     </div>
                 </div>
@@ -704,32 +757,64 @@
                 btn.classList.toggle('active', isActive);
             });
 
-            loadSupportTickets();
+            loadNotifications();
         }
 
-        function updateTicketStatus(index, newStatus) {
-            const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
-            const supportTickets = requests.filter(r => r.category && r.subject);
+        function updateTicketStatus(event, newStatus) {
+            event.stopPropagation();
+            
+            // Get the request ID from the clicked element's data attribute
+            const button = event.target;
+            const notificationItem = button.closest('.notification-item');
+            const requestId = notificationItem.getAttribute('data-request-id');
 
-            if (index >= 0 && index < supportTickets.length) {
-                // Find the actual index in the main requests array
-                const ticket = supportTickets[index];
-                const actualIndex = requests.findIndex(r => r === ticket);
-
-                if (actualIndex !== -1) {
-                    requests[actualIndex].status = newStatus;
-                    // If it's being deleted, remove it
-                    if (newStatus === 'delete' && confirm('Are you sure you want to delete this support ticket?')) {
-                        requests.splice(actualIndex, 1);
-                    }
-                    localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
-                    loadSupportTickets();
-                }
+            if (!requestId) {
+                console.error('Request ID not found');
+                return;
             }
+
+            // If deleting, confirm first
+            if (newStatus === 'delete' && !confirm('Are you sure you want to delete this support ticket?')) {
+                return;
+            }
+
+            // Get admin token
+            const token = localStorage.getItem(AUTH_KEY);
+            if (!token) {
+                alert('Admin authentication required. Please login again.');
+                window.location.href = 'admin.html';
+                return;
+            }
+
+            // Make API call to update status
+            fetch(`/api/account-requests/${requestId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload notifications to reflect changes
+                    loadNotifications();
+                } else {
+                    alert('Failed to update ticket: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                console.error('Error updating ticket:', err);
+                alert('Error updating ticket. Please try again.');
+            });
         }
 
-        function updateTicketCounts() {
-            const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+        function updateTicketCounts(requests) {
+            // requests: array of all account requests (from API or localStorage)
+            if (!Array.isArray(requests)) {
+                requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+            }
             const supportTickets = requests.filter(r => r.category && r.subject);
 
             const counts = {
@@ -758,7 +843,7 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            loadSupportTickets();
+            loadNotifications();
         });
     </script>
 </body>
