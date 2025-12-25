@@ -784,33 +784,67 @@
             const token = getTicketToken();
             if (!token) return;
 
-            const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
-            const trackingId = secureLinks[token];
+            // Check if user is admin (has admin token)
+            const adminToken = localStorage.getItem(AUTH_KEY);
 
-            if (!trackingId) return;
+            if (adminToken) {
+                // Admin: update via API
+                fetch(`${CONFIG.API}/ticket/${token}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({ status: 'complete' })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update localStorage for consistency
+                        updateLocalTicketStatus(token, 'complete');
+                        // Send completion email
+                        sendTicketCompletionEmail(getCurrentTicket());
+                        // Update UI
+                        updateTicketUI('complete');
+                        showStatusMessage('Ticket marked as solved! Email sent to buyer.', 'success');
+                    } else {
+                        showStatusMessage('Failed to update ticket status.', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error updating ticket:', err);
+                    showStatusMessage('Error updating ticket. Please try again.', 'error');
+                });
+            } else {
+                // User: update localStorage only (legacy behavior)
+                const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
+                const trackingId = secureLinks[token];
 
-            const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
-            const ticketIndex = requests.findIndex(r => r.trackingId === trackingId);
+                if (!trackingId) return;
 
-            if (ticketIndex !== -1) {
-                const ticket = requests[ticketIndex];
-                ticket.status = 'complete';
-                ticket.completedDate = new Date().toISOString();
-                localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+                const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+                const ticketIndex = requests.findIndex(r => r.trackingId === trackingId);
 
-                // Send completion email to buyer
-                sendTicketCompletionEmail(ticket);
+                if (ticketIndex !== -1) {
+                    const ticket = requests[ticketIndex];
+                    ticket.status = 'complete';
+                    ticket.completedDate = new Date().toISOString();
+                    localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
 
-                // Update the UI
-                document.getElementById('ticketStatus').textContent = 'complete';
-                document.getElementById('ticketStatus').className = 'status-badge complete';
-                document.getElementById('updatedDate').textContent = new Date().toLocaleString();
+                    // Send completion email to buyer
+                    sendTicketCompletionEmail(ticket);
 
-                // Update button visibility
-                updateSolveButtons('complete');
+                    // Update the UI
+                    document.getElementById('ticketStatus').textContent = 'complete';
+                    document.getElementById('ticketStatus').className = 'status-badge complete';
+                    document.getElementById('updatedDate').textContent = new Date().toLocaleString();
 
-                // Show success message
-                showStatusMessage('Ticket marked as solved! Email sent to buyer.', 'success');
+                    // Update button visibility
+                    updateSolveButtons('complete');
+
+                    // Show success message
+                    showStatusMessage('Ticket marked as solved! Email sent to buyer.', 'success');
+                }
             }
         }
 
@@ -1068,6 +1102,45 @@
         // Clear reply form
         function clearReplyForm() {
             document.getElementById('replyMessage').value = '';
+        }
+
+        // Helper function to update local ticket status
+        function updateLocalTicketStatus(token, status) {
+            const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
+            const trackingId = secureLinks[token];
+
+            if (trackingId) {
+                const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+                const ticketIndex = requests.findIndex(r => r.trackingId === trackingId);
+                if (ticketIndex !== -1) {
+                    requests[ticketIndex].status = status;
+                    requests[ticketIndex].completedDate = new Date().toISOString();
+                    localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
+                }
+            }
+        }
+
+        // Helper function to get current ticket data
+        function getCurrentTicket() {
+            const token = getTicketToken();
+            if (!token) return null;
+
+            const secureLinks = JSON.parse(localStorage.getItem(SECURE_LINKS_KEY) || '{}');
+            const trackingId = secureLinks[token];
+
+            if (trackingId) {
+                const requests = JSON.parse(localStorage.getItem(REQUESTS_KEY) || '[]');
+                return requests.find(r => r.trackingId === trackingId) || null;
+            }
+            return null;
+        }
+
+        // Helper function to update ticket UI
+        function updateTicketUI(status) {
+            document.getElementById('ticketStatus').textContent = status;
+            document.getElementById('ticketStatus').className = 'status-badge ' + status;
+            document.getElementById('updatedDate').textContent = new Date().toLocaleString();
+            updateSolveButtons(status);
         }
 
         // Initialize reply form event listener

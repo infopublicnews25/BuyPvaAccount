@@ -3626,6 +3626,43 @@ app.get('/api/tickets', authenticateAdmin, (req, res) => {
     }
 });
 
+// Admin: update ticket status
+app.put('/api/ticket/:token/status', authenticateAdmin, (req, res) => {
+    try {
+        const { token } = req.params;
+        const { status } = req.body;
+
+        if (!token || !status) {
+            return res.status(400).json({ success: false, message: 'Token and status are required' });
+        }
+
+        const tickets = readJsonArrayFile(TICKETS_FILE);
+        const ticketIndex = tickets.findIndex(t => t && (t.token === token || t.trackingId === token));
+
+        if (ticketIndex === -1) {
+            return res.status(404).json({ success: false, message: 'Ticket not found' });
+        }
+
+        // If deleting, remove the ticket
+        if (status === 'delete') {
+            tickets.splice(ticketIndex, 1);
+        } else {
+            // Update status
+            tickets[ticketIndex].status = status;
+            tickets[ticketIndex].updatedAt = new Date().toISOString();
+        }
+
+        if (!writeJsonArrayFile(TICKETS_FILE, tickets)) {
+            return res.status(500).json({ success: false, message: 'Failed to update ticket' });
+        }
+
+        return res.json({ success: true, message: 'Ticket updated successfully' });
+    } catch (err) {
+        console.error('Error updating ticket:', err);
+        return res.status(500).json({ success: false, message: 'Failed to update ticket' });
+    }
+});
+
 // Endpoint to reset a user's password (updates registered_users.json)
 app.post('/api/reset-password', async (req, res) => {
     try {
