@@ -1067,9 +1067,22 @@
                 <span class="close" onclick="closeModal('bulk-products-modal')">&times;</span>
             </div>
             <div class="modal-body">
+                <div style="margin-bottom: 16px; padding: 16px; background: #e8f4fd; border: 1px solid #b8daff; border-radius: 8px;">
+                    <h4 style="margin: 0 0 8px 0; color: #004085;"><i class="fas fa-file-excel"></i> Excel Template Available</h4>
+                    <p style="margin: 0 0 12px 0; color: #004085; font-size: 14px;">
+                        Download our ready-to-use Excel template with sample data for easy bulk upload.
+                    </p>
+                    <a href="bulk_products_excel_template.csv" download style="background: #007bff; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; display: inline-block;">
+                        <i class="fas fa-download"></i> Download Excel Template
+                    </a>
+                    <a href="EXCEL_BULK_UPLOAD_GUIDE.md" target="_blank" style="background: #28a745; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; display: inline-block; margin-left: 8px;">
+                        <i class="fas fa-question-circle"></i> View Guide
+                    </a>
+                </div>
+
                 <div style="margin-bottom: 12px; color: #666; font-size: 13px;">
-                    Paste a JSON array (recommended) or CSV with columns like: <strong>title, category, price, quantity, image, note</strong>.
-                    You may also include: <strong>title_en/title_ru/title_zh/title_ar</strong> and <strong>note_en/note_ru/note_zh/note_ar</strong>.
+                    <strong>Required columns:</strong> title, category, price, quantity, image<br>
+                    <strong>Optional:</strong> offerPrice, title_en/note_en, title_ru/note_ru, title_zh/note_zh, title_ar/note_ar, note, id
                 </div>
 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">

@@ -4280,7 +4280,160 @@ app.put('/api/products', authenticateStaff, requireStaffPermission('products'), 
     }
 });
 
-// Get all product categories (public endpoint)
+// Bulk upload products from CSV (admin/editor with permission)
+app.post('/api/products/bulk-upload', authenticateStaff, requireStaffPermission('products'), upload.single('csvFile'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No CSV file uploaded' });
+        }
+
+        const csvContent = req.file.buffer.toString('utf8');
+        const lines = csvContent.split('\n').filter(line => line.trim());
+
+        if (lines.length < 2) {
+            return res.status(400).json({ success: false, message: 'CSV file must contain at least header and one data row' });
+        }
+
+        // Parse header
+        const headers = parseCSVLine(lines[0]);
+        const requiredFields = ['title', 'category', 'price', 'quantity', 'image'];
+
+        // Check required fields
+        for (const field of requiredFields) {
+            if (!headers.includes(field)) {
+                return res.status(400).json({ success: false, message: `Required field '${field}' is missing from CSV headers` });
+            }
+        }
+
+        // Parse products
+        const products = [];
+        const errors = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            try {
+                const values = parseCSVLine(lines[i]);
+                if (values.length === 0) continue; // Skip empty lines
+
+                const product = {};
+
+                headers.forEach((header, index) => {
+                    let value = values[index] || '';
+
+                    // Clean up quotes
+                    if (value.startsWith('"') && value.endsWith('"')) {
+                        value = value.slice(1, -1);
+                    }
+
+                    // Convert to appropriate types
+                    if (header === 'price' || header === 'offerPrice') {
+                        value = value ? parseFloat(value) : null;
+                    } else if (header === 'quantity') {
+                        value = value ? parseInt(value) : 0;
+                    } else if (header === 'id' && !value) {
+                        // Generate ID if not provided
+                        value = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+                    }
+
+                    product[header] = value;
+                });
+
+                // Validate required fields
+                for (const field of requiredFields) {
+                    if (!product[field] && product[field] !== 0) {
+                        errors.push(`Row ${i + 1}: Missing required field '${field}'`);
+                        continue;
+                    }
+                }
+
+                // Validate price and quantity
+                if (product.price <= 0) {
+                    errors.push(`Row ${i + 1}: Price must be greater than 0`);
+                    continue;
+                }
+
+                if (product.quantity < 0) {
+                    errors.push(`Row ${i + 1}: Quantity cannot be negative`);
+                    continue;
+                }
+
+                products.push(product);
+
+            } catch (error) {
+                errors.push(`Row ${i + 1}: Failed to parse - ${error.message}`);
+            }
+        }
+
+        if (errors.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'CSV validation failed',
+                errors: errors.slice(0, 10), // Limit errors shown
+                totalErrors: errors.length
+            });
+        }
+
+        if (products.length === 0) {
+            return res.status(400).json({ success: false, message: 'No valid products found in CSV' });
+        }
+
+        // Read existing products and merge
+        const existingProducts = readAllProducts();
+        const mergedProducts = [...existingProducts, ...products];
+
+        // Save all products
+        if (writeAllProducts(mergedProducts)) {
+            logAdminAction('bulk_upload_products_csv', {
+                count: products.length,
+                fileName: req.file.originalname
+            }, req.adminUser || 'admin');
+
+            res.json({
+                success: true,
+                message: `Successfully uploaded ${products.length} products`,
+                products: products
+            });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to save products to database' });
+        }
+
+    } catch (error) {
+        console.error('Error processing CSV upload:', error);
+        res.status(500).json({ success: false, message: 'Failed to process CSV file' });
+    }
+});
+
+// Helper function to parse CSV line (handles quoted values with commas)
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                // Escaped quote
+                current += '"';
+                i++; // Skip next quote
+            } else {
+                // Toggle quote mode
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            // Field separator
+            result.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+
+    // Add last field
+    result.push(current.trim());
+
+    return result;
+}
 app.get('/api/categories', (req, res) => {
     try {
         const categories = readAllCategories();
