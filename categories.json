@@ -3,78 +3,78 @@
     "name": "GMAIL",
     "description": "Google Gmail accounts",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
+    "updatedAt": "2025-12-27T06:44:38.390Z"
   },
   {
     "name": "EMAIL",
     "description": "Category for Email products and services",
     "createdAt": "2025-12-22T12:05:39.904Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
+    "updatedAt": "2025-12-27T06:44:38.390Z"
   },
   {
-    "name": "INSTAGRAM",
-    "description": "Instagram social media accounts",
-    "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
-  },
-  {
-    "name": "TWITTER",
-    "description": "Twitter/X social media accounts",
-    "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
+    "name": "X",
+    "description": "Category for X products and services",
+    "createdAt": "2025-12-26T12:10:28.329Z",
+    "updatedAt": "2025-12-27T06:44:38.390Z"
   },
   {
     "name": "LINKEDIN",
     "description": "LinkedIn professional networking accounts",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
-  },
-  {
-    "name": "YOUTUBE",
-    "description": "YouTube video platform accounts",
-    "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
+    "updatedAt": "2025-12-27T06:44:38.390Z"
   },
   {
     "name": "TIKTOK",
     "description": "TikTok short video platform accounts",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
+    "updatedAt": "2025-12-27T06:44:38.390Z"
   },
   {
-    "name": "TELEGRAM",
-    "description": "Telegram messaging platform accounts",
-    "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
+    "name": "REDDIT",
+    "description": "Category for Reddit products and services",
+    "createdAt": "2025-12-27T06:42:45.226Z",
+    "updatedAt": "2025-12-27T06:44:38.390Z"
+  },
+  {
+    "name": "DISCORD",
+    "description": "Category for Discord products and services",
+    "createdAt": "2025-12-27T06:43:39.915Z",
+    "updatedAt": "2025-12-27T06:44:38.390Z"
+  },
+  {
+    "name": "VOIP",
+    "description": "Category for VoIP products and services",
+    "createdAt": "2025-12-27T06:43:46.584Z",
+    "updatedAt": "2025-12-27T06:44:38.390Z"
+  },
+  {
+    "name": "PINTEREST",
+    "description": "Category for Pinterest products and services",
+    "createdAt": "2025-12-27T06:43:53.230Z",
+    "updatedAt": "2025-12-27T06:44:38.390Z"
   },
   {
     "name": "OTHER",
     "description": "Other miscellaneous accounts and services",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
-  },
-  {
-    "name": "YAHOO",
-    "description": "Category for YAHOO products and services",
-    "createdAt": "2025-12-08T11:11:20.928Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
-  },
-  {
-    "name": "TENDER",
-    "description": "Category for TENDER products and services",
-    "createdAt": "2025-12-08T11:16:23.337Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
-  },
-  {
-    "name": "OPEN",
-    "description": "Category for OPEN products and services",
-    "createdAt": "2025-12-08T11:23:19.336Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
+    "updatedAt": "2025-12-27T06:44:38.390Z"
   },
   {
     "name": "FACEBOOK",
     "description": "Facebook social media accounts",
     "createdAt": "2025-12-08T00:00:00.000Z",
-    "updatedAt": "2025-12-22T12:17:43.020Z"
+    "updatedAt": "2025-12-27T06:44:38.390Z"
+  },
+  {
+    "name": "YOUTUBE",
+    "description": "YouTube video platform accounts",
+    "createdAt": "2025-12-08T00:00:00.000Z",
+    "updatedAt": "2025-12-27T06:44:38.390Z"
+  },
+  {
+    "name": "INSTAGRAM",
+    "description": "Instagram social media accounts",
+    "createdAt": "2025-12-08T00:00:00.000Z",
+    "updatedAt": "2025-12-27T06:44:38.390Z"
   }
 ]

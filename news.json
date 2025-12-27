@@ -1,0 +1,41 @@
+[
+  {
+    "id": "default-1",
+    "date": "🚨 Warranty Alert",
+    "content": "Claims are only valid for 24 hours post-purchase. For specific warranty periods of each account, please refer to our Terms and Conditions. Don't wait inactive accounts may be closed by the service provider.",
+    "date_en": "🚨 Warranty Alert",
+    "content_en": "Claims are only valid for 24 hours post-purchase. For specific warranty periods of each account, please refer to our Terms and Conditions. Don't wait inactive accounts may be closed by the service provider.",
+    "date_ru": "🚨 Гарантийное предупреждение",
+    "content_ru": "Претензии действительны только в течение 24 часов после покупки. Для конкретных сроков гарантии каждой учетной записи, пожалуйста, обратитесь к нашим Условиям и положениям. Не ждите - неактивные учетные записи могут быть закрыты поставщиком услуг.",
+    "date_zh": "🚨 保修警报",
+    "content_zh": "索赔仅在购买后24小时内有效。有关每个账户的具体保修期，请参考我们的条款和条件。不要等待 - 不活跃的账户可能会被服务提供商关闭。",
+    "date_ar": "🚨 تنبيه الضمان",
+    "content_ar": "الادعاءات صالحة فقط لمدة 24 ساعة بعد الشراء. لفترات الضمان المحددة لكل حساب، يرجى الرجوع إلى شروطنا وأحكامنا. لا تنتظر - قد يتم إغلاق الحسابات غير النشطة من قبل مزود الخدمة."
+  },
+  {
+    "id": "default-2",
+    "date": "December 2024",
+    "content": "USDT (BEP20) Now Available! 💳 Pay with minimal fees using the BEP20 network. Ideal for buying small batches of accounts easily. We continue to improve to ensure your experience is as comfortable as possible.",
+    "date_en": "December 2024",
+    "content_en": "USDT (BEP20) Now Available! 💳 Pay with minimal fees using the BEP20 network. Ideal for buying small batches of accounts easily. We continue to improve to ensure your experience is as comfortable as possible.",
+    "date_ru": "Декабрь 2024",
+    "content_ru": "USDT (BEP20) Теперь доступен! 💳 Оплачивайте с минимальными комиссиями с помощью сети BEP20. Идеально для легкой покупки небольших партий аккаунтов. Мы продолжаем улучшать, чтобы обеспечить ваш комфорт.",
+    "date_zh": "2024年12月",
+    "content_zh": "USDT (BEP20) 现已可用！💳 使用 BEP20 网络以最低费用支付。非常适合轻松购买小批量账户。我们继续改进以确保您的体验尽可能舒适。",
+    "date_ar": "ديسمبر 2024",
+    "content_ar": "USDT (BEP20) متاح الآن! 💳 ادفع برسوم قليلة باستخدام شبكة BEP20. مثالي لشراء دفعات صغيرة من الحسابات بسهولة. نحن نواصل التحسين لضمان أن تكون تجربتك مريحة قدر الإمكان."
+  },
+  {
+    "id": "default-3",
+    "date": "November 2024",
+    "content": "Good New! Now you can pay for accounts with PayPal",
+    "date_en": "November 2024",
+    "content_en": "Good New! Now you can pay for accounts with PayPal",
+    "date_ru": "Ноябрь 2024",
+    "content_ru": "Хорошие новости! Теперь вы можете оплачивать аккаунты через PayPal",
+    "date_zh": "2024年11月",
+    "content_zh": "好消息！现在您可以使用 PayPal 支付账户",
+    "date_ar": "نوفمبر 2024",
+    "content_ar": "أخبار جيدة! الآن يمكنك دفع ثمن الحسابات عبر PayPal"
+  }
+]

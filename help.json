@@ -1,0 +1,27 @@
+[
+  {
+    "id": "help-1",
+    "title": "How to Buy Accounts",
+    "content": "<p>To purchase accounts, follow these simple steps:</p><ol><li>Browse our available products in the marketplace</li><li>Select the quantity you need</li><li>Click 'Add to Cart' and proceed to checkout</li><li>Choose your preferred payment method</li><li>Complete the secure payment process</li></ol><p><strong>💡 Pro Tip:</strong> Use our bulk pricing for better rates on large orders!</p>"
+  },
+  {
+    "id": "help-2",
+    "title": "Payment Methods",
+    "content": "<p>We support multiple secure payment options:</p><ul><li><strong>PayPal</strong> - Instant transactions with buyer protection</li><li><strong>USDT (BEP20)</strong> - Minimal fees, fast crypto payments</li><li><strong>Other Cryptocurrencies</strong> - BTC, ETH, and more accepted</li></ul><p>All payments are processed securely and instantly. <a href='https://www.paypal.com' target='_blank'>Learn more about PayPal</a></p><p><em>🔒 Your payment information is always encrypted and secure.</em></p>"
+  },
+  {
+    "id": "help-3",
+    "title": "Account Warranty",
+    "content": "<h3>Warranty Coverage</h3><p>All accounts come with comprehensive warranty coverage. Here's what you need to know:</p><ul><li>Claims must be submitted within <strong>24 hours</strong> of purchase</li><li>Warranty periods vary by account type</li><li>Check product descriptions for specific warranty terms</li><li>Invalid/banned accounts will be replaced</li></ul><p><strong>⚠️ Important:</strong> Warranty does not cover accounts closed due to policy violations or platform changes.</p><img src='/images/warranty-icon.png' alt='Warranty protection' style='max-width: 100px; float: right; margin: 0 0 10px 10px;'>"
+  },
+  {
+    "id": "help-4",
+    "title": "Delivery Process",
+    "content": "<p>After successful payment, your accounts are delivered instantly:</p><div style='background: #f0f8ff; padding: 15px; border-radius: 8px; margin: 10px 0;'><strong>📧 Email Delivery:</strong><br>• Accounts sent to your registered email<br>• Check spam/junk folders<br>• Delivery confirmation included</div><p><strong>Bulk Orders:</strong> May take up to 24 hours for processing and delivery.</p><p>Need help with delivery? <a href='support.html'>Contact our support team</a> anytime!</p>"
+  },
+  {
+    "id": "help-5",
+    "title": "Support & Contact",
+    "content": "<h3>Get Help When You Need It</h3><p>Our support team is here to help you succeed:</p><ul><li><strong>Response Time:</strong> Within 24 hours for all inquiries</li><li><strong>Premium Support:</strong> Available for enterprise customers</li><li><strong>Multiple Channels:</strong> Contact form, email, or live chat</li></ul><p><strong>📞 Contact Us:</strong></p><p>Email: <a href='mailto:info.buypva@gmail.com'>info.buypva@gmail.com</a><br>Support Form: <a href='support.html'>support.html</a></p><p><em>We're committed to your success! 🚀</em></p>"
+  }
+]

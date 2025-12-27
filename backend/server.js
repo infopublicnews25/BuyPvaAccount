@@ -639,8 +639,15 @@ const authLimiter = rateLimit({
 
 const adminLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 50, // limit each IP to 50 admin requests per windowMs
-    message: 'Too many admin requests, please try again later.'
+    max: 500, // limit each IP to 500 admin requests per windowMs (increased from 50)
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            message: 'Too many admin requests, please try again later.'
+        });
+    }
 });
 
 // Apply rate limiting to routes
@@ -2422,6 +2429,338 @@ app.get('/api/email-status', (req, res) => {
         });
     } else {
         res.json({ configured: false });
+    }
+});
+
+// Get news updates for marketplace
+app.get('/api/news', (req, res) => {
+    try {
+        const newsData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'news.json'), 'utf8'));
+        res.json({
+            success: true,
+            news: newsData
+        });
+    } catch (error) {
+        console.error('Error reading news:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to load news'
+        });
+    }
+});
+
+// Add/update news (admin only)
+app.post('/api/admin/news', authenticateAdmin, (req, res) => {
+    try {
+        const { date, content, date_en, content_en, date_ru, content_ru, date_zh, content_zh, date_ar, content_ar, id } = req.body;
+
+        if (!date || !content) {
+            return res.status(400).json({
+                success: false,
+                message: 'Date and content are required'
+            });
+        }
+
+        const newsData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'news.json'), 'utf8'));
+
+        const newsItem = {
+            id: id || `news_${Date.now()}`,
+            date: date,
+            content: content,
+            date_en: date_en || date,
+            content_en: content_en || content,
+            date_ru: date_ru || date,
+            content_ru: content_ru || content,
+            date_zh: date_zh || date,
+            content_zh: content_zh || content,
+            date_ar: date_ar || date,
+            content_ar: content_ar || content
+        };
+
+        // If editing existing news
+        if (id) {
+            const existingIndex = newsData.findIndex(item => item.id === id);
+            if (existingIndex >= 0) {
+                newsData[existingIndex] = newsItem;
+            } else {
+                newsData.unshift(newsItem);
+            }
+        } else {
+            newsData.unshift(newsItem);
+        }
+
+        fs.writeFileSync(path.join(__dirname, '..', 'news.json'), JSON.stringify(newsData, null, 2));
+
+        res.json({
+            success: true,
+            message: id ? 'News updated successfully' : 'News added successfully',
+            news: newsItem
+        });
+    } catch (error) {
+        console.error('Error saving news:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to save news'
+        });
+    }
+});
+
+// Delete news (admin only)
+app.delete('/api/admin/news/:id', authenticateAdmin, (req, res) => {
+    try {
+        const { id } = req.params;
+        const newsData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'news.json'), 'utf8'));
+
+        const filteredNews = newsData.filter(item => item.id !== id);
+
+        if (filteredNews.length === newsData.length) {
+            return res.status(404).json({
+                success: false,
+                message: 'News item not found'
+            });
+        }
+
+        fs.writeFileSync(path.join(__dirname, '..', 'news.json'), JSON.stringify(filteredNews, null, 2));
+
+        res.json({
+            success: true,
+            message: 'News deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting news:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete news'
+        });
+    }
+});
+
+// Reorder news (admin only)
+app.post('/api/admin/news/reorder', authenticateAdmin, (req, res) => {
+    try {
+        const { order } = req.body;
+
+        if (!Array.isArray(order)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order must be an array of news IDs'
+            });
+        }
+
+        const newsData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'news.json'), 'utf8'));
+
+        // Reorder news based on the provided order
+        const reorderedNews = order.map(id => newsData.find(item => item.id === id)).filter(Boolean);
+
+        // Add any news items that weren't in the order array (shouldn't happen but safety check)
+        const remainingNews = newsData.filter(item => !order.includes(item.id));
+        reorderedNews.push(...remainingNews);
+
+        fs.writeFileSync(path.join(__dirname, '..', 'news.json'), JSON.stringify(reorderedNews, null, 2));
+
+        res.json({
+            success: true,
+            message: 'News order updated successfully'
+        });
+    } catch (error) {
+        console.error('Error reordering news:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to reorder news'
+        });
+    }
+});
+
+// Cache bust news (admin only) - forces marketplace to refresh news
+app.post('/api/admin/news/cache-bust', authenticateAdmin, (req, res) => {
+    try {
+        // Update a timestamp in news.json to force cache refresh
+        const newsData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'news.json'), 'utf8'));
+
+        // Add or update cache version
+        const cacheVersion = {
+            _cacheVersion: Date.now(),
+            _lastUpdated: new Date().toISOString()
+        };
+
+        // Add cache version to the beginning of the array
+        newsData.unshift(cacheVersion);
+
+        fs.writeFileSync(path.join(__dirname, '..', 'news.json'), JSON.stringify(newsData, null, 2));
+
+        res.json({
+            success: true,
+            message: 'Cache busted successfully'
+        });
+    } catch (error) {
+        console.error('Error busting cache:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to bust cache'
+        });
+    }
+});
+
+// ========== HELP ENDPOINTS ==========
+
+// Get help items for marketplace
+app.get('/api/help', (req, res) => {
+    try {
+        const helpData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'help.json'), 'utf8'));
+        res.json({
+            success: true,
+            help: helpData
+        });
+    } catch (error) {
+        console.error('Error reading help:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to load help'
+        });
+    }
+});
+
+// Add/update help (admin only)
+app.post('/api/admin/help', authenticateAdmin, (req, res) => {
+    try {
+        const { title, content, id } = req.body;
+
+        if (!title || !content) {
+            return res.status(400).json({
+                success: false,
+                message: 'Title and content are required'
+            });
+        }
+
+        const helpData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'help.json'), 'utf8'));
+
+        const helpItem = {
+            id: id || `help_${Date.now()}`,
+            title: title,
+            content: content
+        };
+
+        // If editing existing help
+        if (id) {
+            const existingIndex = helpData.findIndex(item => item.id === id);
+            if (existingIndex >= 0) {
+                helpData[existingIndex] = helpItem;
+            } else {
+                helpData.unshift(helpItem);
+            }
+        } else {
+            helpData.unshift(helpItem);
+        }
+
+        fs.writeFileSync(path.join(__dirname, '..', 'help.json'), JSON.stringify(helpData, null, 2));
+
+        res.json({
+            success: true,
+            message: id ? 'Help item updated successfully' : 'Help item added successfully',
+            help: helpItem
+        });
+    } catch (error) {
+        console.error('Error saving help:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to save help item'
+        });
+    }
+});
+
+// Delete help (admin only)
+app.delete('/api/admin/help/:id', authenticateAdmin, (req, res) => {
+    try {
+        const { id } = req.params;
+        const helpData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'help.json'), 'utf8'));
+
+        const filteredHelp = helpData.filter(item => item.id !== id);
+
+        if (filteredHelp.length === helpData.length) {
+            return res.status(404).json({
+                success: false,
+                message: 'Help item not found'
+            });
+        }
+
+        fs.writeFileSync(path.join(__dirname, '..', 'help.json'), JSON.stringify(filteredHelp, null, 2));
+
+        res.json({
+            success: true,
+            message: 'Help item deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting help:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete help item'
+        });
+    }
+});
+
+// Reorder help (admin only)
+app.post('/api/admin/help/reorder', authenticateAdmin, (req, res) => {
+    try {
+        const { order } = req.body;
+
+        if (!Array.isArray(order)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order must be an array of help IDs'
+            });
+        }
+
+        const helpData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'help.json'), 'utf8'));
+
+        // Reorder help based on the provided order
+        const reorderedHelp = order.map(id => helpData.find(item => item.id === id)).filter(Boolean);
+
+        // Add any help items that weren't in the order array (shouldn't happen but safety check)
+        const remainingHelp = helpData.filter(item => !order.includes(item.id));
+        reorderedHelp.push(...remainingHelp);
+
+        fs.writeFileSync(path.join(__dirname, '..', 'help.json'), JSON.stringify(reorderedHelp, null, 2));
+
+        res.json({
+            success: true,
+            message: 'Help order updated successfully'
+        });
+    } catch (error) {
+        console.error('Error reordering help:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to reorder help'
+        });
+    }
+});
+
+// Cache bust help (admin only) - forces marketplace to refresh help
+app.post('/api/admin/help/cache-bust', authenticateAdmin, (req, res) => {
+    try {
+        // Update a timestamp in help.json to force cache refresh
+        const helpData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'help.json'), 'utf8'));
+
+        // Add or update cache version
+        const cacheVersion = {
+            _cacheVersion: Date.now(),
+            _lastUpdated: new Date().toISOString()
+        };
+
+        // Add cache version to the beginning of the array
+        helpData.unshift(cacheVersion);
+
+        fs.writeFileSync(path.join(__dirname, '..', 'help.json'), JSON.stringify(helpData, null, 2));
+
+        res.json({
+            success: true,
+            message: 'Cache busted successfully'
+        });
+    } catch (error) {
+        console.error('Error busting cache:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to bust cache'
+        });
     }
 });
 

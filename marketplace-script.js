@@ -24,62 +24,163 @@ function sendNotificationRequest(event) {
   alert('Request sent successfully! We will notify you when the items are available.');
 }
 
+// Text Size Adjustment
+function changeTextSize(delta) {
+  const body = document.body;
+  const currentSize = parseFloat(window.getComputedStyle(body).fontSize);
+  const newSize = Math.max(12, Math.min(24, currentSize + delta)); // Min 12px, max 24px
+  body.style.fontSize = newSize + 'px';
+  localStorage.setItem('textSize', newSize);
+  return false; // Prevent default link behavior
+}
+
+// Load saved text size on page load
+document.addEventListener('DOMContentLoaded', function() {
+  const savedSize = localStorage.getItem('textSize');
+  if (savedSize) {
+    document.body.style.fontSize = savedSize + 'px';
+  }
+});
+
 // Load News Updates
 function loadNewsUpdates() {
   const newsContainer = document.getElementById('newsContainer');
   const lang = detectLanguage();
-  const news = JSON.parse(localStorage.getItem('newsUpdates') || '[]');
-  if (news.length === 0) {
-    const defaultNews = {
-      en: [
-        { date: 'Nov 2025', content: 'Crypto payments optimized for speed.' },
-        { date: 'Oct 2025', content: 'Bulk pricing available on select items.' },
-        { date: 'May 2025', content: 'Improved search & filtering.' }
-      ],
-      ru: [
-        { date: 'Ноя 2025', content: 'Криптовалютные платежи оптимизированы для скорости.' },
-        { date: 'Окт 2025', content: 'Оптовые цены доступны на выбранные товары.' },
-        { date: 'Май 2025', content: 'Улучшен поиск и фильтрация.' }
-      ],
-      zh: [
-        { date: '2025年11月', content: '加密货币支付已优化以提高速度。' },
-        { date: '2025年10月', content: '部分商品提供批量定价。' },
-        { date: '2025年5月', content: '改进的搜索和过滤。' }
-      ],
-      ar: [
-        { date: 'نوفمبر 2025', content: 'تم تحسين المدفوعات المشفرة للسرعة.' },
-        { date: 'أكتوبر 2025', content: 'الأسعار بالجملة متاحة على بعض العناصر.' },
-        { date: 'مايو 2025', content: 'تم تحسين البحث والتصفية.' }
-      ]
-    };
-    const langNews = defaultNews[lang] || defaultNews.en;
-    safeSetInnerHTML(newsContainer, langNews.map(item => `
-      <div class="item"><div class="date">${item.date}</div><div>${item.content}</div></div>
-    `).join(''), true);
-  } else {
-    const hasLocalized = news.some(n => n && (n[`content_${lang}`] || n[`date_${lang}`]));
 
-    // If admin stored only English news but user is browsing RU/ZH/AR,
-    // show the default localized news so the section changes language.
-    if (lang !== 'en' && !hasLocalized) {
+  // Fetch news from API instead of localStorage
+  fetch('/api/news')
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.news && data.news.length > 0) {
+        // Check if news has been updated (cache busting)
+        const cacheVersion = data.news.find(item => item._cacheVersion);
+        const lastCacheVersion = localStorage.getItem('news_cache_version');
+
+        if (cacheVersion && cacheVersion._cacheVersion !== lastCacheVersion) {
+          // News has been updated, clear any cached data
+          localStorage.removeItem('newsUpdates');
+          localStorage.setItem('news_cache_version', cacheVersion._cacheVersion);
+          console.log('News cache updated, refreshing...');
+        }
+
+        // Filter out cache version object from display
+        const displayNews = data.news.filter(item => !item._cacheVersion);
+
+        safeSetInnerHTML(newsContainer, displayNews.map(item => {
+          const date = (item && (item[`date_${lang}`] || item.date)) || '';
+          const content = (item && (item[`content_${lang}`] || item.content)) || '';
+          return `
+            <div class="item">
+              <div class="date">${date}</div>
+              <div class="news-content">${content}</div>
+            </div>
+          `;
+        }).join(''), true);
+      } else {
+        // Fallback to default news if API fails or no news
+        const defaultNews = {
+          en: [
+            { date: 'Nov 2025', content: 'Crypto payments optimized for speed.' },
+            { date: 'Oct 2025', content: 'Bulk pricing available on select items.' },
+            { date: 'May 2025', content: 'Improved search & filtering.' }
+          ],
+          ru: [
+            { date: 'Ноя 2025', content: 'Криптовалютные платежи оптимизированы для скорости.' },
+            { date: 'Окт 2025', content: 'Оптовые цены доступны на выбранные товары.' },
+            { date: 'Май 2025', content: 'Улучшен поиск и фильтрация.' }
+          ],
+          zh: [
+            { date: '2025年11月', content: '加密货币支付已优化以提高速度。' },
+            { date: '2025年10月', content: '部分商品提供批量定价。' },
+            { date: '2025年5月', content: '改进的搜索和过滤。' }
+          ],
+          ar: [
+            { date: 'نوفمبر 2025', content: 'تم تحسين المدفوعات المشفرة للسرعة.' },
+            { date: 'أكتوبر 2025', content: 'الأسعار بالجملة متاحة على بعض العناصر.' },
+            { date: 'مايو 2025', content: 'تم تحسين البحث والتصفية.' }
+          ]
+        };
+        const langNews = defaultNews[lang] || defaultNews.en;
+        safeSetInnerHTML(newsContainer, langNews.map(item => `
+          <div class="item"><div class="date">${item.date}</div><div>${item.content}</div></div>
+        `).join(''), true);
+      }
+    })
+    .catch(err => {
+      console.error('Error loading news from API:', err);
+      // Fallback to default news on error
+      const defaultNews = {
+        en: [
+          { date: 'Nov 2025', content: 'Crypto payments optimized for speed.' },
+          { date: 'Oct 2025', content: 'Bulk pricing available on select items.' },
+          { date: 'May 2025', content: 'Improved search & filtering.' }
+        ],
+        ru: [
+          { date: 'Ноя 2025', content: 'Криптовалютные платежи оптимизированы для скорости.' },
+          { date: 'Окт 2025', content: 'Оптовые цены доступны на выбранные товары.' },
+          { date: 'Май 2025', content: 'Улучшен поиск и фильтрация.' }
+        ],
+        zh: [
+          { date: '2025年11月', content: '加密货币支付已优化以提高速度。' },
+          { date: '2025年10月', content: '部分商品提供批量定价。' },
+          { date: '2025年5月', content: '改进的搜索和过滤。' }
+        ],
+        ar: [
+          { date: 'نوفمبر 2025', content: 'تم تحسين المدفوعات المشفرة للسرعة.' },
+          { date: 'أكتوبر 2025', content: 'الأسعار بالجملة متاحة على بعض العناصر.' },
+          { date: 'مايو 2025', content: 'تم تحسين البحث والتصفية.' }
+        ]
+      };
+      const lang = detectLanguage();
       const langNews = defaultNews[lang] || defaultNews.en;
       safeSetInnerHTML(newsContainer, langNews.map(item => `
         <div class="item"><div class="date">${item.date}</div><div>${item.content}</div></div>
       `).join(''), true);
-      return;
-    }
+    });
+}
 
-    safeSetInnerHTML(newsContainer, news.map(item => {
-      const date = (item && (item[`date_${lang}`] || item.date)) || '';
-      const content = (item && (item[`content_${lang}`] || item.content)) || '';
-      return `
-        <div class="item">
-          <div class="date">${date}</div>
-          <div class="news-content">${content}</div>
+// Load Help Updates
+function loadHelpUpdates() {
+  const helpContainer = document.getElementById('helpContainer');
+
+  // Fetch help from API
+  fetch('/api/help')
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.help && data.help.length > 0) {
+        // Filter out cache version object from display
+        const displayHelp = data.help.filter(item => !item._cacheVersion);
+
+        safeSetInnerHTML(helpContainer, displayHelp.map(item => {
+          const title = (item && item.title) || '';
+          const content = (item && item.content) || '';
+          return `
+            <div class="help-item">
+              <div class="help-title">${title}</div>
+              <div class="help-content">${content}</div>
+            </div>
+          `;
+        }).join(''), true);
+      } else {
+        // Fallback to default help if API fails or no help
+        safeSetInnerHTML(helpContainer, `
+          <div class="help-item">
+            <div class="help-title">Contact Support</div>
+            <div class="help-content">Need help? <a href="support.html" style="color: #007bff;">Contact our support team</a></div>
+          </div>
+        `, true);
+      }
+    })
+    .catch(err => {
+      console.error('Error loading help from API:', err);
+      // Fallback to default help on error
+      safeSetInnerHTML(helpContainer, `
+        <div class="help-item">
+          <div class="help-title">Contact Support</div>
+          <div class="help-content">Need help? <a href="support.html" style="color: #007bff;">Contact our support team</a></div>
         </div>
-      `;
-    }).join(''), true);
-  }
+      `, true);
+    });
 }
 
 function detectLanguage() {
@@ -687,13 +788,36 @@ function getApiBase() {
         });
       };
 
-      row.addEventListener('click', (e) => {
-        if (!e.target.closest('.buy')) {
-          closeOthers();
-          toggle();
-        }
-      });
+      // Check if device supports hover (desktop) or touch (mobile)
+      const isTouchDevice = () => {
+        return (('ontouchstart' in window) ||
+          (navigator.maxTouchPoints > 0) ||
+          (navigator.msMaxTouchPoints > 0));
+      };
 
+      if (!isTouchDevice()) {
+        // Desktop: Hover functionality
+        row.addEventListener('mouseenter', () => {
+          closeOthers();
+          row.setAttribute('aria-expanded', 'true');
+          det.style.display = 'block';
+        });
+
+        row.addEventListener('mouseleave', () => {
+          row.setAttribute('aria-expanded', 'false');
+          det.style.display = 'none';
+        });
+      } else {
+        // Mobile: Click functionality
+        row.addEventListener('click', (e) => {
+          if (!e.target.closest('.buy')) {
+            closeOthers();
+            toggle();
+          }
+        });
+      }
+
+      // Keep keyboard accessibility for both desktop and mobile
       row.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -852,5 +976,11 @@ function getApiBase() {
   }, msToNext30Min());
 })();
 
-// Load news on page load
+// Auto-refresh news every 30 seconds to check for updates
+setInterval(() => {
+  loadNewsUpdates();
+}, 30000);
+
+// Load news and help on page load
 window.addEventListener('load', loadNewsUpdates);
+window.addEventListener('load', loadHelpUpdates);

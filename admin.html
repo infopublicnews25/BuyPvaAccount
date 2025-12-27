@@ -9,7 +9,7 @@
     <meta name="keywords" content="admin, dashboard, BuyPvaAccount, management, orders, users">
     <meta name="author" content="BuyPvaAccount">
     <meta name="robots" content="noindex, nofollow">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48dGV4dCB5PSIuOWVtIiBmb250LXNpemU9IjkwIj7ilrDilrDilrA8L3RleHQ+PC9zdmc+">
     <script src="config.js"></script>
     <script src="staff-guard.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -398,6 +398,40 @@
             display: flex;
             justify-content: space-between;
             align-items: start;
+            cursor: grab;
+            transition: all 0.2s;
+        }
+
+        .news-item:hover {
+            background: #f7fafc;
+        }
+
+        .news-item.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+            cursor: grabbing;
+        }
+
+        .news-item.drag-over {
+            border-top: 2px solid #667eea;
+        }
+
+        .drag-handle {
+            cursor: grab;
+            color: #a0aec0;
+            font-size: 12px;
+            margin-right: 12px;
+            padding: 4px;
+            user-select: none;
+            transition: color 0.2s;
+        }
+
+        .drag-handle:hover {
+            color: #667eea;
+        }
+
+        .news-item.dragging .drag-handle {
+            cursor: grabbing;
         }
 
         .news-content {
@@ -414,6 +448,162 @@
         .news-actions {
             display: flex;
             gap: 8px;
+        }
+
+        .help-item {
+            padding: 20px 0;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            cursor: grab;
+            transition: all 0.2s;
+        }
+
+        .help-item:hover {
+            background: #f7fafc;
+        }
+
+        .help-item.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+            cursor: grabbing;
+        }
+
+        .help-item.drag-over {
+            border-top: 2px solid #667eea;
+        }
+
+        .help-content {
+            flex: 1;
+        }
+
+        .help-content h4 {
+            margin: 0 0 8px 0;
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .help-content p {
+            margin: 0;
+            color: #4a5568;
+            line-height: 1.5;
+        }
+
+        .help-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Rich Text Editor Styles */
+        .rich-editor-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .editor-toolbar {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .editor-btn {
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            min-width: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .editor-btn:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .editor-btn:active {
+            background: #e5e7eb;
+        }
+
+        .font-size-select {
+            padding: 4px 6px;
+            font-size: 11px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .font-size-select:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .font-size-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        .editor-content {
+            min-height: 120px;
+            padding: 12px 16px;
+            outline: none;
+            font-family: inherit;
+            font-size: 11px;
+            line-height: 1.5;
+            color: #374151;
+            background: white;
+        }
+
+        .editor-content:empty:before {
+            content: attr(placeholder);
+            color: #9ca3af;
+            font-style: italic;
+            pointer-events: none;
+        }
+
+        .editor-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+
+        .editor-content p {
+            margin: 8px 0;
+        }
+
+        .editor-content h3 {
+            margin: 16px 0 8px 0;
+            color: #1f2937;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .editor-content ul, .editor-content ol {
+            margin: 8px 0;
+            padding-left: 24px;
+        }
+
+        .editor-content a {
+            color: #3b82f6;
+            text-decoration: underline;
+        }
+
+        .editor-content a:hover {
+            color: #1d4ed8;
         }
 
         .category-tag {
@@ -541,6 +731,7 @@
                 <button class="tab" onclick="switchTab('categories')">📂 Categories</button>
                 <button class="tab" onclick="switchTab('users')">👥 Users</button>
                 <button class="tab" onclick="switchTab('news')">📰 News</button>
+                <button class="tab" onclick="switchTab('help')">❓ Need Help</button>
                 <button class="tab" onclick="switchTab('files')">📁 File Manager</button>
                 <button class="tab" onclick="switchTab('settings')">⚙️ Settings</button>
             </div>
@@ -616,6 +807,7 @@
                     style="margin-bottom: 24px; padding: 24px; background: #f7fafc; border-radius: 12px;">
                     <h3 id="newsFormTitle" style="margin-bottom: 16px;">Add News/Update</h3>
                     <input type="hidden" id="newsEditIndex" value="-1">
+                    <input type="hidden" id="newsEditId" value="">
                     <div class="form-group">
                         <label>Date</label>
                         <input type="text" id="newsDate" value="Nov 2025" required>
@@ -629,6 +821,59 @@
                         style="display: none;">Cancel</button>
                 </form>
                 <div id="newsList"></div>
+            </div>
+
+            <!-- Help Tab -->
+            <div id="helpTab" class="tab-content">
+                <div class="section-header">
+                    <h2>Need Help? Section</h2>
+                </div>
+                <form onsubmit="addHelp(event)"
+                    style="margin-bottom: 24px; padding: 24px; background: #f7fafc; border-radius: 12px;">
+                    <h3 id="helpFormTitle" style="margin-bottom: 16px;">Add Help Item</h3>
+                    <input type="hidden" id="helpEditIndex" value="-1">
+                    <input type="hidden" id="helpEditId" value="">
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" id="helpTitle" placeholder="e.g., How to buy accounts?" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Content (Rich Text Editor)</label>
+                        <div class="rich-editor-container">
+                            <div class="editor-toolbar">
+                                <button type="button" class="editor-btn" onclick="formatText('bold')" title="Bold"><strong>B</strong></button>
+                                <button type="button" class="editor-btn" onclick="formatText('italic')" title="Italic"><em>I</em></button>
+                                <button type="button" class="editor-btn" onclick="formatText('underline')" title="Underline"><u>U</u></button>
+                                <button type="button" class="editor-btn" onclick="formatText('insertUnorderedList')" title="Bullet List">• List</button>
+                                <button type="button" class="editor-btn" onclick="formatText('insertOrderedList')" title="Numbered List">1. List</button>
+                                <select class="editor-btn font-size-select" onchange="changeFontSize(this.value)" title="Font Size">
+                                    <option value="10px">10px</option>
+                                    <option value="11px">11px</option>
+                                    <option value="12px" selected>12px</option>
+                                    <option value="13px">13px</option>
+                                    <option value="14px">14px</option>
+                                    <option value="16px">16px</option>
+                                    <option value="18px">18px</option>
+                                    <option value="20px">20px</option>
+                                </select>
+                                <button type="button" class="editor-btn" onclick="increaseFontSize()" title="Increase Font Size">🔍+</button>
+                                <button type="button" class="editor-btn" onclick="insertLink()" title="Insert Link">🔗 Link</button>
+                                <button type="button" class="editor-btn" onclick="insertImage()" title="Insert Image">🖼️ Image</button>
+                                <button type="button" class="editor-btn" onclick="formatText('formatBlock', 'p')" title="Paragraph">¶</button>
+                                <button type="button" class="editor-btn" onclick="formatText('formatBlock', 'h3')" title="Heading">H3</button>
+                            </div>
+                            <div class="editor-content" id="helpContentEditor" contenteditable="true" placeholder="Provide detailed help information with formatting, links, and images..."></div>
+                        </div>
+                        <textarea id="helpContent" style="display: none;"></textarea>
+                        <div style="margin-top: 8px; font-size: 12px; color: #666;">
+                            💡 Use the toolbar above to format text, add links, and insert images. HTML is supported.
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success" id="helpSubmitBtn">Add Help Item</button>
+                    <button type="button" class="btn btn-secondary" id="helpCancelBtn" onclick="cancelHelpEdit()"
+                        style="display: none;">Cancel</button>
+                </form>
+                <div id="helpList"></div>
             </div>
 
             <!-- File Manager Tab -->
@@ -1351,6 +1596,7 @@
             else if (name === 'categories') loadCategories();
             else if (name === 'users') loadUsers();
             else if (name === 'news') loadNews();
+            else if (name === 'help') loadHelp();
             else if (name === 'settings') {}
         }
         
@@ -1369,6 +1615,7 @@
                 else if (tabName === 'categories') loadCategories();
                 else if (tabName === 'users') loadUsers();
                 else if (tabName === 'news') loadNews();
+                else if (tabName === 'help') loadHelp();
             }
         }
 
@@ -1786,57 +2033,80 @@
 
         // ========== NEWS ==========
         function loadNews() {
-            const news = JSON.parse(localStorage.getItem('newsUpdates') || '[]');
-            const newsList = document.getElementById('newsList');
-            if (news.length === 0) {
-                newsList.innerHTML = '<p style="text-align: center; color: #a0aec0; padding: 40px;">No news items yet.</p>';
-            } else {
-                newsList.innerHTML = news.map((n, i) => `
-            <div class="news-item">
-                <div class="news-content">
-                    <span class="news-date">${n.date}</span>
-                    <span>${n.content}</span>
-                </div>
-                <div class="news-actions">
-                    <button class="btn btn-edit" onclick="editNews(${i})">Edit</button>
-                    <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="deleteNews(${i})">Delete</button>
-                </div>
-            </div>
-        `).join('');
-            }
+            fetch(`${API}/news`)
+                .then(response => response.json())
+                .then(data => {
+                    const newsList = document.getElementById('newsList');
+                    if (!data.success || !data.news || data.news.length === 0) {
+                        newsList.innerHTML = '<p style="text-align: center; color: #a0aec0; padding: 40px;">No news items yet.</p>';
+                    } else {
+                        newsList.innerHTML = data.news.map((n, i) => `
+                    <div class="news-item" draggable="true" data-news-id="${n.id}" data-news-index="${i}">
+                        <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                        <div class="news-content">
+                            <span class="news-date">${n.date}</span>
+                            <span>${n.content}</span>
+                        </div>
+                        <div class="news-actions">
+                            <button class="btn btn-edit" onclick="editNews('${n.id}', '${n.date}', '${n.content.replace(/'/g, "\\'")}')">Edit</button>
+                            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="deleteNews('${n.id}')">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading news:', error);
+                    const newsList = document.getElementById('newsList');
+                    newsList.innerHTML = '<p style="text-align: center; color: #f56565; padding: 40px;">Failed to load news.</p>';
+                });
         }
 
         function addNews(e) {
             e.preventDefault();
-            const news = JSON.parse(localStorage.getItem('newsUpdates') || '[]');
             const editIndex = parseInt(document.getElementById('newsEditIndex').value);
             const newsItem = {
                 date: document.getElementById('newsDate').value,
-                content: document.getElementById('newsContent').value
+                content: document.getElementById('newsContent').value,
+                id: editIndex >= 0 ? document.getElementById('newsEditId').value : null
             };
 
-            if (editIndex >= 0) {
-                news[editIndex] = newsItem;
-            } else {
-                news.unshift(newsItem);
-            }
+            const url = editIndex >= 0 ? `${API}/admin/news` : `${API}/admin/news`;
+            const method = 'POST';
 
-            localStorage.setItem('newsUpdates', JSON.stringify(news));
-            document.getElementById('newsContent').value = '';
-            document.getElementById('newsEditIndex').value = '-1';
-            document.getElementById('newsFormTitle').textContent = 'Add News/Update';
-            document.getElementById('newsSubmitBtn').textContent = 'Add News';
-            document.getElementById('newsCancelBtn').style.display = 'none';
-            loadNews();
-            alert(editIndex >= 0 ? 'News updated!' : 'News added!');
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`
+                },
+                body: JSON.stringify(newsItem)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('newsContent').value = '';
+                    document.getElementById('newsEditIndex').value = '-1';
+                    document.getElementById('newsFormTitle').textContent = 'Add News/Update';
+                    document.getElementById('newsSubmitBtn').textContent = 'Add News';
+                    document.getElementById('newsCancelBtn').style.display = 'none';
+                    loadNews();
+                    alert(editIndex >= 0 ? 'News updated!' : 'News added!');
+                } else {
+                    alert('Failed to save news: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error saving news:', error);
+                alert('Error saving news. Please try again.');
+            });
         }
 
-        function editNews(index) {
-            const news = JSON.parse(localStorage.getItem('newsUpdates') || '[]');
-            const item = news[index];
-            document.getElementById('newsDate').value = item.date;
-            document.getElementById('newsContent').value = item.content;
-            document.getElementById('newsEditIndex').value = index;
+        function editNews(id, date, content) {
+            document.getElementById('newsDate').value = date;
+            document.getElementById('newsContent').value = content;
+            document.getElementById('newsEditId').value = id;
+            document.getElementById('newsEditIndex').value = '0'; // Just needs to be >= 0
             document.getElementById('newsFormTitle').textContent = 'Edit News/Update';
             document.getElementById('newsSubmitBtn').textContent = 'Update News';
             document.getElementById('newsCancelBtn').style.display = 'inline-block';
@@ -1850,12 +2120,513 @@
             document.getElementById('newsCancelBtn').style.display = 'none';
         }
 
-        function deleteNews(index) {
+        function deleteNews(id) {
             if (!confirm('Delete this news item?')) return;
-            const news = JSON.parse(localStorage.getItem('newsUpdates') || '[]');
-            news.splice(index, 1);
-            localStorage.setItem('newsUpdates', JSON.stringify(news));
-            loadNews();
+
+            fetch(`${API}/admin/news/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadNews();
+                    alert('News deleted successfully!');
+                } else {
+                    alert('Failed to delete news: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting news:', error);
+                alert('Error deleting news. Please try again.');
+            });
+        }
+
+        // Drag and Drop functionality for news reordering
+        let draggedNewsItem = null;
+
+        function initNewsDragAndDrop() {
+            const newsList = document.getElementById('newsList');
+
+            newsList.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('news-item')) {
+                    draggedNewsItem = e.target;
+                    e.target.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                }
+            });
+
+            newsList.addEventListener('dragend', (e) => {
+                if (e.target.classList.contains('news-item')) {
+                    e.target.classList.remove('dragging');
+                    draggedNewsItem = null;
+                    // Remove drag-over class from all items
+                    document.querySelectorAll('.news-item').forEach(item => {
+                        item.classList.remove('drag-over');
+                    });
+                }
+            });
+
+            newsList.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+
+                const afterElement = getDragAfterElement(newsList, e.clientY);
+                const draggable = document.querySelector('.news-item.dragging');
+
+                if (afterElement == null) {
+                    newsList.appendChild(draggable);
+                } else {
+                    newsList.insertBefore(draggable, afterElement);
+                }
+            });
+
+            newsList.addEventListener('drop', (e) => {
+                e.preventDefault();
+                saveNewsOrder();
+            });
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.news-item:not(.dragging)')];
+
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function saveNewsOrder() {
+            const newsItems = document.querySelectorAll('.news-item');
+            const newsOrder = Array.from(newsItems).map(item => item.dataset.newsId);
+
+            fetch(`${API}/admin/news/reorder`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`
+                },
+                body: JSON.stringify({ order: newsOrder })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('News order saved successfully');
+                    // Force refresh news on marketplace by updating cache version
+                    updateNewsCacheVersion();
+                } else {
+                    console.error('Failed to save news order:', data.message);
+                    // Reload to restore original order
+                    loadNews();
+                }
+            })
+            .catch(error => {
+                console.error('Error saving news order:', error);
+                loadNews(); // Reload to restore original order
+            });
+        }
+
+        function updateNewsCacheVersion() {
+            // Update a cache version to force marketplace refresh
+            fetch(`${API}/admin/news/cache-bust`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`
+                }
+            }).catch(err => console.log('Cache bust request sent'));
+        }
+
+        // Initialize drag and drop when news loads
+        function loadNews() {
+            fetch(`${API}/news`)
+                .then(response => response.json())
+                .then(data => {
+                    const newsList = document.getElementById('newsList');
+                    if (!data.success || !data.news || data.news.length === 0) {
+                        newsList.innerHTML = '<p style="text-align: center; color: #a0aec0; padding: 40px;">No news items yet.</p>';
+                    } else {
+                        // Filter out invalid news items that don't have content
+                        const validNews = data.news.filter(n => n && n.content && typeof n.content === 'string');
+                        newsList.innerHTML = validNews.map((n, i) => `
+                    <div class="news-item" draggable="true" data-news-id="${n.id}" data-news-index="${i}">
+                        <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                        <div class="news-content">
+                            <span class="news-date">${n.date || 'No date'}</span>
+                            <span>${n.content}</span>
+                        </div>
+                        <div class="news-actions">
+                            <button class="btn btn-edit" onclick="editNews('${n.id}', '${(n.date || '').replace(/'/g, "\\'")}', '${(n.content || '').replace(/'/g, "\\'")}')">Edit</button>
+                            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="deleteNews('${n.id}')">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+                        // Initialize drag and drop after rendering
+                        setTimeout(initNewsDragAndDrop, 100);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading news:', error);
+                    const newsList = document.getElementById('newsList');
+                    newsList.innerHTML = '<p style="text-align: center; color: #f56565; padding: 40px;">Failed to load news.</p>';
+                });
+        }
+
+        // ========== HELP SECTION ==========
+
+        function addHelp(e) {
+            e.preventDefault();
+            const editIndex = parseInt(document.getElementById('helpEditIndex').value);
+            const editor = document.getElementById('helpContentEditor');
+            const content = editor.innerHTML.trim();
+            
+            if (!content || content === '<br>' || content === '<div><br></div>') {
+                alert('Please enter some content for the help item.');
+                return;
+            }
+
+            const helpItem = {
+                title: document.getElementById('helpTitle').value,
+                content: content,
+                id: editIndex >= 0 ? document.getElementById('helpEditId').value : null
+            };
+
+            const url = editIndex >= 0 ? `${API}/admin/help` : `${API}/admin/help`;
+            const method = 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`
+                },
+                body: JSON.stringify(helpItem)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('helpTitle').value = '';
+                    const editor = document.getElementById('helpContentEditor');
+                    editor.innerHTML = '';
+                    document.getElementById('helpEditIndex').value = '-1';
+                    document.getElementById('helpFormTitle').textContent = 'Add Help Item';
+                    document.getElementById('helpSubmitBtn').textContent = 'Add Help Item';
+                    document.getElementById('helpCancelBtn').style.display = 'none';
+                    loadHelp();
+                    alert(editIndex >= 0 ? 'Help item updated!' : 'Help item added!');
+                } else {
+                    alert('Failed to save help item: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error saving help item:', error);
+                alert('Error saving help item. Please try again.');
+            });
+        }
+
+        function editHelpItem(id, title, buttonElement) {
+            const content = buttonElement.getAttribute('data-content');
+            // Decode HTML entities back to HTML
+            const decodedContent = content
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&amp;/g, '&');
+            document.getElementById('helpTitle').value = title;
+            const editor = document.getElementById('helpContentEditor');
+            editor.innerHTML = decodedContent;
+            document.getElementById('helpEditId').value = id;
+            document.getElementById('helpEditIndex').value = '0'; // Just needs to be >= 0
+            document.getElementById('helpFormTitle').textContent = 'Edit Help Item';
+            document.getElementById('helpSubmitBtn').textContent = 'Update Help Item';
+            document.getElementById('helpCancelBtn').style.display = 'inline-block';
+        }
+
+        function cancelHelpEdit() {
+            document.getElementById('helpTitle').value = '';
+            const editor = document.getElementById('helpContentEditor');
+            editor.innerHTML = '';
+            document.getElementById('helpEditIndex').value = '-1';
+            document.getElementById('helpFormTitle').textContent = 'Add Help Item';
+            document.getElementById('helpSubmitBtn').textContent = 'Add Help Item';
+            document.getElementById('helpCancelBtn').style.display = 'none';
+        }
+
+        // Rich Text Editor Functions
+        function formatText(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('helpContentEditor').focus();
+        }
+
+        function changeFontSize(size) {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const selectedText = range.toString();
+                if (selectedText.trim()) {
+                    // Wrap selected text in span with font size
+                    document.execCommand('insertHTML', false, `<span style="font-size: ${size};">${selectedText}</span>`);
+                }
+            }
+            document.getElementById('helpContentEditor').focus();
+        }
+
+        function increaseFontSize() {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const selectedText = range.toString();
+                if (selectedText.trim()) {
+                    // Get current font size or default to 12px
+                    let currentSize = 12; // default
+                    const parentElement = range.commonAncestorContainer.parentElement;
+                    if (parentElement && parentElement.style.fontSize) {
+                        currentSize = parseInt(parentElement.style.fontSize) || 12;
+                    }
+                    const newSize = Math.min(currentSize + 2, 24); // Increase by 2px, max 24px
+                    document.execCommand('insertHTML', false, `<span style="font-size: ${newSize}px;">${selectedText}</span>`);
+                }
+            }
+            document.getElementById('helpContentEditor').focus();
+        }
+
+        function insertLink() {
+            const url = prompt('Enter the URL:');
+            if (url) {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const selectedText = range.toString();
+                    const linkText = selectedText || prompt('Enter link text:', 'Click here');
+                    if (linkText) {
+                        document.execCommand('insertHTML', false, `<a href="${url}" target="_blank">${linkText}</a>`);
+                    }
+                } else {
+                    const linkText = prompt('Enter link text:', 'Click here');
+                    if (linkText) {
+                        document.execCommand('insertHTML', false, `<a href="${url}" target="_blank">${linkText}</a>`);
+                    }
+                }
+            }
+            document.getElementById('helpContentEditor').focus();
+        }
+
+        function insertImage() {
+            // Create a file input element
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Show loading indicator
+                    const editor = document.getElementById('helpContentEditor');
+                    const loadingText = document.createTextNode('Uploading image...');
+                    editor.appendChild(loadingText);
+
+                    // Create FormData for upload
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    // Upload the image
+                    fetch(`${API}/media`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Remove loading text
+                        if (loadingText.parentNode) {
+                            loadingText.parentNode.removeChild(loadingText);
+                        }
+
+                        if (data.success && data.mediaFile) {
+                            // Insert the uploaded image
+                            document.execCommand('insertHTML', false, `<img src="${data.mediaFile.url}" alt="${file.name}" style="max-width: 100%; height: auto; border-radius: 4px; margin: 8px 0;">`);
+                        } else {
+                            alert('Failed to upload image: ' + (data.message || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        // Remove loading text
+                        if (loadingText.parentNode) {
+                            loadingText.parentNode.removeChild(loadingText);
+                        }
+                        console.error('Error uploading image:', error);
+                        alert('Error uploading image. Please try again.');
+                    });
+                }
+            };
+            input.click();
+        }
+
+        function deleteHelp(id) {
+            if (!confirm('Delete this help item?')) return;
+
+            fetch(`${API}/admin/help/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadHelp();
+                    alert('Help item deleted successfully!');
+                } else {
+                    alert('Failed to delete help item: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting help item:', error);
+                alert('Error deleting help item. Please try again.');
+            });
+        }
+
+        // Drag and Drop functionality for help reordering
+        let draggedHelpItem = null;
+
+        function initHelpDragAndDrop() {
+            const helpList = document.getElementById('helpList');
+
+            helpList.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('help-item')) {
+                    draggedHelpItem = e.target;
+                    e.target.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                }
+            });
+
+            helpList.addEventListener('dragend', (e) => {
+                if (e.target.classList.contains('help-item')) {
+                    e.target.classList.remove('dragging');
+                    draggedHelpItem = null;
+                    // Remove drag-over class from all items
+                    document.querySelectorAll('.help-item').forEach(item => {
+                        item.classList.remove('drag-over');
+                    });
+                }
+            });
+
+            helpList.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+
+                const afterElement = getDragAfterElement(helpList, e.clientY);
+                const draggable = document.querySelector('.help-item.dragging');
+
+                if (afterElement == null) {
+                    helpList.appendChild(draggable);
+                } else {
+                    helpList.insertBefore(draggable, afterElement);
+                }
+            });
+
+            helpList.addEventListener('drop', (e) => {
+                e.preventDefault();
+                saveHelpOrder();
+            });
+        }
+
+        function getHelpDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.help-item:not(.dragging)')];
+
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function saveHelpOrder() {
+            const helpItems = document.querySelectorAll('.help-item');
+            const helpOrder = Array.from(helpItems).map(item => item.dataset.helpId);
+
+            fetch(`${API}/admin/help/reorder`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`
+                },
+                body: JSON.stringify({ order: helpOrder })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Help order saved successfully');
+                    // Force refresh help on marketplace by updating cache version
+                    updateHelpCacheVersion();
+                } else {
+                    console.error('Failed to save help order:', data.message);
+                    // Reload to restore original order
+                    loadHelp();
+                }
+            })
+            .catch(error => {
+                console.error('Error saving help order:', error);
+                loadHelp(); // Reload to restore original order
+            });
+        }
+
+        function updateHelpCacheVersion() {
+            // Update a cache version to force marketplace refresh
+            fetch(`${API}/admin/help/cache-bust`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem(AUTH_KEY)}`
+                }
+            }).catch(err => console.log('Cache bust request sent'));
+        }
+
+        function loadHelp() {
+            fetch(`${API}/help`)
+                .then(response => response.json())
+                .then(data => {
+                    const helpList = document.getElementById('helpList');
+                    if (!data.success || !data.help || data.help.length === 0) {
+                        helpList.innerHTML = '<p style="text-align: center; color: #a0aec0; padding: 40px;">No help items yet.</p>';
+                    } else {
+                        // Filter out invalid help items that don't have content
+                        const validHelp = data.help.filter(h => h && h.title && h.content && typeof h.content === 'string');
+                        helpList.innerHTML = validHelp.map((h, i) => `
+                    <div class="help-item" draggable="true" data-help-id="${h.id}" data-help-index="${i}">
+                        <div class="drag-handle" title="Drag to reorder">⋮⋮</div>
+                        <div class="help-content">
+                            <h4 style="margin: 0 0 8px 0; color: #2d3748; font-weight: 600;">${h.title}</h4>
+                            <p style="margin: 0; color: #4a5568; line-height: 1.5;">${h.content}</p>
+                        </div>
+                        <div class="help-actions">
+                            <button class="btn btn-edit" onclick="editHelpItem('${h.id}', '${h.title.replace(/'/g, "\\'").replace(/"/g, '\\"')}', this)" data-content="${h.content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')}">Edit</button>
+                            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="deleteHelp('${h.id}')">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+                        // Initialize drag and drop after rendering
+                        setTimeout(initHelpDragAndDrop, 100);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading help:', error);
+                    const helpList = document.getElementById('helpList');
+                    helpList.innerHTML = '<p style="text-align: center; color: #f56565; padding: 40px;">Failed to load help items.</p>';
+                });
         }
 
         // ========== CATEGORIES ==========
